@@ -44,7 +44,7 @@ class FeedbackDisplayUI:
             on_reset_callback: Callback function when reset button is clicked
         """
         if not comparison_report and not review_summary and not review_analysis:
-            st.info("No analysis results available. Please submit your review in the 'Submit Review' tab first.")
+            st.info(t("no_analysis_results"))
             return
         
         # First show performance summary metrics at the top
@@ -53,7 +53,7 @@ class FeedbackDisplayUI:
         
         # Display the comparison report
         if comparison_report:
-            st.subheader("Educational Feedback:")
+            st.subheader(t("educational_feedback"))
             st.markdown(
                 f'<div class="comparison-report">{comparison_report}</div>',
                 unsafe_allow_html=True
@@ -61,7 +61,7 @@ class FeedbackDisplayUI:
         
         # Always show review history for better visibility
         if review_history and len(review_history) > 0:
-            st.subheader("Your Review:")
+            st.subheader(t("your_review"))
             
             # First show the most recent review prominently
             if review_history:
@@ -69,7 +69,7 @@ class FeedbackDisplayUI:
                 review_analysis = latest_review.get("review_analysis", {})
                 iteration = latest_review.get("iteration_number", 0)
                 
-                st.markdown(f"#### Your Final Review (Attempt {iteration})")
+                st.markdown(f"#### {t('your_final_review').format(iteration=iteration)}")
                 
                 # Format the review text with syntax highlighting
                 st.markdown("```text\n" + latest_review.get("student_review", "") + "\n```")
@@ -77,42 +77,42 @@ class FeedbackDisplayUI:
                 col1, col2, col3 = st.columns(3)
                 with col1:
                     st.metric(
-                        "Issues Found", 
-                        f"{review_analysis.get('identified_count', 0)} of {review_analysis.get('total_problems', 0)}",
+                        t("issues_found"), 
+                        f"{review_analysis.get('identified_count', 0)} {t('of')} {review_analysis.get('total_problems', 0)}",
                         delta=None
                     )
                 with col2:
                     st.metric(
-                        "Accuracy", 
+                        t("accuracy"), 
                         f"{review_analysis.get('accuracy_percentage', 0):.1f}%",
                         delta=None
                     )
                 with col3:
                     false_positives = len(review_analysis.get('false_positives', []))
                     st.metric(
-                        "False Positives", 
+                        t("false_positives"), 
                         false_positives,
                         delta=None
                     )
             
             # Show earlier reviews in an expander if there are multiple
             if len(review_history) > 1:
-                with st.expander("Review History", expanded=False):
-                    tabs = st.tabs([f"Attempt {rev.get('iteration_number', i+1)}" for i, rev in enumerate(review_history)])
+                with st.expander(t("review_history"), expanded=False):
+                    tabs = st.tabs([f"{t('attempt')} {rev.get('iteration_number', i+1)}" for i, rev in enumerate(review_history)])
                     
                     for i, (tab, review) in enumerate(zip(tabs, review_history)):
                         with tab:
                             review_analysis = review.get("review_analysis", {})
                             st.markdown("```text\n" + review.get("student_review", "") + "\n```")
                             
-                            st.write(f"**Found:** {review_analysis.get('identified_count', 0)} of "
-                                    f"{review_analysis.get('total_problems', 0)} issues "
-                                    f"({review_analysis.get('accuracy_percentage', 0):.1f}% accuracy)")
+                            st.write(f"**{t('found')}:** {review_analysis.get('identified_count', 0)} {t('of')} "
+                                    f"{review_analysis.get('total_problems', 0)} {t('issues')} "
+                                    f"({review_analysis.get('accuracy_percentage', 0):.1f}% {t('accuracy')})")
         
         # Display analysis details in an expander
         if review_summary or review_analysis:
-            with st.expander("Detailed Analysis", expanded=True):
-                tabs = st.tabs(["Identified Issues", "Missed Issues"])
+            with st.expander(t("detailed_analysis"), expanded=True):
+                tabs = st.tabs([t("identified_issues"), t("missed_issues")])
                 
                 with tabs[0]:  # Identified Issues
                     self._render_identified_issues(review_analysis)
@@ -121,7 +121,7 @@ class FeedbackDisplayUI:
                     self._render_missed_issues(review_analysis)
 
         # Start over button
-        st.markdown("---")            
+        st.markdown("---")             
             
     def _render_performance_summary(self, review_analysis: Dict[str, Any], review_history: List[Dict[str, Any]]):
         """Render performance summary metrics and charts using the consistent original error count"""
@@ -189,9 +189,9 @@ class FeedbackDisplayUI:
                     
             # Create a DataFrame for the chart
             chart_data = pd.DataFrame({
-                "Iteration": iterations,
-                "Issues Found": identified_counts,
-                "Accuracy (%)": accuracy_percentages
+                t("iteration"): iterations,
+                t("issues_found"): identified_counts,
+                f"{t('accuracy')} (%)": accuracy_percentages
             })
             
             # Display the chart with two y-axes
@@ -201,16 +201,16 @@ class FeedbackDisplayUI:
             fig, ax1 = plt.subplots(figsize=(10, 4))
             
             color = 'tab:blue'
-            ax1.set_xlabel('Iteration')
-            ax1.set_ylabel('Issues Found', color=color)
-            ax1.plot(chart_data["Iteration"], chart_data["Issues Found"], marker='o', color=color)
+            ax1.set_xlabel(t('iteration'))
+            ax1.set_ylabel(t('issues_found'), color=color)
+            ax1.plot(chart_data[t("iteration")], chart_data[t("issues_found")], marker='o', color=color)
             ax1.tick_params(axis='y', labelcolor=color)
             ax1.grid(True, linestyle='--', alpha=0.7)
             
             ax2 = ax1.twinx()  # Create a second y-axis
             color = 'tab:red'
-            ax2.set_ylabel('Accuracy (%)', color=color)
-            ax2.plot(chart_data["Iteration"], chart_data["Accuracy (%)"], marker='s', color=color)
+            ax2.set_ylabel(f"{t('accuracy')} (%)", color=color)
+            ax2.plot(chart_data[t("iteration")], chart_data[f"{t('accuracy')} (%)"], marker='s', color=color)
             ax2.tick_params(axis='y', labelcolor=color)
             
             fig.tight_layout()
@@ -221,10 +221,10 @@ class FeedbackDisplayUI:
         identified_problems = review_analysis.get("identified_problems", [])
         
         if not identified_problems:
-            st.info("You didn't identify any issues correctly.")
+            st.info(t("no_identified_issues"))
             return
             
-        st.subheader(f"Correctly Identified Issues ({len(identified_problems)})")
+        st.subheader(f"{t('correctly_identified_issues')} ({len(identified_problems)})")
         
         for i, issue in enumerate(identified_problems, 1):
             st.markdown(
@@ -241,10 +241,10 @@ class FeedbackDisplayUI:
         missed_problems = review_analysis.get("missed_problems", [])
         
         if not missed_problems:
-            st.success("Great job! You identified all the issues.")
+            st.success(t("all_issues_found"))
             return
             
-        st.subheader(f"Issues You Missed ({len(missed_problems)})")
+        st.subheader(f"{t('issues_missed')} ({len(missed_problems)})")
         
         for i, issue in enumerate(missed_problems, 1):
             st.markdown(
