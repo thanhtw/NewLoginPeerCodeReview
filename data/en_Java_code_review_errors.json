@@ -1,0 +1,252 @@
+{
+    "Logical": [
+      {
+        "error_name": "Off-by-one error",
+        "description": "An iteration error where a loop iterates one time too many or too few, often in array indexing or boundary conditions.",
+        "implementation_guide": "Use a for loop with incorrect boundaries like 'for(int i=0; i<=array.length; i++)' instead of 'for(int i=0; i<array.length; i++)', or use '<' when you need '<='."
+      },
+      {
+        "error_name": "Null check after dereference",
+        "description": "Accessing an object's methods or fields before checking if it's null.",
+        "implementation_guide": "Write code that uses an object and then checks if it's null: 'if(object.getValue() > 0 && object != null)' which causes NullPointerException if object is null."
+      },
+      {
+        "error_name": "Unintended integer division",
+        "description": "Integer division that truncates decimal results when floating-point division was intended.",
+        "implementation_guide": "Divide two integers where decimal precision is needed: 'double result = 5 / 2;' gives 2.0 instead of 2.5."
+      },
+      {
+        "error_name": "Ignoring method return values",
+        "description": "Not checking or using the return value of a method, especially for methods that return status or modified values.",
+        "implementation_guide": "Call string.replace() without assigning the result: 'myString.replace(\"old\", \"new\");' instead of 'myString = myString.replace(\"old\", \"new\");'"
+      },
+      {
+        "error_name": "Incorrect equals/hashCode implementation",
+        "description": "Overriding equals() without overriding hashCode() or implementing them inconsistently.",
+        "implementation_guide": "Override only equals() method without hashCode(), or use different fields in equals() and hashCode() implementations."
+      },
+      {
+        "error_name": "Misunderstanding of short-circuit evaluation",
+        "description": "Not utilizing or misunderstanding how && and || short-circuit, leading to potential errors or inefficient code.",
+        "implementation_guide": "Use '&' or '|' instead of '&&' or '||' when short-circuiting is needed to prevent NullPointerException: 'if(obj != null & obj.getValue() > 0)'"
+      },
+      {
+        "error_name": "Race conditions in multi-threaded code",
+        "description": "Incorrect synchronization leading to unpredictable behavior when multiple threads access shared resources.",
+        "implementation_guide": "Access shared variables without proper synchronization or locks, or use non-atomic operations in concurrent contexts."
+      },
+      {
+        "error_name": "String comparison using ==",
+        "description": "Comparing String objects with == instead of the equals() method.",
+        "implementation_guide": "Compare strings with == instead of equals(): 'if(str1 == str2)' instead of 'if(str1.equals(str2))'"
+      },
+      {
+        "error_name": "Side effects in assertions",
+        "description": "Including operations with side effects in assertions, which may not execute when assertions are disabled.",
+        "implementation_guide": "Write assertions that modify state: 'assert (x = calculateValue()) > 0;' where x is being assigned a value."
+      },
+      {
+        "error_name": "Missing break in switch statements",
+        "description": "Forgetting break statements in switch cases, causing unintended fall-through to subsequent cases.",
+        "implementation_guide": "Create a switch statement without break statements between cases, leading to execution of multiple case blocks."
+      },
+      {
+        "error_name": "Using assignment instead of comparison",
+        "description": "Using = (assignment) instead of == (comparison) in a conditional statement.",
+        "implementation_guide": "Use assignment in condition: 'if(x = 5)' instead of 'if(x == 5)', which assigns 5 to x and then evaluates to true."
+      },
+      {
+        "error_name": "Order of operations misunderstanding",
+        "description": "Incorrect assumptions about operator precedence leading to unexpected calculation results.",
+        "implementation_guide": "Write expressions without parentheses where the order of operations matters: 'a + b * c' expecting (a + b) * c."
+      }
+    ],
+    "Syntax": [
+      {
+        "error_name": "Missing semicolons",
+        "description": "Forgetting to terminate statements with semicolons, causing compilation errors.",
+        "implementation_guide": "Omit semicolons at the end of statements: 'int x = 5' instead of 'int x = 5;'"
+      },
+      {
+        "error_name": "Unbalanced brackets or parentheses",
+        "description": "Having mismatched opening and closing brackets, braces, or parentheses in code.",
+        "implementation_guide": "Create code with unbalanced brackets: 'if (condition) { doSomething();' without the closing brace."
+      },
+      {
+        "error_name": "Incorrect method declaration",
+        "description": "Syntax errors in method declarations, such as missing return types or incorrect modifiers.",
+        "implementation_guide": "Declare a method without a return type: 'public calculateTotal(int x, int y) { return x + y; }' instead of 'public int calculateTotal(int x, int y) { return x + y; }'"
+      },
+      {
+        "error_name": "Invalid variable declarations",
+        "description": "Syntax errors in variable declarations, such as missing types or invalid identifiers.",
+        "implementation_guide": "Declare variables with invalid syntax: 'int 2count = 10;' using identifiers that start with numbers, or 'count = 5;' without specifying type for a new variable."
+      },
+      {
+        "error_name": "Type mismatch in assignment",
+        "description": "Assigning values of incompatible types without proper casting.",
+        "implementation_guide": "Assign incompatible types without casting: 'int x = \"Hello\";' or 'String s = 42;'"
+      },
+      {
+        "error_name": "Using keywords as identifiers",
+        "description": "Attempting to use Java reserved keywords as variable, method, or class names.",
+        "implementation_guide": "Try to use reserved words as identifiers: 'int class = 10;' or 'void public() { }'."
+      },
+      {
+        "error_name": "Missing return statement",
+        "description": "Not providing a return statement in a method that declares a return type.",
+        "implementation_guide": "Create a non-void method without a return statement: 'public int getValue() { int x = 10; }' without returning x."
+      },
+      {
+        "error_name": "Illegal modifiers",
+        "description": "Using incompatible or redundant modifiers for classes, methods, or variables.",
+        "implementation_guide": "Use conflicting modifiers: 'private public void method()' or 'final abstract class MyClass'."
+      }
+    ],
+    "Code Quality": [
+      {
+        "error_name": "Magic numbers",
+        "description": "Using literal numbers in code instead of named constants, reducing readability and maintainability.",
+        "implementation_guide": "Hardcode numeric values: 'if(count > 1000)' or 'for(int i=0; i<365; i++)' instead of using named constants."
+      },
+      {
+        "error_name": "Long method",
+        "description": "Methods that are excessively long and try to do too many things, violating the Single Responsibility Principle.",
+        "implementation_guide": "Create methods with more than 50 lines that perform multiple responsibilities instead of breaking them into smaller, focused methods."
+      },
+      {
+        "error_name": "Code duplication",
+        "description": "Repeated code blocks that could be refactored into shared methods or utilities.",
+        "implementation_guide": "Copy-paste similar logic in multiple places instead of extracting common logic into separate methods."
+      },
+      {
+        "error_name": "Deep nesting",
+        "description": "Excessive levels of nested conditionals or loops, making code hard to read and maintain.",
+        "implementation_guide": "Create deeply nested if-else statements or loops with 4+ levels of indentation instead of using early returns or extracted methods."
+      },
+      {
+        "error_name": "Poor exception handling",
+        "description": "Catching exceptions that are too broad or empty catch blocks that swallow exceptions without proper handling.",
+        "implementation_guide": "Use catch(Exception e) {} with empty body, hiding all errors, or catch overly broad exceptions without specific handling."
+      },
+      {
+        "error_name": "Missing logging",
+        "description": "Inadequate or missing logging, especially for errors, making troubleshooting difficult.",
+        "implementation_guide": "Create catch blocks that don't log exceptions, or omit logging of important application events and state changes."
+      },
+      {
+        "error_name": "Inappropriate comments",
+        "description": "Comments that are misleading, outdated, or simply restate what the code does without adding value.",
+        "implementation_guide": "Write comments that just repeat the code: '// increment counter' for 'counter++', or leave outdated comments that no longer match the code."
+      },
+      {
+        "error_name": "Poor variable naming",
+        "description": "Using unclear, ambiguous, or overly abbreviated variable names that don't convey their purpose.",
+        "implementation_guide": "Use names like 'x', 'temp', or 'data' that don't clearly indicate the purpose or content of the variable."
+      },
+      {
+        "error_name": "Law of Demeter violations",
+        "description": "Violating the principle that an object should only interact with its immediate neighbors, creating tight coupling.",
+        "implementation_guide": "Create method chains like 'object.getX().getY().doZ()' instead of having objects only communicate with direct dependencies."
+      },
+      {
+        "error_name": "Not using appropriate collections",
+        "description": "Using the wrong collection type for the operations being performed, leading to inefficient code.",
+        "implementation_guide": "Use ArrayList when frequent insertions/deletions are needed (LinkedList would be better), or use List when set operations are required."
+      },
+      {
+        "error_name": "Excessive class coupling",
+        "description": "Classes that are too interdependent, making the system fragile and difficult to modify.",
+        "implementation_guide": "Create classes that directly reference many other concrete classes instead of using interfaces, dependency injection, or other decoupling patterns."
+      },
+      {
+        "error_name": "Not using try-with-resources",
+        "description": "Not using try-with-resources for AutoCloseable resources, risking resource leaks.",
+        "implementation_guide": "Manually close resources with finally blocks instead of using try-with-resources: 'try { FileReader fr = new FileReader(file); ... } finally { fr.close(); }'"
+      }
+    ],
+    "Standard Violation": [
+      {
+        "error_name": "Inconsistent naming conventions",
+        "description": "Not following standard Java naming conventions for classes, methods, variables, and constants.",
+        "implementation_guide": "Use incorrect naming: 'class myClass' (lowercase), 'public void GetValue()' (uppercase method), 'final int maxValue = 100' (non-uppercase constant)."
+      },
+      {
+        "error_name": "Improper indentation",
+        "description": "Inconsistent or incorrect code indentation that reduces readability.",
+        "implementation_guide": "Use inconsistent or missing indentation in code blocks, especially nested ones."
+      },
+      {
+        "error_name": "Unorganized imports",
+        "description": "Import statements that are not properly organized or contain unused imports.",
+        "implementation_guide": "Import classes that aren't used, use wildcard imports unnecessarily, or leave imports unorganized (not grouped by package)."
+      },
+      {
+        "error_name": "Missing file headers",
+        "description": "Source files without standard header comments describing purpose, author, and license information.",
+        "implementation_guide": "Omit file header documentation that includes information about the class purpose, creation date, author, and copyright."
+      },
+      {
+        "error_name": "Line length violations",
+        "description": "Lines of code that exceed the recommended maximum length (typically 80-120 characters).",
+        "implementation_guide": "Write extremely long lines of code that require horizontal scrolling instead of breaking them into multiple lines."
+      },
+      {
+        "error_name": "Inconsistent brace placement",
+        "description": "Placing opening and closing braces inconsistently throughout the codebase.",
+        "implementation_guide": "Mix different brace styles: 'if (condition) {' and 'if (condition)\n{' in the same codebase."
+      },
+      {
+        "error_name": "Unconventional package structure",
+        "description": "Not following standard package naming and organization conventions.",
+        "implementation_guide": "Use non-conventional package names like uppercase packages, or place classes in inappropriate packages."
+      },
+      {
+        "error_name": "Ignoring code analyzer warnings",
+        "description": "Suppressing or ignoring warnings from static code analyzers without proper justification.",
+        "implementation_guide": "Add @SuppressWarnings annotations without comments explaining why the warning is being suppressed."
+      }
+    ],
+    "Java Specific": [
+      {
+        "error_name": "Raw type usage",
+        "description": "Using raw types instead of parameterized types, bypassing generic type safety.",
+        "implementation_guide": "Use 'List list = new ArrayList();' instead of 'List<String> list = new ArrayList<>();', losing type safety."
+      },
+      {
+        "error_name": "Collection modification during iteration",
+        "description": "Modifying a collection while iterating over it with a for-each loop, causing ConcurrentModificationException.",
+        "implementation_guide": "Remove elements from a collection during a for-each loop: 'for(String item : items) { if(condition) items.remove(item); }'"
+      },
+      {
+        "error_name": "Ignoring InterruptedException",
+        "description": "Catching InterruptedException without handling it properly, breaking thread interruption mechanism.",
+        "implementation_guide": "Catch InterruptedException without rethrowing or setting the interrupt flag: 'try { Thread.sleep(1000); } catch (InterruptedException e) { }'"
+      },
+      {
+        "error_name": "Boxing/unboxing overhead",
+        "description": "Unnecessary conversions between primitive types and their wrapper classes, impacting performance.",
+        "implementation_guide": "Repeatedly box/unbox in tight loops: 'Integer sum = 0; for(int i=0; i<1000000; i++) { sum += i; }' instead of using primitive int."
+      },
+      {
+        "error_name": "Misuse of finalize()",
+        "description": "Overriding finalize() for resource management, which is unreliable due to garbage collection unpredictability.",
+        "implementation_guide": "Override finalize() to close resources instead of using try-with-resources or explicit close() calls."
+      },
+      {
+        "error_name": "Checked exception overuse",
+        "description": "Declaring methods to throw checked exceptions that could be handled locally or converted to unchecked exceptions.",
+        "implementation_guide": "Propagate checked exceptions up the call stack when they could be handled or wrapped locally."
+      },
+      {
+        "error_name": "Not using diamond operator",
+        "description": "Not using the diamond operator (<>) for generic instance creation, making code more verbose.",
+        "implementation_guide": "Use 'Map<String, List<Integer>> map = new HashMap<String, List<Integer>>();' instead of 'Map<String, List<Integer>> map = new HashMap<>();'"
+      },
+      {
+        "error_name": "Not using @Override annotation",
+        "description": "Omitting @Override annotation when overriding methods, losing compiler validation.",
+        "implementation_guide": "Override methods from superclasses or interfaces without using the @Override annotation."
+      }
+    ]
+  }
