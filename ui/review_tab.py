@@ -10,7 +10,7 @@ import logging
 import time
 from typing import Dict, List, Any, Optional, Callable
 import datetime
-from utils.language_utils import t, get_current_language
+from utils.language_utils import t, get_current_language, get_state_attribute
 
 # Configure logging
 logging.basicConfig(
@@ -44,7 +44,7 @@ def process_student_review(workflow, student_review: str):
             state = st.session_state.workflow_state
             
             # Check if code snippet exists
-            if not state.code_snippet:
+            if not get_state_attribute(state, "code_snippet"):
                 status.update(label=f"{t('error')}: {t('no_code_snippet_available')}", state="error")
                 st.session_state.error = t("please_generate_problem_first")
                 return False
@@ -56,8 +56,9 @@ def process_student_review(workflow, student_review: str):
                 return False
             
             # Store the current review in session state for display consistency
-            current_iteration = state.current_iteration
+            current_iteration = get_state_attribute(state, "current_iteration")
             st.session_state[f"submitted_review_{current_iteration}"] = student_review
+            
             
             # Update status
             status.update(label=t("analyzing_review"), state="running")

@@ -39,7 +39,7 @@ translations = {
     "about": "關於",
     "about_app": "此應用程式透過生成具有故意錯誤的程式碼，幫助您學習和練習 Java 程式碼審查技能。",
 
-    #Provide sections
+    #Provider sections
     'llm_provider_setup':'LLM 提供者設定',
     'please_select_LLM':'請選擇您要使用的 LLM 提供者',
     'select_LLM':'選擇 LLM 提供者',
@@ -135,6 +135,7 @@ translations = {
     "no_code_generated": "尚未生成程式碼。請先前往「生成問題」標籤。",
     "submit_review": "提交您的程式碼審查",
     "attempt": "嘗試",
+    "iteration": "迭代",
     "of": "共",
     "review_guidelines": "審查指南",
     "how_to_write": "如何撰寫有效的程式碼審查：",
@@ -172,13 +173,17 @@ translations = {
     "detailed_analysis": "詳細分析",
     "identified_issues": "已識別的問題",
     "missed_issues": "遺漏的問題",
+    "issues_missed": "您遺漏的問題",
+    "no_identified_issues": "您沒有正確識別任何問題。",
+    "correctly_identified_issues": "正確識別的問題",
+    "all_issues_found": "太棒了！您找到了所有問題！",
+    "no_analysis_results": "沒有可用的分析結果。請先在「提交審查」標籤中提交您的審查。",
     "new_session": "準備再次審查？",
     "new_session_desc": "開始新的程式碼審查會話以練習不同的錯誤。",
     "start_new_session": "開始新會話",
     "complete_review_first":"請在查看回饋意見前完成所有的審查嘗試",
     "current_process_review1":"目前進度：已完成",
     "current_process_review2":"次嘗試",
-    # Add these keys to translations dictionary
     "review_completed_max_iterations": "審查已完成：已達到最大迭代次數",
     "review_completed_sufficient": "審查已完成：審查足夠",
     "review_completed_all_identified": "審查已完成：所有",
@@ -311,6 +316,19 @@ translations = {
     "no_code_snippet_evaluation": "沒有可評估的代碼片段",
     "no_code_snippet_available": "沒有可用的代碼片段",
     "no_review_submitted": "沒有提交審查",
-    "student_evaluator_not_initialized": "學生回應評估器未初始化"
+    "student_evaluator_not_initialized": "學生回應評估器未初始化",
+    "current_language": "目前語言",
+
+    # Field name translations
+    "identified_problems": "已識別的問題",
+    "missed_problems": "遺漏的問題", 
+    "false_positives": "誤報",
+    "identified_count": "已識別數量",
+    "total_problems": "總問題數",
+    "accuracy_percentage": "準確率百分比",
+    "review_sufficient": "審查足夠",
+    "feedback": "反饋",
+    "review_summary": "審查摘要",
+    "check_detailed_analysis": "請查看比較報告中的詳細分析以獲取更多信息。" 
 
 }

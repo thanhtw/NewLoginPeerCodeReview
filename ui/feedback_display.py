@@ -9,7 +9,8 @@ import logging
 import pandas as pd
 import matplotlib.pyplot as plt
 from typing import List, Dict, Any, Optional, Tuple, Callable
-from utils.language_utils import t, get_current_language
+from utils.language_utils import t, get_current_language, get_field_value, get_state_attribute
+
 
 # Configure logging
 logging.basicConfig(
@@ -130,19 +131,19 @@ class FeedbackDisplayUI:
         col1, col2, col3 = st.columns(3)
         
         # Get the correct total_problems count from original_error_count if available
-        original_error_count = review_analysis.get("original_error_count", 0)
+        original_error_count = get_field_value(review_analysis, "original_error_count", 0)
         if original_error_count <= 0:
             # Fallback to total_problems if original_error_count is not available
-            original_error_count = review_analysis.get("total_problems", 0)
+            original_error_count = get_field_value(review_analysis, "total_problems", 0)
         
         # If still zero, make a final check with the found and missed counts
         if original_error_count <= 0:
-            identified_count = review_analysis.get("identified_count", 0)
-            missed_count = len(review_analysis.get("missed_problems", []))
+            identified_count = get_field_value(review_analysis, "identified_count", 0)
+            missed_count = len(get_field_value(review_analysis, "missed_problems", []))
             original_error_count = identified_count + missed_count
         
         # Now calculate the accuracy using the original count for consistency
-        identified_count = review_analysis.get("identified_count", 0)
+        identified_count = get_field_value(review_analysis, "identified_count", 0)
         accuracy = (identified_count / original_error_count * 100) if original_error_count > 0 else 0
         
         with col1:
@@ -160,7 +161,7 @@ class FeedbackDisplayUI:
             )
             
         with col3:
-            false_positives = len(review_analysis.get("false_positives", []))
+            false_positives = len(get_field_value(review_analysis, "false_positives", []))
             st.metric(
                 t("false_positives"), 
                 f"{false_positives}",
@@ -175,11 +176,11 @@ class FeedbackDisplayUI:
             accuracy_percentages = []
             
             for review in review_history:
-                analysis = review.get("review_analysis", {})
-                iterations.append(review.get("iteration_number", 0))
+                analysis = get_field_value(review, "review_analysis", {})
+                iterations.append(get_field_value(review, "iteration_number", 0))
                 
                 # Use consistent error count for all iterations
-                review_identified = analysis.get("identified_count", 0)
+                review_identified = get_field_value(analysis, "identified_count", 0)
                 identified_counts.append(review_identified)
                 
                 # Calculate accuracy consistently

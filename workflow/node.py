@@ -12,6 +12,7 @@ from typing import Dict, Any, List, Tuple, Optional
 from state_schema import WorkflowState, CodeSnippet
 from utils.code_utils import extract_both_code_versions, create_regeneration_prompt, get_error_count_from_state
 import random
+from utils.language_utils import get_field_value, get_state_attribute, t
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -415,13 +416,12 @@ class WorkflowNodes:
                     
             code_snippet = state.code_snippet.code
             
-            # Use evaluation result to extract problem information
             # But modify to use the original error count for consistent metrics
             known_problems = []
-            original_error_count = state.original_error_count
+            original_error_count = get_state_attribute(state, "original_error_count")
             
-            if state.evaluation_result and 'found_errors' in state.evaluation_result:
-                known_problems = state.evaluation_result.get('found_errors', [])
+            if get_state_attribute(state, "evaluation_result") and 'found_errors' in get_state_attribute(state, "evaluation_result"):
+                known_problems = get_field_value(get_state_attribute(state, "evaluation_result"), "found_errors", [])
             
             # Get the student response evaluator from the evaluator attribute
             evaluator = getattr(self, "evaluator", None)
@@ -441,7 +441,7 @@ class WorkflowNodes:
             if original_error_count > 0:
                 # Store the found problem count and original count
                 found_problems_count = len(known_problems)
-                identified_count = analysis.get("identified_count", 0)
+                identified_count = get_field_value(analysis, "identified_count", 0)
                 
                 # IMPORTANT FIX: Override total_problems to use original_error_count
                 analysis["total_problems"] = original_error_count
@@ -452,7 +452,8 @@ class WorkflowNodes:
                 analysis["accuracy_percentage"] = (identified_count / original_error_count) * 100
                 
                 logger.info(f"Updated review analysis: {identified_count}/{original_error_count} " +
-                        f"({analysis['identified_percentage']:.1f}%) [Found problems: {found_problems_count}]")
+                    f"({get_field_value(analysis, 'identified_percentage', 0):.1f}%) [Found problems: {found_problems_count}]")
+                
                 # NEW CODE: Mark review as sufficient if all errors are found regardless of LLM assessment
                 if identified_count == original_error_count:
                     analysis["review_sufficient"] = True
@@ -462,18 +463,19 @@ class WorkflowNodes:
             latest_review.analysis = analysis
             
             # Check if the review is sufficient
-            review_sufficient = analysis.get("review_sufficient", False)
+            review_sufficient = get_field_value(analysis, "review_sufficient", False)
             state.review_sufficient = review_sufficient
             
+            
             # Generate targeted guidance if needed
-            if not review_sufficient and state.current_iteration < state.max_iterations:
+            if not review_sufficient and get_state_attribute(state, "current_iteration") < get_state_attribute(state, "max_iterations"):
                 targeted_guidance = evaluator.generate_targeted_guidance(
                     code_snippet=code_snippet,
                     known_problems=known_problems,
                     student_review=student_review,
                     review_analysis=analysis,
-                    iteration_count=state.current_iteration,
-                    max_iterations=state.max_iterations
+                    iteration_count=get_state_attribute(state, "current_iteration"),
+                    max_iterations=get_state_attribute(state, "max_iterations")
                 )
                 latest_review.targeted_guidance = targeted_guidance
             

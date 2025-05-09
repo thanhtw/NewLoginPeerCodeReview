@@ -10,7 +10,8 @@ import time
 import traceback
 from typing import Dict, List, Any, Optional, Callable
 from utils.code_utils import generate_comparison_report
-from utils.language_utils import t, get_current_language
+from utils.language_utils import t, get_current_language, get_field_value, get_state_attribute
+
 
 # Configure logging
 logging.basicConfig(
@@ -37,10 +38,10 @@ def render_feedback_tab(workflow, feedback_display_ui, auth_ui=None):
     # Check if review process is completed
     review_completed = False
     if hasattr(state, 'current_iteration') and hasattr(state, 'max_iterations'):
-        if state.current_iteration > state.max_iterations:
+        if get_state_attribute(state, 'current_iteration') > get_state_attribute(state, 'max_iterations'):
             review_completed = True
             logger.info(t("review_completed_max_iterations"))
-        elif hasattr(state, 'review_sufficient') and state.review_sufficient:
+        elif get_state_attribute(state, 'review_sufficient'):
             review_completed = True
             logger.info(t("review_completed_sufficient"))
         
@@ -49,12 +50,12 @@ def render_feedback_tab(workflow, feedback_display_ui, auth_ui=None):
             latest_review = state.review_history[-1]
             analysis = latest_review.analysis if hasattr(latest_review, 'analysis') else {}
             
-            identified_count = analysis.get("identified_count", 0)
-            total_problems = analysis.get("total_problems", 0) 
+            identified_count = get_field_value(analysis, "identified_count", 0)
+            total_problems = get_field_value(analysis, "total_problems", 0) 
             
             if identified_count == total_problems and total_problems > 0:
                 review_completed = True
-                if not hasattr(state, 'review_sufficient') or not state.review_sufficient:
+                if not get_state_attribute(state, 'review_sufficient'):
                     # Ensure state is consistent
                     state.review_sufficient = True
                 logger.info(f"{t('review_completed_all_identified')} {total_problems} {t('issues')}")
@@ -62,7 +63,7 @@ def render_feedback_tab(workflow, feedback_display_ui, auth_ui=None):
     # Block access if review not completed
     if not review_completed:
         st.warning(f"{t('complete_review_first')}")
-        st.info(f"{t('current_process_review1')} {state.current_iteration-1}/{state.max_iterations} {t('current_process_review2')}")       
+        st.info(f"{t('current_process_review1')} {get_state_attribute(state, 'current_iteration')-1}/{get_state_attribute(state, 'max_iterations')} {t('current_process_review2')}")       
         return
     
     # Get the latest review analysis and history
@@ -82,11 +83,11 @@ def render_feedback_tab(workflow, feedback_display_ui, auth_ui=None):
             })
     
     # If we have review history but no comparison report, generate one
-    if latest_review and latest_review.analysis and not state.comparison_report:
+    if latest_review and latest_review.analysis and not get_state_attribute(state, 'comparison_report'):
         try:
             # Get the known problems from the evaluation result instead of code_snippet.known_problems
-            if state.evaluation_result and 'found_errors' in state.evaluation_result:
-                found_errors = state.evaluation_result.get('found_errors', [])
+            if get_state_attribute(state, 'evaluation_result') and 'found_errors' in get_state_attribute(state, 'evaluation_result'):
+                found_errors = get_field_value(get_state_attribute(state, 'evaluation_result'), 'found_errors', [])
                 
                 # Generate a comparison report if it doesn't exist
                 state.comparison_report = generate_comparison_report(
@@ -97,7 +98,7 @@ def render_feedback_tab(workflow, feedback_display_ui, auth_ui=None):
         except Exception as e:
             logger.error(f"{t('error')} {t('generating_comparison_report')}: {str(e)}")
             logger.error(traceback.format_exc())  # Log full stacktrace
-            if not state.comparison_report:
+            if not get_state_attribute(state, 'comparison_report'):
                 state.comparison_report = (
                     f"# {t('review_feedback')}\n\n"
                     f"{t('error_generating_report')} "
@@ -109,46 +110,46 @@ def render_feedback_tab(workflow, feedback_display_ui, auth_ui=None):
     
     # Update user statistics if AuthUI is provided and we have analysis
     if auth_ui and latest_analysis:       
-        current_iteration = getattr(state, 'current_iteration', 1) 
-        identified_count = latest_analysis.get("identified_count", 0)
+        current_iteration = get_state_attribute(state, 'current_iteration', 1)
+        identified_count = get_field_value(latest_analysis, "identified_count", 0)
         stats_key = f"stats_updated_{current_iteration}_{identified_count}"
     
     if stats_key not in st.session_state:
         try:
             # Extract accuracy and identified_count from the latest review
-            accuracy = latest_analysis.get("identified_percentage", 0)
-            
+            accuracy = get_field_value(latest_analysis, "identified_percentage", 0)
+                
             # Log details before update
             logger.info(f"{t('preparing_update_stats')}: {t('accuracy')}={accuracy:.1f}%, " + 
                     f"{t('score')}={identified_count} ({t('identified_count')}), key={stats_key}")
             
             # Update user stats with identified_count as score
             result = auth_ui.update_review_stats(accuracy, identified_count)
-            
+                
             # Store the update result for debugging
             st.session_state[stats_key] = result
             
             # Log the update result
-            if result and result.get("success", False):
-                logger.info(f"{t('successfully_updated_statistics')}: {result}")
-                
-                # Add explicit UI message about the update
-                st.success(f"{t('statistics_updated')}! {t('added')} {identified_count} {t('to_your_score')}.")
-                
-                # Show level promotion message if level changed
-                if result.get("level_changed", False):
-                    old_level = result.get("old_level", "").capitalize()
-                    new_level = result.get("new_level", "").capitalize()
-                    st.balloons()  # Add visual celebration effect
-                    st.success(f"🎉 {t('congratulations')}! {t('level_upgraded')} {old_level} {t('to')} {new_level}!")
-                
-                # Give the database a moment to complete the update
-                time.sleep(0.5)
-                
-                # Force UI refresh after successful update
-                st.rerun()
+            if result and get_field_value(result, "success", False):
+                    logger.info(f"{t('successfully_updated_statistics')}: {result}")
+                    
+                    # Add explicit UI message about the update
+                    st.success(f"{t('statistics_updated')}! {t('added')} {identified_count} {t('to_your_score')}.")
+                    
+                    # Show level promotion message if level changed
+                    if get_field_value(result, "level_changed", False):
+                        old_level = get_field_value(result, "old_level", "").capitalize()
+                        new_level = get_field_value(result, "new_level", "").capitalize()
+                        st.balloons()  # Add visual celebration effect
+                        st.success(f"🎉 {t('congratulations')}! {t('level_upgraded')} {old_level} {t('to')} {new_level}!")
+                    
+                    # Give the database a moment to complete the update
+                    time.sleep(0.5)
+                    
+                    # Force UI refresh after successful update
+                    st.rerun()
             else:
-                err_msg = result.get('error', t('unknown_error')) if result else t('no_result_returned')
+                err_msg = get_field_value(result, 'error', t('unknown_error')) if result else t('no_result_returned')
                 logger.error(f"{t('failed_update_statistics')}: {err_msg}")
                 st.error(f"{t('failed_update_statistics')}: {err_msg}")
         except Exception as e:
@@ -158,8 +159,8 @@ def render_feedback_tab(workflow, feedback_display_ui, auth_ui=None):
     
     # Display feedback results
     feedback_display_ui.render_results(
-        comparison_report=state.comparison_report,
-        review_summary=state.review_summary,
+        comparison_report=get_state_attribute(state, 'comparison_report'),
+        review_summary=get_state_attribute(state, 'review_summary'),
         review_analysis=latest_analysis,
         review_history=review_history        
     )

@@ -116,26 +116,26 @@ evaluation_template = """作為Java代碼質量專家，您的任務是分析Jav
 
 ```json
 {
-"found_errors": [
+"已找到錯誤": [
     {
-    "error_type": "BUILD",  
-    "error_name": "NullPointerException",
-    "line_number": 42,
-    "code_segment": "String str = null; int length = str.length();",
-    "explanation": "此代碼將引發NullPointerException，因為它在空String上調用length()"
+    "錯誤類型": "BUILD",  
+    "錯誤名稱": "NullPointerException",
+    "行號": 42,
+    "代碼片段": "String str = null; int length = str.length();",
+    "解釋": "此代碼將引發NullPointerException，因為它在空String上調用length()"
     }
     // 列出所有與請求列表匹配的已實現錯誤
 ],
-"missing_errors": [
+"遺漏錯誤": [
     {
-    "error_type": "CHECKSTYLE",
-    "error_name": "MemberName",
-    "explanation": "代碼中沒有違反成員命名慣例的變數名"
+    "錯誤類型": "CHECKSTYLE",
+    "錯誤名稱": "MemberName",
+    "解釋": "代碼中沒有違反成員命名慣例的變數名"
     }
     // 列出所有未實現的請求錯誤
 ],
-"valid": true,  // 只有當所有請求的錯誤都已實現，不多也不少時才設為true
-"feedback": "代碼成功實現了所有{error_count}個請求的錯誤。"  // 提供簡要的總體評估
+"有效": true,  // 只有當所有請求的錯誤都已實現，不多也不少時才設為true
+"反饋": "代碼成功實現了所有{error_count}個請求的錯誤。"  // 提供簡要的總體評估
 }
 ```
 
@@ -227,37 +227,37 @@ review_analysis_template = """您是一位教育評估專家，正在分析學�
 以下列JSON格式提供您的分析：
 
 ```json
-{{
-"identified_problems": [
-    {{
-    "problem": "具體已知問題文本",
-    "student_comment": "學生的相關評論",
-    "accuracy": 0.9,
-    "feedback": "關於此識別的簡短反饋"
-    }}
+{
+"已識別問題": [
+    {
+    "問題": "具體已知問題文本",
+    "學生評論": "學生的相關評論",
+    "準確度": 0.9,
+    "反饋": "關於此識別的簡短反饋"
+    }
     // 包含所有正確識別的問題
 ],
-"missed_problems": [
-    {{
-    "problem": "具體已知問題文本",
-    "hint": "幫助找到此類問題的有用教育提示"
-    }}
+"遺漏問題": [
+    {
+    "問題": "具體已知問題文本",
+    "提示": "幫助找到此類問題的有用教育提示"
+    }
     // 包含所有遺漏的問題
 ],
-"false_positives": [
-    {{
-    "student_comment": "學生的錯誤評論",
-    "explanation": "為什麼這實際上不是問題"
-    }}
+"誤報": [
+    {
+    "學生評論": "學生的錯誤評論",
+    "解釋": "為什麼這實際上不是問題"
+    }
     // 包含任何錯誤識別
 ],
-"identified_count": 3,  // 正確識別的問題數量
-"total_problems": {problem_count},  // 已知問題總數
-"identified_percentage": 60.0,  // 正確識別的問題百分比
-"review_quality_score": 7.5,  // 1-10分評價審查質量
-"review_sufficient": true,  // 如果識別至少60%的問題則為true
-"feedback": "總體評估，提供具體改進建議"
-}}
+"已識別數量": 3,  // 正確識別的問題數量
+"總問題數": {problem_count},  // 已知問題總數
+"識別百分比": 60.0,  // 正確識別的問題百分比
+"審查質量分數": 7.5,  // 1-10分評價審查質量
+"審查充分": true,  // 如果識別至少60%的問題則為true
+"反饋": "總體評估，提供具體改進建議"
+}
 ```
 
 評估標準：
