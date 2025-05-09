@@ -124,7 +124,7 @@ class FeedbackDisplayUI:
         st.markdown("---")             
             
     def _render_performance_summary(self, review_analysis: Dict[str, Any], review_history: List[Dict[str, Any]]):
-        """Render performance summary metrics and charts using the consistent original error count"""
+        """Render enhanced performance summary metrics and charts"""
         st.subheader(t("review_performance_summary"))
         
         # Create performance metrics using the original error count if available
@@ -133,24 +133,30 @@ class FeedbackDisplayUI:
         # Get the correct total_problems count from original_error_count if available
         original_error_count = get_field_value(review_analysis, "original_error_count", 0)
         if original_error_count <= 0:
-            # Fallback to total_problems if original_error_count is not available
             original_error_count = get_field_value(review_analysis, "total_problems", 0)
         
-        # If still zero, make a final check with the found and missed counts
-        if original_error_count <= 0:
-            identified_count = get_field_value(review_analysis, "identified_count", 0)
-            missed_count = len(get_field_value(review_analysis, "missed_problems", []))
-            original_error_count = identified_count + missed_count
-        
-        # Now calculate the accuracy using the original count for consistency
+        # Calculate metrics using the original count for consistency
         identified_count = get_field_value(review_analysis, "identified_count", 0)
         accuracy = (identified_count / original_error_count * 100) if original_error_count > 0 else 0
+        false_positives = len(get_field_value(review_analysis, "false_positives", []))
+        
+        # Generate color based on accuracy
+        if accuracy >= 80:
+            color = "#28a745"  # Green for good performance
+            icon = "✅"
+        elif accuracy >= 60:
+            color = "#ffc107"  # Yellow for medium performance
+            icon = "⚠️"
+        else:
+            color = "#dc3545"  # Red for needs improvement
+            icon = "❌"
         
         with col1:
             st.metric(
                 t("overall_accuracy"), 
                 f"{accuracy:.1f}%",
-                delta=None
+                delta=None,
+                delta_color="normal"
             )
             
         with col2:
@@ -161,13 +167,31 @@ class FeedbackDisplayUI:
             )
             
         with col3:
-            false_positives = len(get_field_value(review_analysis, "false_positives", []))
             st.metric(
                 t("false_positives"), 
                 f"{false_positives}",
                 delta=None
             )
-            
+        
+        # Add a visual progress bar for accuracy
+        st.markdown(f"""
+            <div style="margin: 10px 0 20px 0; background-color: #f0f2f5; border-radius: 5px; padding: 5px; position: relative;">
+                <div style="width: {accuracy}%; background-color: {color}; height: 30px; border-radius: 3px; 
+                    transition: width 0.5s ease-in-out; position: relative; text-align: center;">
+                    <span style="position: absolute; top: 5px; left: 50%; transform: translateX(-50%); color: white; font-weight: bold;">
+                        {accuracy:.1f}%
+                    </span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-top: 5px;">
+                    <span style="color: #666;">0%</span>
+                    <span style="color: #666;">25%</span>
+                    <span style="color: #666;">50%</span>
+                    <span style="color: #666;">75%</span>
+                    <span style="color: #666;">100%</span>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+                
         # Create a progress chart if multiple iterations
         if len(review_history) > 1:
             # Extract data for chart
@@ -217,7 +241,7 @@ class FeedbackDisplayUI:
             st.pyplot(fig)
     
     def _render_identified_issues(self, review_analysis: Dict[str, Any]):
-        """Render identified issues section"""
+        """Render identified issues section with enhanced styling"""
         identified_problems = review_analysis.get("identified_problems", [])
         
         if not identified_problems:
@@ -226,18 +250,58 @@ class FeedbackDisplayUI:
             
         st.subheader(f"{t('correctly_identified_issues')} ({len(identified_problems)})")
         
-        for i, issue in enumerate(identified_problems, 1):
-            st.markdown(
-                f"""
-                <div style="border-left: 4px solid #4CAF50; padding: 10px; margin: 10px 0; border-radius: 4px;">
-                <strong>✓ {i}. {issue}</strong>
-                </div>
-                """, 
-                unsafe_allow_html=True
-            )
+        # Group issues by category if possible
+        categorized_issues = {}
+        
+        for issue in identified_problems:
+            # Try to extract category information
+            category = None
+            if isinstance(issue, dict) and "category" in issue:
+                category = issue.get("category")
+            elif isinstance(issue, str):
+                # Try to extract category from string format like "CATEGORY - Issue name"
+                parts = issue.split(" - ", 1)
+                if len(parts) > 1:
+                    category = parts[0]
+            
+            # Default category if none found
+            if not category:
+                category = "Other"
+                
+            # Add to categorized dictionary
+            if category not in categorized_issues:
+                categorized_issues[category] = []
+            
+            categorized_issues[category].append(issue)
+        
+        # Display issues by category with collapsible sections
+        for category, issues in categorized_issues.items():
+            with st.expander(f"{category} ({len(issues)})", expanded=True):
+                for i, issue in enumerate(issues, 1):
+                    issue_text = issue
+                    if isinstance(issue, dict):
+                        issue_text = issue.get("problem", str(issue))
+                    
+                    st.markdown(
+                        f"""
+                        <div style="display: flex; align-items: center; border-left: 4px solid #4CAF50; 
+                            padding: 10px; margin: 10px 0; border-radius: 4px; 
+                            background-color: rgba(76, 175, 80, 0.1);">
+                            <div style="background-color: #4CAF50; color: white; border-radius: 50%; 
+                                width: 28px; height: 28px; display: flex; align-items: center; 
+                                justify-content: center; margin-right: 12px; flex-shrink: 0;">
+                                <strong>✓</strong>
+                            </div>
+                            <div>
+                                <strong>{i}. {issue_text}</strong>
+                            </div>
+                        </div>
+                        """, 
+                        unsafe_allow_html=True
+                    )
     
     def _render_missed_issues(self, review_analysis: Dict[str, Any]):
-        """Render missed issues section"""
+        """Render missed issues section with enhanced styling and tips"""
         missed_problems = review_analysis.get("missed_problems", [])
         
         if not missed_problems:
@@ -246,14 +310,64 @@ class FeedbackDisplayUI:
             
         st.subheader(f"{t('issues_missed')} ({len(missed_problems)})")
         
-        for i, issue in enumerate(missed_problems, 1):
-            st.markdown(
-                f"""
-                <div style="border-left: 4px solid #f44336; padding: 10px; margin: 10px 0; border-radius: 4px;">
-                <strong>✗ {i}. {issue}</strong>
-                </div>
-                """, 
-                unsafe_allow_html=True
-            )
+        # Group issues by category similar to identified issues
+        categorized_issues = {}
+        
+        for issue in missed_problems:
+            # Extract category similar to identified issues method
+            category = None
+            if isinstance(issue, dict) and "category" in issue:
+                category = issue.get("category")
+            elif isinstance(issue, str):
+                parts = issue.split(" - ", 1)
+                if len(parts) > 1:
+                    category = parts[0]
+            
+            if not category:
+                category = "Other"
+                
+            if category not in categorized_issues:
+                categorized_issues[category] = []
+            
+            categorized_issues[category].append(issue)
+        
+        # Display issues by category with collapsible sections
+        for category, issues in categorized_issues.items():
+            with st.expander(f"{category} ({len(issues)})", expanded=True):
+                for i, issue in enumerate(issues, 1):
+                    issue_text = issue
+                    hint = None
+                    
+                    if isinstance(issue, dict):
+                        issue_text = issue.get("problem", str(issue))
+                        hint = issue.get("hint")
+                    
+                    # Add issue with hint if available
+                    hint_html = ""
+                    if hint:
+                        hint_html = f"""
+                        <div style="margin-top: 5px; font-style: italic; color: #666;">
+                            <strong>Tip:</strong> {hint}
+                        </div>
+                        """
+                    
+                    st.markdown(
+                        f"""
+                        <div style="display: flex; align-items: flex-start; border-left: 4px solid #dc3545; 
+                            padding: 10px; margin: 10px 0; border-radius: 4px;
+                            background-color: rgba(220, 53, 69, 0.1);">
+                            <div style="background-color: #dc3545; color: white; border-radius: 50%; 
+                                width: 28px; height: 28px; display: flex; align-items: center; 
+                                justify-content: center; margin-right: 12px; margin-top: 2px; flex-shrink: 0;">
+                                <strong>✗</strong>
+                            </div>
+                            <div>
+                                <strong>{i}. {issue_text}</strong>
+                                {hint_html}
+                            </div>
+                        </div>
+                        """, 
+                        unsafe_allow_html=True
+                    )
     
     
