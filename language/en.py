@@ -329,5 +329,11 @@ translations = {
     "review_sufficient": "Review Sufficient",
     "feedback": "Feedback",
     "review_summary": "Review Summary",
-    "check_detailed_analysis": "Check the detailed analysis in the comparison report for more information."
+    "check_detailed_analysis": "Check the detailed analysis in the comparison report for more information.",
+
+    "problemt":"problem",
+    "student_commentt":"student_comment",
+    "accuracyt": "accuracy",
+    "feedbackt":"feedback",
+    "hintt":"hint"
 }

@@ -242,7 +242,7 @@ class FeedbackDisplayUI:
     
     def _render_identified_issues(self, review_analysis: Dict[str, Any]):
         """Render identified issues section with enhanced styling"""
-        identified_problems = review_analysis.get("identified_problems", [])
+        identified_problems = get_field_value(review_analysis, "identified_problems", [])
         
         if not identified_problems:
             st.info(t("no_identified_issues"))
@@ -276,33 +276,45 @@ class FeedbackDisplayUI:
         
         # Display issues by category with collapsible sections
         for category, issues in categorized_issues.items():
-            with st.expander(f"{category} ({len(issues)})", expanded=True):
+            if category and issues:
+                st.markdown(f"### {category} ({len(issues)})")
                 for i, issue in enumerate(issues, 1):
-                    issue_text = issue
                     if isinstance(issue, dict):
-                        issue_text = issue.get("problem", str(issue))
-                    
-                    st.markdown(
-                        f"""
-                        <div style="display: flex; align-items: center; border-left: 4px solid #4CAF50; 
-                            padding: 10px; margin: 10px 0; border-radius: 4px; 
-                            background-color: rgba(76, 175, 80, 0.1);">
-                            <div style="background-color: #4CAF50; color: white; border-radius: 50%; 
-                                width: 28px; height: 28px; display: flex; align-items: center; 
-                                justify-content: center; margin-right: 12px; flex-shrink: 0;">
-                                <strong>✓</strong>
+                        key1 =  t('problemt')
+                        key2 =  t('student_commentt')
+                        key3 =  t('accuracyt')
+                        key4 =  t('feedbackt')
+                        problem = issue[key1]
+                        student_comment = issue[key2]
+                        accuracy = issue[key3]
+                        feedback = issue[key4]
+                        st.markdown(
+                            f"""
+                            <div style="border-left: 4px solid #4CAF50; padding: 10px; margin: 10px 0;
+                                        border-radius: 4px; background-color: rgba(76, 175, 80, 0.1);">
+                                <div style="margin-bottom: 5px;"><strong>{i}. 問題:</strong> {problem}</div>
+                                <div style="margin-bottom: 5px;"><strong>學生評論:</strong> {student_comment}</div>
+                                <div style="margin-bottom: 5px;"><strong>準確度:</strong> {accuracy}</div>
+                                <div><strong>反饋:</strong> {feedback}</div>
                             </div>
-                            <div>
-                                <strong>{i}. {issue_text}</strong>
+                            """,
+                            unsafe_allow_html=True
+                        )
+                    else:
+                        # Fallback for plain string issues
+                        st.markdown(
+                            f"""
+                            <div style="border-left: 4px solid #4CAF50; padding: 10px; margin: 10px 0;
+                                        border-radius: 4px; background-color: rgba(76, 175, 80, 0.1);">
+                                <strong>{i}. {issue}</strong>
                             </div>
-                        </div>
-                        """, 
-                        unsafe_allow_html=True
-                    )
+                            """,
+                            unsafe_allow_html=True
+                        )
     
     def _render_missed_issues(self, review_analysis: Dict[str, Any]):
         """Render missed issues section with enhanced styling and tips"""
-        missed_problems = review_analysis.get("missed_problems", [])
+        missed_problems = get_field_value(review_analysis, "missed_problems", [])
         
         if not missed_problems:
             st.success(t("all_issues_found"))
@@ -333,41 +345,35 @@ class FeedbackDisplayUI:
         
         # Display issues by category with collapsible sections
         for category, issues in categorized_issues.items():
-            with st.expander(f"{category} ({len(issues)})", expanded=True):
+            if category and issues:
+                st.markdown(f"### {category} ({len(issues)})")
                 for i, issue in enumerate(issues, 1):
-                    issue_text = issue
-                    hint = None
-                    
                     if isinstance(issue, dict):
-                        issue_text = issue.get("problem", str(issue))
-                        hint = issue.get("hint")
-                    
-                    # Add issue with hint if available
-                    hint_html = ""
-                    if hint:
-                        hint_html = f"""
-                        <div style="margin-top: 5px; font-style: italic; color: #666;">
-                            <strong>Tip:</strong> {hint}
-                        </div>
-                        """
-                    
-                    st.markdown(
-                        f"""
-                        <div style="display: flex; align-items: flex-start; border-left: 4px solid #dc3545; 
-                            padding: 10px; margin: 10px 0; border-radius: 4px;
-                            background-color: rgba(220, 53, 69, 0.1);">
-                            <div style="background-color: #dc3545; color: white; border-radius: 50%; 
-                                width: 28px; height: 28px; display: flex; align-items: center; 
-                                justify-content: center; margin-right: 12px; margin-top: 2px; flex-shrink: 0;">
-                                <strong>✗</strong>
+                        key1 =  t('problemt')
+                        key2 =  t('hintt')
+                        problem = issue[key1]
+                        hint = issue[key2]
+                        
+                        st.markdown(
+                            f"""
+                            <div style="border-left: 4px solid #dc3545; padding: 10px; margin: 10px 0;
+                                        border-radius: 4px; background-color: rgba(220, 53, 69, 0.1);">
+                                <div style="margin-bottom: 5px;"><strong>{i}. 問題:</strong> {problem}</div>
+                                <div style="margin-bottom: 5px;"><strong>提示:</strong> {hint}</div>
                             </div>
-                            <div>
-                                <strong>{i}. {issue_text}</strong>
-                                {hint_html}
+                            """,
+                            unsafe_allow_html=True
+                        )
+                    else:
+                        # Fallback for plain string
+                        st.markdown(
+                            f"""
+                            <div style="border-left: 4px solid #dc3545; padding: 10px; margin: 10px 0;
+                                        border-radius: 4px; background-color: rgba(220, 53, 69, 0.1);">
+                                <strong>{i}. {issue}</strong>
                             </div>
-                        </div>
-                        """, 
-                        unsafe_allow_html=True
-                    )
+                            """,
+                            unsafe_allow_html=True
+                        )
     
     

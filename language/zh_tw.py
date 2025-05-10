@@ -329,6 +329,12 @@ translations = {
     "review_sufficient": "審查足夠",
     "feedback": "反饋",
     "review_summary": "審查摘要",
-    "check_detailed_analysis": "請查看比較報告中的詳細分析以獲取更多信息。" 
+    "check_detailed_analysis": "請查看比較報告中的詳細分析以獲取更多信息。",
+
+    "problemt":"問題",
+    "student_commentt":"學生評論",
+    "accuracyt": "準確度",
+    "feedbackt":"反饋",
+    "hintt":"提示"
 
 }
