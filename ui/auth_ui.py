@@ -43,25 +43,6 @@ class AuthUI:
                 "user_info": {}
             }
     
-    def _load_image(self, file_name, width=100):
-        """Load and encode an image for HTML display."""
-        # Determine the path to the image
-        script_dir = Path(__file__).parent.parent
-        image_path = script_dir / "static" / "images" / file_name
-        
-        # Check if the image exists
-        if not image_path.exists():
-            return ""
-            
-        # Get the static URL for the image
-        try:
-            with open(image_path, "rb") as img_file:
-                img_bytes = img_file.read()
-                encoded = base64.b64encode(img_bytes).decode()
-                return f'<img src="data:image/png;base64,{encoded}" width="{width}">'
-        except Exception as e:
-            logger.error(f"Error loading image {file_name}: {str(e)}")
-            return ""
     
     def render_auth_page(self) -> bool:
         """
@@ -70,8 +51,6 @@ class AuthUI:
         Returns:
             bool: True if user is authenticated, False otherwise
         """
-        # Load and display a logo if available
-        logo_html = self._load_image("java_logo.png", width=120)
         
         # Apply custom CSS for the login page
         st.markdown("""

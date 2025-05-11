@@ -49,11 +49,10 @@ from ui.main_ui import (
 # Import UI components
 from ui.error_selector import ErrorSelectorUI
 from ui.code_display import CodeDisplayUI
-from ui.feedback_display import FeedbackDisplayUI
+from ui.feedback_system import FeedbackSystem, render_feedback_tab
 from ui.provider_selector import ProviderSelectorUI
 from ui.generate_tab import render_generate_tab
 from ui.review_tab import render_review_tab
-from ui.feedback_tab import render_feedback_tab
 from ui.auth_ui import AuthUI
 
 # Load environment variables
@@ -145,7 +144,7 @@ def main():
     # Initialize UI components
     error_selector_ui = ErrorSelectorUI()
     code_display_ui = CodeDisplayUI()
-    feedback_display_ui = FeedbackDisplayUI()
+    feedback_display_ui = FeedbackSystem(workflow)
     
     # Render sidebar with provider status
     render_sidebar(llm_manager, workflow)
@@ -192,7 +191,7 @@ def main():
         render_review_tab(workflow, code_display_ui)
     
     with tabs[2]:
-        render_feedback_tab(workflow, feedback_display_ui, auth_ui)
+        render_feedback_tab(workflow, auth_ui)
         
     with tabs[3]:  
         render_llm_logs_tab()

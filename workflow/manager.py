@@ -23,53 +23,11 @@ from workflow.conditions import WorkflowConditions
 from workflow.builder import GraphBuilder
 
 from utils.llm_logger import LLMInteractionLogger
-from utils.code_utils import generate_comparison_report
+from utils.code_utils import generate_comparison_report, process_llm_response
+from utils.language_utils import t, get_field_value, get_llm_instructions
 
 # Configure logging
 logger = logging.getLogger(__name__)
-
-class ReviewIteration:
-    """Class for storing a single review iteration."""
-    
-    def __init__(self, iteration_number: int, student_review: str, 
-                 review_analysis: Dict[str, Any], targeted_guidance: Optional[str] = None, 
-                 timestamp: Optional[str] = None):
-        """
-        Initialize a review iteration record.
-        
-        Args:
-            iteration_number: The sequence number of this review iteration
-            student_review: The student's review comments
-            review_analysis: Analysis of the student review
-            targeted_guidance: Guidance provided for the next iteration
-            timestamp: Timestamp of this review iteration
-        """
-        self.iteration_number = iteration_number
-        self.student_review = student_review
-        self.review_analysis = review_analysis
-        self.targeted_guidance = targeted_guidance
-        self.timestamp = timestamp or datetime.datetime.now().isoformat()
-    
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary."""
-        return {
-            "iteration_number": self.iteration_number,
-            "student_review": self.student_review,
-            "review_analysis": self.review_analysis,
-            "targeted_guidance": self.targeted_guidance,
-            "timestamp": self.timestamp
-        }
-    
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'ReviewIteration':
-        """Create a ReviewIteration from a dictionary."""
-        return cls(
-            iteration_number=data.get("iteration_number", 1),
-            student_review=data.get("student_review", ""),
-            review_analysis=data.get("review_analysis", {}),
-            targeted_guidance=data.get("targeted_guidance"),
-            timestamp=data.get("timestamp")
-        )
 
 class WorkflowManager:
     """
@@ -243,25 +201,26 @@ class WorkflowManager:
         
         return updated_state
     
+    
     def _generate_review_feedback(self, state: WorkflowState) -> None:
         """
-        Generate feedback for review completion.
+        Generate feedback for review completion with proper language support.
         
         Args:
             state: Current workflow state
         """
         # Check if we have review history
         if not state.review_history:
-            logger.warning("No review history found for generating feedback")
+            logger.warning(t("no_review_history_found"))
             return
-            
+                
         # Get latest review
         latest_review = state.review_history[-1]
         
         # Generate comparison report if not already generated
         if not state.comparison_report and state.evaluation_result:
             try:
-                logger.info("Generating comparison report for feedback")
+                logger.info(t("generating_comparison_report"))
                 
                 # Extract error information from evaluation results
                 found_errors = state.evaluation_result.get('found_errors', [])
@@ -274,132 +233,10 @@ class WorkflowManager:
                     latest_review.analysis["original_error_count"] = original_error_count
                     
                     # Recalculate percentages based on original count
-                    identified_count = latest_review.analysis.get("identified_count", 0) 
+                    identified_count = get_field_value(latest_review.analysis, "identified_count", 0) 
                     latest_review.analysis["identified_percentage"] = (identified_count / original_error_count) * 100
                     latest_review.analysis["accuracy_percentage"] = (identified_count / original_error_count) * 100
-                    if auth_ui:
-                        auth_ui.update_review_stats(accuracy, identified_count)
-                # Convert review history to format expected by generate_comparison_report
-                converted_history = []
-                for review in state.review_history:
-                    converted_history.append({
-                        "iteration_number": review.iteration_number,
-                        "student_review": review.student_review,
-                        "review_analysis": review.analysis,
-                        "targeted_guidance": review.targeted_guidance
-                    })
-                # Generate the comparison report with the updated analysis
-                state.comparison_report = generate_comparison_report(
-                    found_errors,
-                    latest_review.analysis,
-                    converted_history,
-                    llm=self.summary_model
-                )
-                logger.info("Generated comparison report for feedback")
-                
-            except Exception as e:
-                logger.error(f"Error generating comparison report: {str(e)}")
-                state.comparison_report = (
-                    "# Review Feedback\n\n"
-                    "There was an error generating a detailed comparison report. "
-                    "Please check your review history for details."
-                )
-        
-        # Generate review summary with LLM if available
-        if not state.review_summary and self.summary_model and state.code_snippet:
-            try:
-                logger.info("Generating review summary with LLM")
-                # Prepare the feedback manager with the current state
-                self.feedback_manager.code_snippet = state.code_snippet.code
-                if state.evaluation_result:
-                    self.feedback_manager.known_problems = state.evaluation_result.get('found_errors', [])
-                self.feedback_manager.review_history = []
-                
-                # Get the original error count
-                original_error_count = state.original_error_count
-                if original_error_count > 0:
-                    self.feedback_manager.original_error_count = original_error_count
-                
-                # Add review history to feedback manager
-                for review in state.review_history:
-                    # Update the analysis with the original error count if needed
-                    if original_error_count > 0 and "original_error_count" not in review.analysis:
-                        review.analysis["original_error_count"] = original_error_count
                         
-                        # Recalculate percentages based on original count
-                        identified_count = review.analysis.get("identified_count", 0)
-                        review.analysis["identified_percentage"] = (identified_count / original_error_count) * 100
-                        review.analysis["accuracy_percentage"] = (identified_count / original_error_count) * 100
-                    
-                    self.feedback_manager.review_history.append(
-                        ReviewIteration(
-                            iteration_number=review.iteration_number,
-                            student_review=review.student_review,
-                            review_analysis=review.analysis,
-                            targeted_guidance=review.targeted_guidance
-                        )
-                    )
-                
-                # Generate the final feedback
-                state.review_summary = self.feedback_manager.generate_final_feedback(
-                    llm=self.summary_model,
-                    include_resources=True,
-                    include_visualizations=True
-                )
-            except Exception as e:
-                logger.error(f"Error generating LLM review summary: {str(e)}")
-                
-                # Generate a fallback summary if LLM fails
-                if latest_review and latest_review.analysis:
-                    analysis = latest_review.analysis
-                    
-                    # Use the original error count if available
-                    original_error_count = state.original_error_count
-                    if original_error_count <= 0:
-                        original_error_count = analysis.get("total_problems", 0)
-                    
-                    identified_count = analysis.get("identified_count", 0)
-                    identified_percentage = (identified_count / original_error_count * 100) if original_error_count > 0 else 0
-                    
-                    state.review_summary = (
-                        f"# Review Summary\n\n"
-                        f"You found {identified_count} out of {original_error_count} issues "
-                        f"({identified_percentage:.1f}% accuracy).\n\n"
-                        f"Check the detailed analysis in the comparison report for more information."
-                    )
-        
-        logger.info("Feedback generation complete")
-
-    def _generate_review_feedback(self, state: WorkflowState) -> None:
-        """Generate feedback for review completion."""
-        # Check if we have review history
-        if not state.review_history:
-            logger.warning("No review history found for generating feedback")
-            return
-            
-        # Get latest review
-        latest_review = state.review_history[-1]
-        
-        # Generate comparison report if not already generated
-        if not state.comparison_report and state.evaluation_result:
-            try:
-                logger.info("Generating comparison report for feedback")
-                
-                # Extract error information from evaluation results
-                found_errors = state.evaluation_result.get('found_errors', [])
-                
-                # Get original error count for consistent metrics
-                original_error_count = state.original_error_count
-                
-                # Update the analysis with the original error count if needed
-                if original_error_count > 0 and "original_error_count" not in latest_review.analysis:
-                    latest_review.analysis["original_error_count"] = original_error_count
-                    
-                    # Recalculate percentages based on original count
-                    identified_count = latest_review.analysis.get("identified_count", 0) 
-                    latest_review.analysis["identified_percentage"] = (identified_count / original_error_count) * 100
-                    latest_review.analysis["accuracy_percentage"] = (identified_count / original_error_count) * 100
-                    
                 # Convert review history to format expected by generate_comparison_report
                 converted_history = []
                 for review in state.review_history:
@@ -409,7 +246,7 @@ class WorkflowManager:
                         "review_analysis": review.analysis,
                         "targeted_guidance": review.targeted_guidance
                     })
-                    
+                        
                 # Generate the comparison report
                 state.comparison_report = generate_comparison_report(
                     found_errors,
@@ -417,60 +254,12 @@ class WorkflowManager:
                     converted_history,
                     llm=self.summary_model
                 )
-                logger.info("Generated comparison report for feedback")
-                
-            except Exception as e:
-                logger.error(f"Error generating comparison report: {str(e)}")
-                state.comparison_report = (
-                    "# Review Feedback\n\n"
-                    "There was an error generating a detailed comparison report. "
-                    "Please check your review history for details."
-                )
-        
-        # Generate review summary with LLM if available
-        if not state.review_summary and self.summary_model and state.code_snippet:
-            try:
-                logger.info("Generating review summary with LLM")
-                
-                # Extract needed data
-                latest_analysis = latest_review.analysis
-                identified_problems = latest_analysis.get("identified_problems", [])
-                missed_problems = latest_analysis.get("missed_problems", [])
-                false_positives = latest_analysis.get("false_positives", [])
-                identified_count = latest_analysis.get("identified_count", 0)
-                total_problems = state.original_error_count or latest_analysis.get("total_problems", 0)
-                
-                # Create a prompt for the LLM
-                system_prompt = """You are an expert Java programming mentor who provides comprehensive educational feedback on code reviews..."""
-                prompt = f"""Create comprehensive educational feedback for a student who completed a Java code review exercise..."""
-                
-                # Generate feedback with LLM
-                response = self.summary_model.invoke(system_prompt + "\n\n" + prompt)
-                processed_response = process_llm_response(response)
-                state.review_summary = processed_response
-                
-            except Exception as e:
-                logger.error(f"Error generating LLM review summary: {str(e)}")
-                
-                # Use template-based feedback as fallback
-                try:
-                    state.review_summary = self._generate_template_feedback(
-                        identified_problems=latest_analysis.get("identified_problems", []),
-                        missed_problems=latest_analysis.get("missed_problems", []),
-                        false_positives=latest_analysis.get("false_positives", []),
-                        total_problems=total_problems,
-                        identified_count=identified_count,
-                        review_history=converted_history
-                    )
-                except Exception as template_error:
-                    logger.error(f"Error generating template feedback: {str(template_error)}")
+                logger.info(t("generated_comparison_report"))
                     
-                    # Super simple fallback
-                    state.review_summary = (
-                        f"# Review Summary\n\n"
-                        f"You found {identified_count} out of {total_problems} issues "
-                        f"({latest_analysis.get('identified_percentage', 0):.1f}% accuracy).\n\n"
-                        f"Check the detailed analysis in the comparison report for more information."
-                    )
-            
-        logger.info("Feedback generation complete")
+            except Exception as e:
+                logger.error(f"{t('error')} {t('generating_comparison_report')}: {str(e)}")
+                state.comparison_report = (
+                    f"# {t('review_feedback')}\n\n"
+                    f"{t('error_generating_report')} "
+                    f"{t('check_review_history')}."
+                )

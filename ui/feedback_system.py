@@ -1,16 +1,19 @@
 """
-Feedback Display UI module for Java Peer Review Training System.
+Feedback System for Java Peer Review Training System.
 
-This module provides the FeedbackDisplayUI class for displaying feedback on student reviews.
+This module provides a unified system for displaying feedback on student reviews
+and handling the feedback tab functionality with proper workflow state management.
 """
 
 import streamlit as st
 import logging
 import pandas as pd
 import matplotlib.pyplot as plt
+import time
+import traceback
 from typing import List, Dict, Any, Optional, Tuple, Callable
-from utils.language_utils import t, get_current_language, get_field_value, get_state_attribute
-
+from utils.language_utils import t, get_field_value, get_state_attribute
+from utils.code_utils import generate_comparison_report
 
 # Configure logging
 logging.basicConfig(
@@ -19,20 +22,72 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-class FeedbackDisplayUI:
+class FeedbackSystem:
     """
-    UI Component for displaying feedback on student reviews.
+    Unified feedback system for the Java Peer Review Training System.
     
-    This class handles displaying analysis results, review history,
-    and feedback on student reviews.
+    This class combines the UI rendering and workflow state management
+    for the feedback tab. It handles displaying analysis results,
+    generating comparison reports, and updating user statistics.
     """
     
+    def __init__(self, workflow, auth_ui=None):
+        """
+        Initialize the FeedbackSystem with workflow and auth components.
+        
+        Args:
+            workflow: The JavaCodeReviewGraph workflow instance
+            auth_ui: Optional AuthUI instance for updating user statistics
+        """
+        self.workflow = workflow
+        self.auth_ui = auth_ui
+        self.stats_updates = {}  # Track stats updates to avoid duplicates
+
+    def render_feedback_tab(self):
+        """
+        Render the feedback tab with review analysis and updating user statistics.
+        Checks if review is completed before showing feedback.
+        """
+        state = st.session_state.workflow_state
+        
+        # Check if review process is completed
+        review_completed = self._check_review_completion(state)
+        
+        # Block access if review not completed
+        if not review_completed:
+            self._display_completion_required_message(state)
+            return
+        
+        # Get the latest review analysis and history
+        latest_review, review_history = self._extract_review_data(state)
+        
+        # Generate comparison report if needed
+        if latest_review and latest_review.analysis and not get_state_attribute(state, 'comparison_report'):
+            self._generate_comparison_report(state, latest_review)
+        
+        # Get the latest review analysis
+        latest_analysis = latest_review.analysis if latest_review else None
+        
+        # Update user statistics if AuthUI is provided and we have analysis
+        if self.auth_ui and latest_analysis:
+            self._update_user_statistics(state, latest_analysis)
+        
+        # Display the feedback results
+        self.render_results(
+            comparison_report=get_state_attribute(state, 'comparison_report'),
+            review_summary=get_state_attribute(state, 'review_summary'),
+            review_analysis=latest_analysis,
+            review_history=review_history        
+        )
+        
+        # Add a button to start a new session
+        self._render_new_session_button()
+
     def render_results(self, 
                       comparison_report: str = None,
                       review_summary: str = None,
                       review_analysis: Dict[str, Any] = None,
-                      review_history: List[Dict[str, Any]] = None,
-                      on_reset_callback: Callable[[], None] = None) -> None:
+                      review_history: List[Dict[str, Any]] = None) -> None:
         """
         Render the analysis results and feedback with improved review visibility.
         
@@ -41,7 +96,6 @@ class FeedbackDisplayUI:
             review_summary: Review summary text
             review_analysis: Analysis of student review
             review_history: History of review iterations
-            on_reset_callback: Callback function when reset button is clicked
         """
         if not comparison_report and not review_summary and not review_analysis:
             st.info(t("no_analysis_results"))
@@ -120,7 +174,7 @@ class FeedbackDisplayUI:
                 with tabs[1]:  # Missed Issues
                     self._render_missed_issues(review_analysis)
 
-        # Start over button
+        # Add horizontal separator
         st.markdown("---")             
             
     def _render_performance_summary(self, review_analysis: Dict[str, Any], review_history: List[Dict[str, Any]]):
@@ -139,17 +193,6 @@ class FeedbackDisplayUI:
         identified_count = get_field_value(review_analysis, "identified_count", 0)
         accuracy = (identified_count / original_error_count * 100) if original_error_count > 0 else 0
         false_positives = len(get_field_value(review_analysis, "false_positives", []))
-        
-        # Generate color based on accuracy
-        if accuracy >= 80:
-            color = "#28a745"  # Green for good performance
-            icon = "✅"
-        elif accuracy >= 60:
-            color = "#ffc107"  # Yellow for medium performance
-            icon = "⚠️"
-        else:
-            color = "#dc3545"  # Red for needs improvement
-            icon = "❌"
         
         with col1:
             st.metric(
@@ -173,24 +216,6 @@ class FeedbackDisplayUI:
                 delta=None
             )
         
-        # Add a visual progress bar for accuracy
-        st.markdown(f"""
-            <div style="margin: 10px 0 20px 0; background-color: #f0f2f5; border-radius: 5px; padding: 5px; position: relative;">
-                <div style="width: {accuracy}%; background-color: {color}; height: 30px; border-radius: 3px; 
-                    transition: width 0.5s ease-in-out; position: relative; text-align: center;">
-                    <span style="position: absolute; top: 5px; left: 50%; transform: translateX(-50%); color: white; font-weight: bold;">
-                        {accuracy:.1f}%
-                    </span>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin-top: 5px;">
-                    <span style="color: #666;">0%</span>
-                    <span style="color: #666;">25%</span>
-                    <span style="color: #666;">50%</span>
-                    <span style="color: #666;">75%</span>
-                    <span style="color: #666;">100%</span>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
                 
         # Create a progress chart if multiple iterations
         if len(review_history) > 1:
@@ -402,4 +427,196 @@ class FeedbackDisplayUI:
                             unsafe_allow_html=True
                         )
     
+    def _check_review_completion(self, state) -> bool:
+        """
+        Determine if the review process is completed.
+        
+        Args:
+            state: The workflow state
+            
+        Returns:
+            bool: True if review is completed, False otherwise
+        """
+        review_completed = False
+        
+        # Check if max iterations reached or review is sufficient
+        if hasattr(state, 'current_iteration') and hasattr(state, 'max_iterations'):
+            if get_state_attribute(state, 'current_iteration') > get_state_attribute(state, 'max_iterations'):
+                review_completed = True
+                logger.info(t("review_completed_max_iterations"))
+            elif get_state_attribute(state, 'review_sufficient'):
+                review_completed = True
+                logger.info(t("review_completed_sufficient"))
+        
+        # Check for all errors identified - HIGHEST PRIORITY CHECK
+        if state.review_history and len(state.review_history) > 0:
+            latest_review = state.review_history[-1]
+            analysis = latest_review.analysis if hasattr(latest_review, 'analysis') else {}
+            
+            identified_count = get_field_value(analysis, "identified_count", 0)
+            total_problems = get_field_value(analysis, "total_problems", 0) 
+            
+            if identified_count == total_problems and total_problems > 0:
+                review_completed = True
+                if not get_state_attribute(state, 'review_sufficient'):
+                    # Ensure state is consistent
+                    state.review_sufficient = True
+                logger.info(f"{t('review_completed_all_identified')} {total_problems} {t('issues')}")
+                
+        return review_completed
     
+    def _display_completion_required_message(self, state):
+        """Display message requiring completion of review before viewing feedback."""
+        st.warning(f"{t('complete_review_first')}")
+        st.info(f"{t('current_process_review1')} {get_state_attribute(state, 'current_iteration')-1}/{get_state_attribute(state, 'max_iterations')} {t('current_process_review2')}")
+    
+    def _extract_review_data(self, state):
+        """
+        Extract review data from the workflow state.
+        
+        Args:
+            state: The workflow state
+            
+        Returns:
+            Tuple: (latest_review, review_history)
+        """
+        latest_review = None
+        review_history = []
+        
+        # Make sure we have review history
+        if state.review_history:
+            latest_review = state.review_history[-1]
+            
+            # Convert review history to the format expected by FeedbackDisplayUI
+            for review in state.review_history:
+                review_history.append({
+                    "iteration_number": review.iteration_number,
+                    "student_review": review.student_review,
+                    "review_analysis": review.analysis
+                })
+                
+        return latest_review, review_history
+    
+    def _generate_comparison_report(self, state, latest_review):
+        """
+        Generate a comparison report for the review feedback.
+        
+        Args:
+            state: The workflow state
+            latest_review: The latest review attempt
+        """
+        try:
+            # Get the known problems from the evaluation result instead of code_snippet.known_problems
+            if get_state_attribute(state, 'evaluation_result') and 'found_errors' in get_state_attribute(state, 'evaluation_result'):
+                found_errors = get_field_value(get_state_attribute(state, 'evaluation_result'), 'found_errors', [])
+                
+                # Generate a comparison report if it doesn't exist
+                state.comparison_report = generate_comparison_report(
+                    found_errors,
+                    latest_review.analysis
+                )
+                logger.info(t("generated_comparison_report"))
+        except Exception as e:
+            logger.error(f"{t('error')} {t('generating_comparison_report')}: {str(e)}")
+            logger.error(traceback.format_exc())  # Log full stacktrace
+            if not get_state_attribute(state, 'comparison_report'):
+                state.comparison_report = (
+                    f"# {t('review_feedback')}\n\n"
+                    f"{t('error_generating_report')} "
+                    f"{t('check_review_history')}."
+                )
+    
+    def _update_user_statistics(self, state, latest_analysis):
+        """
+        Update user statistics based on review performance.
+        
+        Args:
+            state: The workflow state
+            latest_analysis: The analysis of the latest review
+        """
+        # Check if we already updated stats for this iteration
+        current_iteration = get_state_attribute(state, 'current_iteration', 1)
+        identified_count = get_field_value(latest_analysis, "identified_count", 0)
+        stats_key = f"stats_updated_{current_iteration}_{identified_count}"
+    
+        if stats_key not in st.session_state and stats_key not in self.stats_updates:
+            try:
+                # Extract accuracy and identified_count from the latest review
+                accuracy = get_field_value(latest_analysis, "identified_percentage", 0)
+                    
+                # Log details before update
+                logger.info(f"{t('preparing_update_stats')}: {t('accuracy')}={accuracy:.1f}%, " + 
+                        f"{t('score')}={identified_count} ({t('identified_count')}), key={stats_key}")
+                
+                # Update user stats with identified_count as score
+                result = self.auth_ui.update_review_stats(accuracy, identified_count)
+                    
+                # Store the update result for debugging
+                st.session_state[stats_key] = result
+                self.stats_updates[stats_key] = True
+                
+                # Log the update result
+                if result and get_field_value(result, "success", False):
+                        logger.info(f"{t('successfully_updated_statistics')}: {result}")
+                        
+                        # Add explicit UI message about the update
+                        st.success(f"{t('statistics_updated')}! {t('added')} {identified_count} {t('to_your_score')}.")
+                        
+                        # Show level promotion message if level changed
+                        if get_field_value(result, "level_changed", False):
+                            old_level = get_field_value(result, "old_level", "").capitalize()
+                            new_level = get_field_value(result, "new_level", "").capitalize()
+                            st.balloons()  # Add visual celebration effect
+                            st.success(f"🎉 {t('congratulations')}! {t('level_upgraded')} {old_level} {t('to')} {new_level}!")
+                        
+                        # Give the database a moment to complete the update
+                        time.sleep(0.5)
+                else:
+                    err_msg = get_field_value(result, 'error', t('unknown_error')) if result else t('no_result_returned')
+                    logger.error(f"{t('failed_update_statistics')}: {err_msg}")
+                    st.error(f"{t('failed_update_statistics')}: {err_msg}")
+            except Exception as e:
+                logger.error(f"{t('error')} {t('updating_user_statistics')}: {str(e)}")
+                logger.error(traceback.format_exc())
+                st.error(f"{t('error')} {t('updating_statistics')}: {str(e)}")
+                
+    def _render_new_session_button(self):
+        """Render button to start a new session."""
+        st.markdown("---")
+        new_session_col1, new_session_col2 = st.columns([3, 1])
+        with new_session_col1:
+            st.markdown(f"### {t('new_session')}")
+            st.markdown(t("new_session_desc"))
+        with new_session_col2:
+            if st.button(t("start_new_session"), use_container_width=True):
+                # Clear all update keys in session state
+                keys_to_remove = [k for k in st.session_state.keys() if k.startswith("stats_updated_")]
+                for key in keys_to_remove:
+                    del st.session_state[key]
+                    
+                # Clear tracking dict
+                self.stats_updates = {}
+                    
+                # Set the full reset flag
+                st.session_state.full_reset = True
+                
+                # Return to the generate tab
+                st.session_state.active_tab = 0
+                
+                # Force UI refresh
+                st.rerun()
+
+def render_feedback_tab(workflow, auth_ui=None):
+    """
+    Render the feedback and analysis tab with enhanced visualization 
+    and user statistics updating.
+    
+    Args:
+        workflow: The JavaCodeReviewGraph workflow instance
+        auth_ui: Optional AuthUI instance for updating user statistics
+    """
+    # Create the feedback system instance
+    feedback_system = FeedbackSystem(workflow, auth_ui)
+    
+    # Render the feedback tab
+    feedback_system.render_feedback_tab()
