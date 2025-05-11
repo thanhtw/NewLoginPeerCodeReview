@@ -47,11 +47,10 @@ from ui.main_ui import (
 )
 
 # Import UI components
-from ui.error_selector import ErrorSelectorUI
+from ui.CodeGeneratorUI import CodeGeneratorUI
 from ui.code_review import CodeDisplayUI, render_review_tab  # Changed import
 from ui.feedback_system import FeedbackSystem, render_feedback_tab
 from ui.provider_selector import ProviderSelectorUI
-from ui.generate_tab import render_generate_tab
 from ui.auth_ui import AuthUI
 # Load environment variables
 load_dotenv(override=True)
@@ -140,9 +139,9 @@ def main():
     workflow = JavaCodeReviewGraph(llm_manager)
 
     # Initialize UI components
-    error_selector_ui = ErrorSelectorUI()
     code_display_ui = CodeDisplayUI()
-    feedback_display_ui = FeedbackSystem(workflow)
+    code_generator_ui = CodeGeneratorUI(workflow, code_display_ui)
+    
     
     # Render sidebar with provider status
     render_sidebar(llm_manager, workflow)
@@ -175,15 +174,12 @@ def main():
     # Use the enhanced tabs function
     tabs = create_enhanced_tabs(tab_labels)
     
-    # Set the active tab based on session state
-    active_tab = st.session_state.active_tab
-
     # Get user level from auth_ui
     user_level = auth_ui.get_user_level()
     
     # Tab content
     with tabs[0]:
-        render_generate_tab(workflow, error_selector_ui, code_display_ui, user_level)
+        code_generator_ui.render(user_level)
     
     with tabs[1]:
         render_review_tab(workflow, code_display_ui)
