@@ -124,7 +124,7 @@ class FeedbackDisplayUI:
         st.markdown("---")             
             
     def _render_performance_summary(self, review_analysis: Dict[str, Any], review_history: List[Dict[str, Any]]):
-        """Render enhanced performance summary metrics and charts"""
+        """Render enhanced performance summary metrics and charts with CJK font support"""
         st.subheader(t("review_performance_summary"))
         
         # Create performance metrics using the original error count if available
@@ -221,7 +221,38 @@ class FeedbackDisplayUI:
             # Display the chart with two y-axes
             st.subheader(t("progress_across_iterations"))
             
-            # Using matplotlib for more control
+            # Set font configuration for matplotlib for CJK support
+            import matplotlib
+            import matplotlib.font_manager as fm
+            
+            # Configure matplotlib to use a font that supports CJK characters
+            # Try to find appropriate fonts based on platform
+            font_list = matplotlib.rcParams['font.sans-serif']
+            
+            # Add CJK compatible fonts to the front of the list
+            # Common CJK compatible fonts across different platforms
+            cjk_fonts = ['Noto Sans CJK JP', 'Noto Sans CJK TC', 'Noto Sans CJK SC', 
+                        'Microsoft YaHei', '微软雅黑', 'Microsoft JhengHei', '微軟正黑體',
+                        'SimHei', '黑体', 'WenQuanYi Zen Hei', 'WenQuanYi Micro Hei',
+                        'Hiragino Sans GB', 'STHeiti', 'Source Han Sans CN', 
+                        'Source Han Sans TW', 'Source Han Sans JP',
+                        'DroidSansFallback', 'Droid Sans Fallback']
+            
+            # Set the font family to ensure CJK support
+            matplotlib.rcParams['font.family'] = 'sans-serif'
+            matplotlib.rcParams['font.sans-serif'] = cjk_fonts + font_list
+            
+            # Use a non-DejaVu font explicitly for this plot
+            try:
+                # Trying to use a specific CJK-compatible font if available
+                plt.rcParams['font.sans-serif'] = cjk_fonts
+                # Set Unicode fallback font
+                plt.rcParams['axes.unicode_minus'] = False
+            except Exception as e:
+                # Log the error but continue
+                logger.warning(f"Could not set matplotlib font: {str(e)}")
+            
+            # Using matplotlib for more control - with CJK font configuration
             fig, ax1 = plt.subplots(figsize=(10, 4))
             
             color = 'tab:blue'
@@ -241,13 +272,13 @@ class FeedbackDisplayUI:
             st.pyplot(fig)
     
     def _render_identified_issues(self, review_analysis: Dict[str, Any]):
-        """Render identified issues section with enhanced styling"""
+        """Render identified issues section with enhanced styling and proper language support"""
         identified_problems = get_field_value(review_analysis, "identified_problems", [])
         
         if not identified_problems:
             st.info(t("no_identified_issues"))
             return
-            
+                
         st.subheader(f"{t('correctly_identified_issues')} ({len(identified_problems)})")
         
         # Group issues by category if possible
@@ -280,22 +311,18 @@ class FeedbackDisplayUI:
                 st.markdown(f"### {category} ({len(issues)})")
                 for i, issue in enumerate(issues, 1):
                     if isinstance(issue, dict):
-                        key1 =  t('problemt')
-                        key2 =  t('student_commentt')
-                        key3 =  t('accuracyt')
-                        key4 =  t('feedbackt')
-                        problem = issue[key1]
-                        student_comment = issue[key2]
-                        accuracy = issue[key3]
-                        feedback = issue[key4]
+                        # Use get_field_value for proper language handling
+                        problem = get_field_value(issue, f"{t('problemt')}", "")
+                        student_comment = get_field_value(issue, f"{t('student_commentt')}", "")
+                        feedback = get_field_value(issue, f"{t('feedbackt')}", "")
+                        
                         st.markdown(
                             f"""
                             <div style="border-left: 4px solid #4CAF50; padding: 10px; margin: 10px 0;
                                         border-radius: 4px; background-color: rgba(76, 175, 80, 0.1);">
-                                <div style="margin-bottom: 5px;"><strong>{i}. 問題:</strong> {problem}</div>
-                                <div style="margin-bottom: 5px;"><strong>學生評論:</strong> {student_comment}</div>
-                                <div style="margin-bottom: 5px;"><strong>準確度:</strong> {accuracy}</div>
-                                <div><strong>反饋:</strong> {feedback}</div>
+                                <div style="margin-bottom: 5px;"><strong>{t("problemt")}:</strong> {problem}</div>
+                                <div style="margin-bottom: 5px;"><strong>{t("student_commentt")}:</strong> {student_comment}</div>
+                                <div><strong>{t("feedbackt")}:</strong> {feedback}</div>
                             </div>
                             """,
                             unsafe_allow_html=True
@@ -313,16 +340,16 @@ class FeedbackDisplayUI:
                         )
     
     def _render_missed_issues(self, review_analysis: Dict[str, Any]):
-        """Render missed issues section with enhanced styling and tips"""
+        """Render missed issues section with enhanced styling and proper language support"""
         missed_problems = get_field_value(review_analysis, "missed_problems", [])
         
         if not missed_problems:
             st.success(t("all_issues_found"))
             return
-            
+                
         st.subheader(f"{t('issues_missed')} ({len(missed_problems)})")
         
-        # Group issues by category similar to identified issues
+        # Group issues by category similar to identified issues method
         categorized_issues = {}
         
         for issue in missed_problems:
@@ -349,17 +376,16 @@ class FeedbackDisplayUI:
                 st.markdown(f"### {category} ({len(issues)})")
                 for i, issue in enumerate(issues, 1):
                     if isinstance(issue, dict):
-                        key1 =  t('problemt')
-                        key2 =  t('hintt')
-                        problem = issue[key1]
-                        hint = issue[key2]
+                        # Use get_field_value for proper language handling
+                        problem = get_field_value(issue, f"{t('problemt')}", "")
+                        hint = get_field_value(issue, f"{t('hintt')}", "")
                         
                         st.markdown(
                             f"""
                             <div style="border-left: 4px solid #dc3545; padding: 10px; margin: 10px 0;
                                         border-radius: 4px; background-color: rgba(220, 53, 69, 0.1);">
-                                <div style="margin-bottom: 5px;"><strong>{i}. 問題:</strong> {problem}</div>
-                                <div style="margin-bottom: 5px;"><strong>提示:</strong> {hint}</div>
+                                <div style="margin-bottom: 5px;"><strong>{t("problemt")}:</strong> {problem}</div>
+                                {f'<div style="margin-bottom: 5px;"><strong>{t("hintt")}:</strong> {hint}</div>' if hint else ''}
                             </div>
                             """,
                             unsafe_allow_html=True

@@ -11,7 +11,7 @@ import os
 import logging
 from typing import List, Dict, Any, Optional, Tuple
 from langchain_core.language_models import BaseLanguageModel
-from utils.language_utils import get_llm_instructions, get_current_language
+from utils.language_utils import get_llm_instructions, get_current_language, get_field_value, get_state_attribute
 
 # Import prompt templates
 from prompts import get_prompt_template
@@ -301,30 +301,30 @@ def create_feedback_prompt(code: str, known_problems: list, review_analysis: dic
     Returns:
         Feedback prompt string
     """
-    # Extract data from review analysis
-    identified = review_analysis.get("identified_count", 0)
-    total = review_analysis.get("total_problems", len(known_problems))
-    accuracy = review_analysis.get("identified_percentage", 0)
-    iteration = review_analysis.get("iteration_count", 1)
-    max_iterations = review_analysis.get("max_iterations", 3)
-    remaining = review_analysis.get("remaining_attempts", max_iterations - iteration)
+    # Extract data from review analysis using language-aware field access
+    identified = get_field_value(review_analysis, "identified_count", 0)
+    total = get_field_value(review_analysis, "total_problems", len(known_problems))
+    accuracy = get_field_value(review_analysis, "identified_percentage", 0)
+    iteration = get_field_value(review_analysis, "iteration_count", 1)
+    max_iterations = get_field_value(review_analysis, "max_iterations", 3)
+    remaining = get_field_value(review_analysis, "remaining_attempts", max_iterations - iteration)
     
-    # Format identified problems
-    identified_problems = review_analysis.get("identified_problems", [])
+    # Format identified problems with language-aware field access
+    identified_problems = get_field_value(review_analysis, "identified_problems", [])
     identified_text = ""
     for problem in identified_problems:
         if isinstance(problem, dict):
-            problem_text = problem.get("problem", "")
+            problem_text = get_field_value(problem, "problem", "")
             identified_text += f"- {problem_text}\n"
         else:
             identified_text += f"- {problem}\n"
     
-    # Format missed problems
-    missed_problems = review_analysis.get("missed_problems", [])
+    # Format missed problems with language-aware field access
+    missed_problems = get_field_value(review_analysis, "missed_problems", [])
     missed_text = ""
     for problem in missed_problems:
         if isinstance(problem, dict):
-            problem_text = problem.get("problem", "")
+            problem_text = get_field_value(problem, "problem", "")
             missed_text += f"- {problem_text}\n"
         else:
             missed_text += f"- {problem}\n"
@@ -344,8 +344,8 @@ def create_feedback_prompt(code: str, known_problems: list, review_analysis: dic
         total=total,
         accuracy=accuracy,
         remaining=remaining,
-        identified_text=identified_text or "None",
-        missed_text=missed_text or "None - great job!"
+        identified_text=identified_text,
+        missed_text=missed_text
     )
     
     return prompt
@@ -363,15 +363,15 @@ def create_comparison_report_prompt(evaluation_errors: List[str], review_analysi
     Returns:
         Comparison report prompt string
     """
-    # Extract performance metrics from latest review
-    identified_problems = review_analysis.get("identified_problems", [])
-    missed_problems = review_analysis.get("missed_problems", [])
-    false_positives = review_analysis.get("false_positives", [])
+    # Extract performance metrics from latest review using language-aware field access
+    identified_problems = get_field_value(review_analysis, "identified_problems", [])
+    missed_problems = get_field_value(review_analysis, "missed_problems", [])
+    false_positives = get_field_value(review_analysis, "false_positives", [])
     
-    # Get total problems count
-    total_problems = (review_analysis.get("total_problems", 0) or 
-                       review_analysis.get("original_error_count", 0) or 
-                       len(evaluation_errors))
+    # Get total problems count using language-aware field access
+    total_problems = (get_field_value(review_analysis, "total_problems", 0) or 
+                      get_field_value(review_analysis, "original_error_count", 0) or 
+                      len(evaluation_errors))
     
     # Calculate metrics
     identified_count = len(identified_problems)
@@ -381,21 +381,21 @@ def create_comparison_report_prompt(evaluation_errors: List[str], review_analysi
     identified_str = []
     for problem in identified_problems:
         if isinstance(problem, dict) and "problem" in problem:
-            identified_str.append(problem["problem"])
+            identified_str.append(get_field_value(problem, "problem", ""))
         elif isinstance(problem, str):
             identified_str.append(problem)
     
     missed_str = []
     for problem in missed_problems:
         if isinstance(problem, dict) and "problem" in problem:
-            missed_str.append(problem["problem"])
+            missed_str.append(get_field_value(problem, "problem", ""))
         elif isinstance(problem, str):
             missed_str.append(problem)
     
     false_str = []
     for problem in false_positives:
         if isinstance(problem, dict) and "student_comment" in problem:
-            false_str.append(problem["student_comment"])
+            false_str.append(get_field_value(problem, "student_comment", ""))
         elif isinstance(problem, str):
             false_str.append(problem)
     
@@ -406,23 +406,6 @@ def create_comparison_report_prompt(evaluation_errors: List[str], review_analysi
     
     # Create progress tracking info if multiple attempts exist
     progress_info = ""
-    if review_history and len(review_history) > 1:
-        progress_info = "## Progress Across Attempts\n\n"
-        
-        for i, review in enumerate(review_history, 1):
-            analysis = review.get("review_analysis", {})
-            found = analysis.get("identified_count", 0)
-            acc = analysis.get("identified_percentage", 0)
-            progress_info += f"Attempt {i}: Found {found}/{total_problems} issues ({acc:.1f}%)\n"
-        
-        # Compare first vs. latest attempt
-        first = review_history[0].get("review_analysis", {})
-        first_found = first.get("identified_count", 0)
-        first_acc = first.get("identified_percentage", 0)
-        
-        if accuracy > first_acc:
-            improvement = accuracy - first_acc
-            progress_info += f"\nImprovement: +{improvement:.1f}% from first attempt\n"
 
     # Get language-specific instructions
     language_instructions = get_llm_instructions()
@@ -438,9 +421,9 @@ def create_comparison_report_prompt(evaluation_errors: List[str], review_analysi
         accuracy=accuracy,
         len_missed_str=len(missed_str),
         len_false_str=len(false_str),
-        identified_text=identified_text or "None - the student didn't identify any correct issues.",
-        missed_text=missed_text or "None - the student identified all issues correctly!",
-        false_positive_text=false_positive_text or "None - the student didn't identify any false issues.",
+        identified_text=identified_text,
+        missed_text=missed_text,
+        false_positive_text=false_positive_text,
         progress_info=progress_info
     )
 
@@ -583,24 +566,41 @@ def generate_comparison_report_fallback(evaluation_errors: List[str], review_ana
     Returns:
         Formatted comparison report
     """
-    # Extract performance metrics from latest review
-    identified_problems = review_analysis.get("identified_problems", [])
-    missed_problems = review_analysis.get("missed_problems", [])
-    false_positives = review_analysis.get("false_positives", [])
+    # Extract performance metrics from latest review using language-aware field access
+    identified_problems = get_field_value(review_analysis, "identified_problems", [])
+    missed_problems = get_field_value(review_analysis, "missed_problems", [])
+    false_positives = get_field_value(review_analysis, "false_positives", [])
     
-    # Get total problems count
-    total_problems = (review_analysis.get("total_problems", 0) or 
-                     review_analysis.get("original_error_count", 0) or 
+    # Get total problems count using language-aware field access
+    total_problems = (get_field_value(review_analysis, "total_problems", 0) or 
+                     get_field_value(review_analysis, "original_error_count", 0) or 
                      len(evaluation_errors))
     
     # Calculate metrics
     identified_count = len(identified_problems)
     accuracy = (identified_count / total_problems * 100) if total_problems > 0 else 0
     
-    # Convert all problems to strings
-    identified_str = [str(p) if not isinstance(p, str) else p for p in identified_problems]
-    missed_str = [str(p) if not isinstance(p, str) else p for p in missed_problems]
-    false_str = [str(p) if not isinstance(p, str) else p for p in false_positives]
+    # Convert all problems to strings with language-aware field access
+    identified_str = []
+    for p in identified_problems:
+        if isinstance(p, dict):
+            identified_str.append(get_field_value(p, "problem", str(p)))
+        else:
+            identified_str.append(str(p))
+            
+    missed_str = []
+    for p in missed_problems:
+        if isinstance(p, dict):
+            missed_str.append(get_field_value(p, "problem", str(p)))
+        else:
+            missed_str.append(str(p))
+            
+    false_str = []
+    for p in false_positives:
+        if isinstance(p, dict):
+            false_str.append(get_field_value(p, "student_comment", str(p)))
+        else:
+            false_str.append(str(p))
     
     # Build report with markdown
     report = "# Code Review Assessment\n\n"
@@ -612,15 +612,15 @@ def generate_comparison_report_fallback(evaluation_errors: List[str], review_ana
         report += "|---------|--------------|----------|\n"
         
         for i, review in enumerate(review_history, 1):
-            analysis = review.get("review_analysis", {})
-            found = analysis.get("identified_count", 0)
-            acc = analysis.get("identified_percentage", 0)
+            analysis = get_field_value(review, "review_analysis", {})
+            found = get_field_value(analysis, "identified_count", 0)
+            acc = get_field_value(analysis, "identified_percentage", 0)
             report += f"| {i} | {found}/{total_problems} | {acc:.1f}% |\n"
         
         # Compare first vs. latest attempt
-        first = review_history[0].get("review_analysis", {})
-        first_found = first.get("identified_count", 0)
-        first_acc = first.get("identified_percentage", 0)
+        first = get_field_value(review_history[0], "review_analysis", {})
+        first_found = get_field_value(first, "identified_count", 0)
+        first_acc = get_field_value(first, "identified_percentage", 0)
         
         if accuracy > first_acc:
             improvement = accuracy - first_acc
@@ -660,9 +660,16 @@ def generate_comparison_report_fallback(evaluation_errors: List[str], review_ana
     # New knowledge gained (if multiple attempts)
     if review_history and len(review_history) > 1:
         # Get identified issues from first attempt
-        first_review = review_history[0].get("review_analysis", {})
-        first_identified = first_review.get("identified_problems", [])
-        first_identified_str = [str(p) if not isinstance(p, str) else p for p in first_identified]
+        first_review = review_history[0]
+        first_analysis = get_field_value(first_review, "review_analysis", {})
+        first_identified = get_field_value(first_analysis, "identified_problems", [])
+        
+        first_identified_str = []
+        for p in first_identified:
+            if isinstance(p, dict):
+                first_identified_str.append(get_field_value(p, "problem", str(p)))
+            else:
+                first_identified_str.append(str(p))
         
         # Find newly identified issues in the latest attempt
         new_findings = [p for p in identified_str if p not in first_identified_str]
@@ -746,7 +753,7 @@ def process_llm_response(response):
 def get_error_count_from_state(state: Any, difficulty_level: str = "medium") -> int:
     """
     Get error count from the state object or parameters.
-    Replaces the fixed get_error_count_for_difficulty function.
+    Uses language-aware state attribute access.
     
     Args:
         state: State object that might contain error count info
@@ -756,22 +763,23 @@ def get_error_count_from_state(state: Any, difficulty_level: str = "medium") -> 
         Number of errors to use
     """
     # First try to get error count from selected_specific_errors if available
-    if hasattr(state, 'selected_specific_errors') and state.selected_specific_errors:
-        return len(state.selected_specific_errors)
+    specific_errors = get_state_attribute(state, 'selected_specific_errors')
+    if specific_errors:
+        return len(specific_errors)
     
     # Next try to get from original_error_count if it's been set
-    if hasattr(state, 'original_error_count') and state.original_error_count > 0:
-        return state.original_error_count
+    original_error_count = get_state_attribute(state, 'original_error_count', 0)
+    if original_error_count > 0:
+        return original_error_count
     
     # If we have selected error categories, use their count
-    if hasattr(state, 'selected_error_categories'):
-        selected_categories = state.selected_error_categories
-        if selected_categories:
-            java_errors = selected_categories.get("java_errors", [])
-            # Use at least one error per selected category
-            category_count = len(java_errors)
-            if category_count > 0:
-                return max(category_count, 2)  # Ensure at least 2 errors
+    selected_categories = get_state_attribute(state, 'selected_error_categories')
+    if selected_categories:
+        java_errors = selected_categories.get("java_errors", [])
+        # Use at least one error per selected category
+        category_count = len(java_errors)
+        if category_count > 0:
+            return max(category_count, 2)  # Ensure at least 2 errors
     
     # Finally fall back to difficulty-based default if all else fails
     difficulty_map = {
