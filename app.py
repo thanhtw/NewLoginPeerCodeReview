@@ -48,13 +48,11 @@ from ui.main_ui import (
 
 # Import UI components
 from ui.error_selector import ErrorSelectorUI
-from ui.code_display import CodeDisplayUI
+from ui.code_review import CodeDisplayUI, render_review_tab  # Changed import
 from ui.feedback_system import FeedbackSystem, render_feedback_tab
 from ui.provider_selector import ProviderSelectorUI
 from ui.generate_tab import render_generate_tab
-from ui.review_tab import render_review_tab
 from ui.auth_ui import AuthUI
-
 # Load environment variables
 load_dotenv(override=True)
 
