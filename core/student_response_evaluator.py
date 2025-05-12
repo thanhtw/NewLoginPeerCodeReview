@@ -153,7 +153,6 @@ class StudentResponseEvaluator:
         enhanced_result = {
             t("identified_problems"): identified_problems,  # Keep the detailed version
             t("missed_problems"): missed_problems,  # Keep the detailed version
-            t("identified_count"): identified_count,
             t("total_problems"): total_problems,
             t("accuracy_percentage"): identified_percentage,  # For backward compatibility
             t("review_sufficient"): review_sufficient
@@ -178,7 +177,6 @@ class StudentResponseEvaluator:
             t("identified_problems"): [],
             t("missed_problems"): known_problems,
             t("accuracy_percentage"): 0.0,
-            t("identified_count"): 0,
             t("total_problems"): len(known_problems),
             t("review_sufficient"): False
         }
@@ -282,15 +280,6 @@ class StudentResponseEvaluator:
             else:
                 analysis[t("missed_problems")] = []
             
-            # Try to extract identified count - support both English and Chinese field names
-            count_match = re.search(r'"(identified_count|已識別數量)"\s*:\s*([0-9]+)', text)
-            if count_match:
-                try:
-                    analysis[t("identified_count")] = int(count_match.group(2))
-                except:
-                    analysis[t("identified_count")] = 0
-            else:
-                analysis[t("identified_count")] = 0
             
             # Try to extract total problems - support both English and Chinese field names
             total_match = re.search(r'"(total_problems|總問題數)"\s*:\s*([0-9]+)', text)
@@ -331,7 +320,6 @@ class StudentResponseEvaluator:
                 required_fields = [
                     t("identified_problems"),
                     t("missed_problems"),
-                    t("identified_count"),
                     t("total_problems"),
                     t("accuracy_percentage"),
                     t("review_sufficient"),
@@ -341,9 +329,7 @@ class StudentResponseEvaluator:
                 # Fill in any missing required fields with defaults
                 for field in required_fields:
                     if field not in analysis:
-                        if field == t("identified_count") or field == t("total_problems"):
-                            analysis[field] = 0
-                        elif field == t("accuracy_percentage"):
+                        if field == t("accuracy_percentage"):
                             analysis[field] = 0.0
                         elif field == t("review_sufficient"):
                             analysis[field] = False
@@ -403,7 +389,6 @@ class StudentResponseEvaluator:
             metadata = {
                 t("iteration"): iteration_count,
                 t("max_iterations"): max_iterations,
-                t("identified_count"): get_field_value(review_analysis, "identified_count", 0),
                 t("total_problems"): get_field_value(review_analysis, "total_problems", len(known_problems)),
                 t("accuracy_percentage"): get_field_value(review_analysis, "accuracy_percentage", 0)
             }
@@ -434,7 +419,6 @@ class StudentResponseEvaluator:
             error_metadata = {
                 t("iteration"): iteration_count,
                 t("max_iterations"): max_iterations,
-                t("identified_count"): get_field_value(review_analysis, "identified_count", 0),
                 t("total_problems"): get_field_value(review_analysis, "total_problems", len(known_problems)),
                 t("error"): str(e)
             }
@@ -461,13 +445,10 @@ class StudentResponseEvaluator:
             Concise guidance text
         """
         # Extract key metrics with proper field access
-        identified_count = get_field_value(review_analysis, "identified_count", 0)
-        total_problems = get_field_value(review_analysis, "total_problems", 0)
         accuracy = get_field_value(review_analysis, "accuracy_percentage", 0)
         
         # Get missed problems
         missed_problems = get_field_value(review_analysis, "missed_problems", [])
-        print("missed_problemsmissed_problems: ", missed_problems)
         # Categorize missed problems to provide more targeted guidance
         missed_categories = self._categorize_missed_problems(missed_problems)
         

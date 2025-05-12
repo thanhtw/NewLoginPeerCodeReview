@@ -368,7 +368,8 @@ class FeedbackSystem:
         
         missed_problems = get_field_value(review_analysis, t("missed_problems"), [])
         
-        #print("missed_problemsmissed_problems: ", review_analysis)
+        print("missed_problemsmissed_problems: ", missed_problems)
+        print("review_analysisreview_analysis: ", review_analysis)
         
         if not missed_problems:
             st.success(t("all_issues_found"))
