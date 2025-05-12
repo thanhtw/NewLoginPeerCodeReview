@@ -6,6 +6,7 @@ from langchain_core.language_models import BaseLanguageModel
 
 from utils.code_utils import create_review_analysis_prompt, create_feedback_prompt, process_llm_response
 from utils.llm_logger import LLMInteractionLogger
+from utils.language_utils import t, get_field_value, get_current_language
 
 # Configure logging
 logging.basicConfig(
@@ -127,10 +128,10 @@ class StudentResponseEvaluator:
             return self._fallback_evaluation(known_problems)
         
         # Extract core metrics with defaults
-        identified_count = analysis_data.get("identified_count", 0)
-        missed_count = analysis_data.get("missed_count", 0)
-        false_positive_count = analysis_data.get("false_positive_count", 0)
-        total_problems = analysis_data.get("total_problems", len(known_problems))
+        identified_count = get_field_value(analysis_data, "identified_count", 0)
+        missed_count = get_field_value(analysis_data, "missed_count", 0)
+        false_positive_count = get_field_value(analysis_data, "false_positive_count", 0)
+        total_problems = get_field_value(analysis_data, "total_problems", len(known_problems))
         
         # Calculate percentages
         if total_problems > 0:
@@ -139,7 +140,7 @@ class StudentResponseEvaluator:
             identified_percentage = 100.0
         
         # Extract review quality metrics
-        review_quality_score = analysis_data.get("review_quality_score", 5.0)
+        review_quality_score = get_field_value(analysis_data, "review_quality_score", 5.0)
         if not isinstance(review_quality_score, (int, float)):
             try:
                 review_quality_score = float(review_quality_score)
@@ -149,14 +150,14 @@ class StudentResponseEvaluator:
         # Determine if review is sufficient
         # Use LLM's determination if available, otherwise calculate based on percentage
         if "review_sufficient" in analysis_data:
-            review_sufficient = analysis_data["review_sufficient"]
+            review_sufficient = get_field_value(analysis_data, "review_sufficient", False)
         else:
             review_sufficient = identified_percentage >= self.min_identified_percentage
         
         # Extract problem lists
-        identified_problems = analysis_data.get("identified_problems", [])
-        missed_problems = analysis_data.get("missed_problems", [])
-        false_positives = analysis_data.get("false_positives", [])
+        identified_problems = get_field_value(analysis_data, "identified_problems", [])
+        missed_problems = get_field_value(analysis_data, "missed_problems", [])
+        false_positives = get_field_value(analysis_data, "false_positives", [])
         
         # Simplify the identified problems list if needed
         simple_identified = []
@@ -183,7 +184,7 @@ class StudentResponseEvaluator:
                 simple_false_positives.append(false_positive)
         
         # Get overall feedback
-        feedback = analysis_data.get("feedback", "")
+        feedback = get_field_value(analysis_data, "feedback", "")
         if not feedback:
             # Generate basic feedback based on performance
             if identified_percentage >= 80:
@@ -195,23 +196,23 @@ class StudentResponseEvaluator:
             else:
                 feedback = "Your review needs improvement. You missed most of the issues in the code."
         
-        # Construct enhanced result
+        # Construct enhanced result using t() function for keys
         enhanced_result = {
-            "identified_problems": identified_problems,  # Keep the detailed version
-            "missed_problems": missed_problems,  # Keep the detailed version
-            "false_positives": false_positives,  # Keep the detailed version
-            "simple_identified": simple_identified,  # Add simplified version
-            "simple_missed": simple_missed,  # Add simplified version
-            "simple_false_positives": simple_false_positives,  # Add simplified version
-            "identified_count": identified_count,
-            "missed_count": missed_count,
-            "false_positive_count": false_positive_count,
-            "total_problems": total_problems,
-            "identified_percentage": identified_percentage,
-            "accuracy_percentage": identified_percentage,  # For backward compatibility
-            "review_quality_score": review_quality_score,
-            "review_sufficient": review_sufficient,
-            "feedback": feedback
+            t("identified_problems"): identified_problems,  # Keep the detailed version
+            t("missed_problems"): missed_problems,  # Keep the detailed version
+            t("false_positives"): false_positives,  # Keep the detailed version
+            t("simple_identified"): simple_identified,  # Add simplified version
+            t("simple_missed"): simple_missed,  # Add simplified version
+            t("simple_false_positives"): simple_false_positives,  # Add simplified version
+            t("identified_count"): identified_count,
+            t("missed_count"): missed_count,
+            t("false_positive_count"): false_positive_count,
+            t("total_problems"): total_problems,
+            t("identified_percentage"): identified_percentage,
+            t("accuracy_percentage"): identified_percentage,  # For backward compatibility
+            t("review_quality_score"): review_quality_score,
+            t("review_sufficient"): review_sufficient,
+            t("feedback"): feedback
         }
         
         return enhanced_result
@@ -228,17 +229,17 @@ class StudentResponseEvaluator:
         """
         logger.warning("Using fallback evaluation due to LLM error")
         
-        # Create a basic fallback evaluation
+        # Create a basic fallback evaluation using t() function for keys
         return {
-            "identified_problems": [],
-            "missed_problems": known_problems,
-            "false_positives": [],
-            "accuracy_percentage": 0.0,
-            "identified_percentage": 0.0,
-            "identified_count": 0,
-            "total_problems": len(known_problems),
-            "review_sufficient": False,
-            "feedback": "Your review needs improvement. Try to identify more issues in the code."
+            t("identified_problems"): [],
+            t("missed_problems"): known_problems,
+            t("false_positives"): [],
+            t("accuracy_percentage"): 0.0,
+            t("identified_percentage"): 0.0,
+            t("identified_count"): 0,
+            t("total_problems"): len(known_problems),
+            t("review_sufficient"): False,
+            t("feedback"): "Your review needs improvement. Try to identify more issues in the code."
         }
             
     def _extract_json_from_text(self, text: str) -> Dict[str, Any]:

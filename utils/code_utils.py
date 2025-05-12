@@ -132,8 +132,35 @@ def format_template_safely(template: str, **kwargs) -> str:
         # First attempt: use standard string formatting
         return template.format(**kwargs)
     except KeyError as e:
-        # If we get a KeyError, log it and try a fallback approach
+        # If we get a KeyError, log it and try to handle translations
         logger.warning(f"Template formatting error: missing key {e}")
+        
+        # Check if the missing key is a Chinese translation
+        missing_key = str(e).strip("'")
+        
+        # Map of common Chinese keys to their English equivalents
+        chinese_to_english = {
+            "已找到錯誤": "found_errors",
+            "遺漏錯誤": "missing_errors",
+            "錯誤類型": "error_type",
+            "錯誤名稱": "error_name",
+            "行號": "line_number",
+            "代碼片段": "code_segment",
+            "解釋": "explanation",
+            "有效": "valid",
+            "反饋": "feedback",
+            "錯誤": "error"
+        }
+        
+        # If the missing key is a Chinese translation, use the English value instead
+        if missing_key in chinese_to_english and chinese_to_english[missing_key] in kwargs:
+            english_key = chinese_to_english[missing_key]
+            template = template.replace("{" + missing_key + "}", "{" + english_key + "}")
+            try:
+                return template.format(**kwargs)
+            except Exception:
+                pass
+                
         # Replace problematic placeholders with their string values
         for key, value in kwargs.items():
             placeholder = "{" + key + "}"
