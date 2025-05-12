@@ -85,29 +85,36 @@ class WorkflowConditions:
         """
         logger.debug(f"Deciding review path with state: iteration={get_state_attribute(state, 'current_iteration')}/{get_state_attribute(state, 'max_iterations')}, "
                 f"sufficient={get_state_attribute(state, 'review_sufficient')}")
+        print("===============================should_continue_review===============================================================================")
+        # Get the latest review analysis
+        review_history = get_state_attribute(state, 'review_history')
+        latest_review = review_history[-1] if review_history else None
         
-        # Check if we've reached max iterations
-        if state.current_iteration > state.max_iterations:
-            logger.info(f"Review path decision: generate_summary (max iterations reached: {state.current_iteration})")
-            return "generate_summary"
-        
-        # Check if the review is sufficient
-        if get_state_attribute(state, "review_sufficient"):
-            logger.info("Review path decision: generate_summary (review sufficient)")
-            return "generate_summary"
-        
-        # Check if all issues have been identified
-        latest_review = state.review_history[-1] if state.review_history else None
-
         if latest_review and latest_review.analysis:
             identified_count = get_field_value(latest_review.analysis, "identified_count", 0)
             total_problems = get_field_value(latest_review.analysis, "total_problems", 0)
-            if identified_count == total_problems and total_problems > 0:
-                # Also set review_sufficient to True to maintain state consistency
+            
+            # Check if all issues have been identified OR we've reached the max iterations (attempt == 3)
+            current_iteration = get_state_attribute(state, 'current_iteration')
+            max_iterations = get_state_attribute(state, 'max_iterations')
+            print("=================identified_countidentified_count: ",identified_count)
+            print("=======================total_problemstotal_problems ", total_problems)
+            if (identified_count == total_problems and total_problems > 0) or current_iteration > max_iterations:
+                # Set review_sufficient to True to maintain state consistency
                 state.review_sufficient = True
-                logger.info(f"Review path decision: generate_summary (all {total_problems} issues identified)")
+                if identified_count == total_problems:
+                    logger.info(f"Review path decision: generate_summary (all {total_problems} issues identified)")
+                else:
+                    logger.info(f"Review path decision: generate_summary (max iterations reached: {current_iteration})")
                 return "generate_summary"
         
+        # If we've reached max iterations but somehow don't have a review yet
+        current_iteration = get_state_attribute(state, 'current_iteration')
+        max_iterations = get_state_attribute(state, 'max_iterations')
+        if current_iteration > max_iterations:
+            logger.info(f"Review path decision: generate_summary (max iterations reached: {current_iteration})")
+            return "generate_summary"
+        
         # Otherwise, continue reviewing
-        logger.info(f"Review path decision: continue_review (iteration {get_state_attribute(state, 'current_iteration')}, not sufficient)")
-        return "review_code"
+        logger.info(f"Review path decision: continue_review (iteration {current_iteration}, not sufficient)")
+        return "continue_review"
