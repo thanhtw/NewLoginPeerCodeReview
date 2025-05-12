@@ -98,6 +98,7 @@ class WorkflowConditions:
         
         # Check if all issues have been identified
         latest_review = state.review_history[-1] if state.review_history else None
+
         if latest_review and latest_review.analysis:
             identified_count = get_field_value(latest_review.analysis, "identified_count", 0)
             total_problems = get_field_value(latest_review.analysis, "total_problems", 0)
@@ -109,4 +110,4 @@ class WorkflowConditions:
         
         # Otherwise, continue reviewing
         logger.info(f"Review path decision: continue_review (iteration {get_state_attribute(state, 'current_iteration')}, not sufficient)")
-        return "continue_review"
+        return "review_code"

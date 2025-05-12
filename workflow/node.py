@@ -466,16 +466,15 @@ class WorkflowNodes:
             review_sufficient = get_field_value(analysis, "review_sufficient", False)
             state.review_sufficient = review_sufficient
             
-            
             # Generate targeted guidance if needed
-            if not review_sufficient and get_state_attribute(state, "current_iteration") < get_state_attribute(state, "max_iterations"):
+            if not review_sufficient and state.current_iteration < state.max_iterations:
                 targeted_guidance = evaluator.generate_targeted_guidance(
                     code_snippet=code_snippet,
                     known_problems=known_problems,
                     student_review=student_review,
                     review_analysis=analysis,
-                    iteration_count=get_state_attribute(state, "current_iteration"),
-                    max_iterations=get_state_attribute(state, "max_iterations")
+                    iteration_count=state.current_iteration,
+                    max_iterations=state.max_iterations
                 )
                 latest_review.targeted_guidance = targeted_guidance
             

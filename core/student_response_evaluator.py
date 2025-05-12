@@ -6,8 +6,6 @@ from langchain_core.language_models import BaseLanguageModel
 
 from utils.code_utils import create_review_analysis_prompt, create_feedback_prompt, process_llm_response
 from utils.llm_logger import LLMInteractionLogger
-from utils.language_utils import get_field_value, get_state_attribute, t
-
 
 # Configure logging
 logging.basicConfig(
@@ -129,10 +127,10 @@ class StudentResponseEvaluator:
             return self._fallback_evaluation(known_problems)
         
         # Extract core metrics with defaults
-        identified_count = get_field_value(analysis_data, "identified_count", 0)
-        missed_count = get_field_value(analysis_data, "missed_count", 0)
-        false_positive_count = get_field_value(analysis_data, "false_positive_count", 0)
-        total_problems = get_field_value(analysis_data, "total_problems", len(known_problems))
+        identified_count = analysis_data.get("identified_count", 0)
+        missed_count = analysis_data.get("missed_count", 0)
+        false_positive_count = analysis_data.get("false_positive_count", 0)
+        total_problems = analysis_data.get("total_problems", len(known_problems))
         
         # Calculate percentages
         if total_problems > 0:
@@ -141,7 +139,7 @@ class StudentResponseEvaluator:
             identified_percentage = 100.0
         
         # Extract review quality metrics
-        review_quality_score = get_field_value(analysis_data, "review_quality_score", 5.0)
+        review_quality_score = analysis_data.get("review_quality_score", 5.0)
         if not isinstance(review_quality_score, (int, float)):
             try:
                 review_quality_score = float(review_quality_score)
@@ -151,14 +149,14 @@ class StudentResponseEvaluator:
         # Determine if review is sufficient
         # Use LLM's determination if available, otherwise calculate based on percentage
         if "review_sufficient" in analysis_data:
-            review_sufficient = get_field_value(analysis_data, "review_sufficient")
+            review_sufficient = analysis_data["review_sufficient"]
         else:
             review_sufficient = identified_percentage >= self.min_identified_percentage
         
         # Extract problem lists
-        identified_problems = get_field_value(analysis_data, "identified_problems", [])
-        missed_problems = get_field_value(analysis_data, "missed_problems", [])
-        false_positives = get_field_value(analysis_data, "false_positives", [])
+        identified_problems = analysis_data.get("identified_problems", [])
+        missed_problems = analysis_data.get("missed_problems", [])
+        false_positives = analysis_data.get("false_positives", [])
         
         # Simplify the identified problems list if needed
         simple_identified = []
@@ -185,7 +183,7 @@ class StudentResponseEvaluator:
                 simple_false_positives.append(false_positive)
         
         # Get overall feedback
-        feedback = get_field_value(analysis_data, "feedback", "")
+        feedback = analysis_data.get("feedback", "")
         if not feedback:
             # Generate basic feedback based on performance
             if identified_percentage >= 80:

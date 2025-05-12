@@ -604,50 +604,6 @@ def show_workflow_process():
     max_evaluation_attempts = getattr(state, 'max_evaluation_attempts', 3)
     
     # Create a workflow visualization with improved style
-    st.markdown("""
-    <style>
-    .workflow-container {
-        margin: 20px 0;
-    }
-    .workflow-step {
-        padding: 15px;
-        border-radius: 10px;
-        margin-bottom: 10px;
-        text-align: center;
-        font-weight: 500;
-        transition: all 0.3s ease;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-    .workflow-step:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-    }
-    .step-completed {
-        background-color: #28a745;
-        color: white;
-    }
-    .step-active {
-        background-color: #4c68d7;
-        color: white;
-        animation: pulse 2s infinite;
-    }
-    .step-pending {
-        background-color: #6c757d;
-        color: white;
-    }
-    @keyframes pulse {
-        0% {
-            box-shadow: 0 0 0 0 rgba(76, 104, 215, 0.4);
-        }
-        70% {
-            box-shadow: 0 0 0 10px rgba(76, 104, 215, 0);
-        }
-        100% {
-            box-shadow: 0 0 0 0 rgba(76, 104, 215, 0);
-        }
-    }
-    </style>
-    """, unsafe_allow_html=True)
     
     st.subheader(t("code_generation_process"))
     
@@ -811,34 +767,6 @@ def render_generate_tab(workflow, error_selector_ui, code_display_ui, user_level
             # Rerun to update UI
             st.rerun()
     else:
-        # Add custom CSS for the error category cards
-        st.markdown("""
-        <style>
-        .problem-area-card {
-            transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
-            cursor: pointer;
-            border: 1px solid #e0e0e0;
-            border-radius: 10px;
-            padding: 16px;
-        }
-        .problem-area-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
-        }
-        .problem-area-card.selected {
-            background-color: rgba(76, 104, 215, 0.1);
-            border-color: #4c68d7;
-            box-shadow: 0 4px 8px rgba(76, 104, 215, 0.2);
-        }
-        .category-selection-container {
-            background-color: #f9f9f9;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-            border: 1px solid #e0e0e0;
-        }
-        </style>
-        """, unsafe_allow_html=True)
        
         selection_mode = error_selector_ui.render_mode_selector()
         
@@ -884,16 +812,6 @@ def render_generate_tab(workflow, error_selector_ui, code_display_ui, user_level
             
         st.markdown('</div>', unsafe_allow_html=True)
         
-        # Create a visually appealing generate button
-        st.markdown("""
-        <style>
-        .generate-button-container {
-            display: flex;
-            justify-content: center;
-            margin: 30px 0 10px 0;
-        }
-        </style>
-        """, unsafe_allow_html=True)
         
         st.markdown('<div class="generate-button-container">', unsafe_allow_html=True)
         if st.button(t("generate_code_button"), type="primary", use_container_width=True):

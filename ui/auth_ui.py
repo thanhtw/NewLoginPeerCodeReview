@@ -52,52 +52,7 @@ class AuthUI:
             bool: True if user is authenticated, False otherwise
         """
         
-        # Apply custom CSS for the login page
-        st.markdown("""
-        <style>
-        .auth-container {
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-        }
-        .auth-header {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .auth-form {
-            background-color: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        .auth-form h3 {
-            margin-bottom: 20px;
-            color: #4c68d7;
-            text-align: center;
-        }
-        .auth-divider {
-            text-align: center;
-            margin: 20px 0;
-            color: #666;
-        }
-        .auth-footer {
-            text-align: center;
-            margin-top: 20px;
-            font-size: 14px;
-            color: #666;
-        }
-        .demo-section {
-            text-align: center;
-            margin-top: 30px;
-            padding: 20px;
-            background-color: #f8f9fa;
-            border-radius: 10px;
-        }
-        </style>
-        """, unsafe_allow_html=True)
-
+        
         # Main container
         st.markdown('<div class="auth-container">', unsafe_allow_html=True)
         
@@ -219,34 +174,6 @@ class AuthUI:
         display_name = user_info.get("display_name", "User")
         level = user_info.get("level", "basic").capitalize()     
         
-        # Add styled profile section
-        st.sidebar.markdown("""
-        <style>
-        .profile-container {
-            padding: 15px;
-            background-color: rgba(76, 104, 215, 0.1);
-            border-radius: 10px;
-            margin-bottom: 20px;
-        }
-        .profile-name {
-            font-weight: bold;
-            font-size: 1.2em;
-            margin-bottom: 5px;
-        }
-        .profile-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 5px 0;
-            border-bottom: 1px solid rgba(0,0,0,0.05);
-        }
-        .profile-label {
-            color: #666;
-        }
-        .profile-value {
-            font-weight: 500;
-        }
-        </style>
-        """, unsafe_allow_html=True)
         
         st.sidebar.markdown(f"""
         <div class="profile-container">
