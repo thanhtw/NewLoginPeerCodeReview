@@ -467,7 +467,7 @@ class StudentResponseEvaluator:
         
         # Get missed problems
         missed_problems = get_field_value(review_analysis, "missed_problems", [])
-        
+        print("missed_problemsmissed_problems: ", missed_problems)
         # Categorize missed problems to provide more targeted guidance
         missed_categories = self._categorize_missed_problems(missed_problems)
         

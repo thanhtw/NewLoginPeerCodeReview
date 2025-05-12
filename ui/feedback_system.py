@@ -97,7 +97,7 @@ class FeedbackSystem:
             review_analysis: Analysis of student review
             review_history: History of review iterations
         """
-        print("review_historyreview_history: ", review_history)
+      
         if not comparison_report and not review_summary and not review_analysis:
             st.info(t("no_analysis_results"))
             return
@@ -298,8 +298,7 @@ class FeedbackSystem:
     
     def _render_identified_issues(self, review_analysis: Dict[str, Any]):
         """Render identified issues section with enhanced styling and proper language support"""
-        identified_problems = get_field_value(review_analysis, "identified_problems", [])
-        
+        identified_problems = get_field_value(review_analysis, "identified_problems", [])       
         if not identified_problems:
             st.info(t("no_identified_issues"))
             return
@@ -366,7 +365,10 @@ class FeedbackSystem:
     
     def _render_missed_issues(self, review_analysis: Dict[str, Any]):
         """Render missed issues section with enhanced styling and proper language support"""
-        missed_problems = get_field_value(review_analysis, "missed_problems", [])
+        
+        missed_problems = get_field_value(review_analysis, t("missed_problems"), [])
+        
+        #print("missed_problemsmissed_problems: ", review_analysis)
         
         if not missed_problems:
             st.success(t("all_issues_found"))
@@ -490,12 +492,11 @@ class FeedbackSystem:
                 latest_review = review_history_list[-1]
                 
                 # Convert review history to the format expected by FeedbackDisplayUI
-                for review in review_history_list:
-                    print("get_field_value=======",type(review))
+                for review in review_history_list:                   
                     review_history.append({
-                        "iteration_number": get_field_value(review, "iteration_number", 0),
-                        "student_review": get_field_value(review, "student_review", ""),
-                        "review_analysis": get_field_value(review, "analysis", {})
+                        "iteration_number": get_state_attribute(review, "iteration_number", 0),
+                        "student_review": get_state_attribute(review, "student_review", ""),
+                        "review_analysis": get_state_attribute(review, "analysis", {})
                     })
                 
         return latest_review, review_history

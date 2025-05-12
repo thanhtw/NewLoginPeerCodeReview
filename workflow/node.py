@@ -412,7 +412,7 @@ class WorkflowNodes:
                 student_review=student_review
             )
 
-            print("analysisanalysisanalysis: ", analysis)
+          
             
             # IMPROVED: Update analysis using t() function for key translation
             if original_error_count > 0:
@@ -438,12 +438,11 @@ class WorkflowNodes:
                     analysis[t("review_sufficient")] = True
                     logger.info("All errors found! Marking review as sufficient.")
 
-            print("analysisanalysisanalysis222222222222: ", analysis)
+          
             # Update the review with analysis
             latest_review.analysis = analysis
 
-            print("latest_reviewlatest_reviewlatest_reviewlatest_review: ", latest_review)
-            
+        
             # Use get_field_value to retrieve values consistently
             review_sufficient = get_field_value(analysis, "review_sufficient", False)
             state.review_sufficient = review_sufficient
