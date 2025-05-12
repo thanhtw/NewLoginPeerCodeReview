@@ -335,5 +335,50 @@ translations = {
     "student_commentt":"student_comment",
     "accuracyt": "accuracy",
     "feedbackt":"feedback",
-    "hintt":"hint"
+    "hintt":"hint",
+
+    # Add these to the translations dictionary
+    "empty_response_from_llm": "Empty response from LLM",
+    "could_not_extract_json": "Could not extract JSON, attempting manual extraction",
+    "analysis_could_not_extract_feedback": "The analysis could not extract feedback.",
+    "could_not_extract_analysis_data": "Could not extract analysis data from LLM response",
+    "could_not_parse_json_response": "Could not parse JSON response",
+    "error_extracting_json": "Error extracting JSON",
+
+    "no_llm_provided_for_guidance": "No LLM provided for guidance generation, using concise fallback guidance",
+    "generating_concise_targeted_guidance": "Generating concise targeted guidance for iteration {iteration_count}",
+    "trimmed_guidance_words": "Trimmed guidance from {before} to {after} words",
+    "error_generating_guidance": "Error generating guidance with LLM",
+
+    "good_performance_guidance": "You're doing well! Try looking for issues related to '{missed_text}'. Check for similar patterns elsewhere in the code.",
+    "excellent_work_guidance": "Excellent work! Try to be even more specific in your explanations of why each issue is problematic.",
+    "medium_performance_guidance": "Look more carefully for {category} issues. Compare variable types, check method names, and examine control flow statements.",
+    "medium_performance_general_guidance": "You've found some issues but missed others. Be more methodical - check each line, method signature, and variable declaration carefully.",
+    "low_performance_guidance": "Try a more systematic approach: first check variable declarations, then method signatures, then control flow statements. Look specifically for naming conventions and null handling.",
+
+    "null_pointer_category": "null pointer",
+    "naming_convention_category": "naming convention",
+    "object_comparison_category": "object comparison",
+    "code_formatting_category": "code formatting",
+    "exception_handling_category": "exception handling",
+    "array_handling_category": "array handling",
+    "logical_error_category": "logical error",
+
+    "empty_response_from_llm": "Empty response from LLM",
+    "could_not_extract_json": "Could not extract JSON, attempting manual extraction",
+    "json_parse_error": "JSON parsing error",
+    "analysis_could_not_extract_feedback": "The analysis could not extract feedback.",
+    "could_not_extract_analysis_data": "Could not extract analysis data from LLM response",
+    "could_not_parse_json_response": "Could not parse JSON response",
+    "error_extracting_json": "Error extracting JSON",
+    "default_feedback": "The system was unable to extract detailed feedback. Please check the overall analysis results.",
+    "error": "error",
+    "raw_text": "raw_text",
+
+    "iteration_count": "iteration_count",
+    "max_iterations": "max_iterations",
+    "remaining_attempts": "remaining_attempts",
+    "iteration": "iteration",
+    "targeted_guidance":"Targeted Guidance",
+    "identified_percentage":"Identified Percentage"
 }

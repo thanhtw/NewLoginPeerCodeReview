@@ -400,6 +400,7 @@ class WorkflowNodes:
             
             # Get the student response evaluator
             evaluator = getattr(self, "evaluator", None)
+            
             if not evaluator:
                 state.error = t("student_evaluator_not_initialized")
                 return state

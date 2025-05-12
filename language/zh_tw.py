@@ -335,6 +335,51 @@ translations = {
     "student_commentt":"學生評論",
     "accuracyt": "準確度",
     "feedbackt":"反饋",
-    "hintt":"提示"
+    "hintt":"提示", 
+
+    # Add these to the translations dictionary
+    "empty_response_from_llm": "LLM 回應為空",
+    "could_not_extract_json": "無法提取 JSON，嘗試手動提取",
+    "analysis_could_not_extract_feedback": "分析無法提取反饋。",
+    "could_not_extract_analysis_data": "無法從 LLM 回應中提取分析數據",
+    "could_not_parse_json_response": "無法解析 JSON 回應",
+    "error_extracting_json": "提取 JSON 時出錯",
+
+    "no_llm_provided_for_guidance": "未提供用於生成指導的 LLM，使用簡明的後備指導",
+    "generating_concise_targeted_guidance": "正在為迭代 {iteration_count} 生成簡明的針對性指導",
+    "trimmed_guidance_words": "將指導從 {before} 個詞修剪為 {after} 個詞",
+    "error_generating_guidance": "使用 LLM 生成指導時出錯",
+
+    "good_performance_guidance": "做得很好！嘗試尋找與「{missed_text}」相關的問題。檢查代碼中其他地方的類似模式。",
+    "excellent_work_guidance": "出色的工作！嘗試更具體地解釋為什麼每個問題存在問題。",
+    "medium_performance_guidance": "更仔細地查找 {category} 問題。比較變數類型，檢查方法名稱，並檢查控制流語句。",
+    "medium_performance_general_guidance": "您找到了一些問題，但錯過了其他問題。更加有條理 - 仔細檢查每一行、方法簽名和變數聲明。",
+    "low_performance_guidance": "嘗試更系統的方法：首先檢查變數聲明，然後是方法簽名，然後是控制流語句。特別留意命名約定和空值處理。",
+
+    "null_pointer_category": "空指針",
+    "naming_convention_category": "命名約定",
+    "object_comparison_category": "物件比較",
+    "code_formatting_category": "代碼格式",
+    "exception_handling_category": "異常處理",
+    "array_handling_category": "陣列處理",
+    "logical_error_category": "邏輯錯誤",
+    "empty_response_from_llm": "LLM 回應為空",
+
+    "could_not_extract_json": "無法提取 JSON，嘗試手動提取",
+    "json_parse_error": "JSON 解析錯誤",
+    "analysis_could_not_extract_feedback": "分析無法提取反饋。",
+    "could_not_extract_analysis_data": "無法從 LLM 回應中提取分析數據",
+    "could_not_parse_json_response": "無法解析 JSON 回應",
+    "error_extracting_json": "提取 JSON 時出錯",
+    "default_feedback": "系統無法提取詳細反饋。請查看整體分析結果。",
+    "error": "錯誤",
+
+    "raw_text": "原始文本",
+    "iteration_count": "迭代計數",
+    "max_iterations": "最大迭代次數",
+    "remaining_attempts": "剩餘嘗試次數",
+    "iteration": "迭代",
+    "targeted_guidance":"針對性指導",
+    "identified_percentage":"識別百分比"
 
 }

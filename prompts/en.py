@@ -206,7 +206,6 @@ Provide your analysis in JSON format with these components:
 "identified_count": 3,  // Number of correctly identified issues
 "total_problems": {problem_count},  // Total number of known issues
 "identified_percentage": 60.0,  // Percentage of issues correctly identified
-"review_quality_score": 7.5,  // Score from 1-10 rating review quality
 "review_sufficient": true,  // true if >= 60% of issues identified
 "feedback": "Overall assessment with specific improvement suggestions"
 }

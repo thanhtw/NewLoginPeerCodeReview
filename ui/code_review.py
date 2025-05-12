@@ -11,7 +11,8 @@ import time
 import datetime
 from typing import List, Dict, Any, Optional, Tuple, Callable
 from utils.code_utils import add_line_numbers
-from utils.language_utils import t, get_current_language, get_state_attribute
+from utils.language_utils import t, get_current_language, get_state_attribute, get_field_value
+
 
 # Configure logging
 logging.basicConfig(
@@ -101,9 +102,9 @@ class CodeDisplayUI:
                         st.markdown(
                             f'<div class="analysis-box">'
                             f'<div class="guidance-title"><span class="guidance-icon">📊</span> {t("previous_results")}</div>'
-                            f'{t("you_identified")} {review_analysis.get("identified_count", 0)} {t("of")} '
-                            f'{review_analysis.get("total_problems", 0)} {t("issues")} '
-                            f'({review_analysis.get("identified_percentage", 0):.1f}%). '
+                            f'{t("you_identified")} {get_field_value(review_analysis, "identified_count", 0)} {t("of")} '
+                            f'{get_field_value(review_analysis, "total_problems", 0)} {t("issues")} '
+                            f'{get_field_value(review_analysis, "accuracy_percentage", 0):.1f}% '
                             f'{t("try_find_more_issues")}'
                             f'</div>',
                             unsafe_allow_html=True

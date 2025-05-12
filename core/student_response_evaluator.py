@@ -129,8 +129,6 @@ class StudentResponseEvaluator:
         
         # Extract core metrics with defaults
         identified_count = get_field_value(analysis_data, "identified_count", 0)
-        missed_count = get_field_value(analysis_data, "missed_count", 0)
-        false_positive_count = get_field_value(analysis_data, "false_positive_count", 0)
         total_problems = get_field_value(analysis_data, "total_problems", len(known_problems))
         
         # Calculate percentages
@@ -139,13 +137,6 @@ class StudentResponseEvaluator:
         else:
             identified_percentage = 100.0
         
-        # Extract review quality metrics
-        review_quality_score = get_field_value(analysis_data, "review_quality_score", 5.0)
-        if not isinstance(review_quality_score, (int, float)):
-            try:
-                review_quality_score = float(review_quality_score)
-            except:
-                review_quality_score = 5.0
         
         # Determine if review is sufficient
         # Use LLM's determination if available, otherwise calculate based on percentage
@@ -158,61 +149,18 @@ class StudentResponseEvaluator:
         identified_problems = get_field_value(analysis_data, "identified_problems", [])
         missed_problems = get_field_value(analysis_data, "missed_problems", [])
         false_positives = get_field_value(analysis_data, "false_positives", [])
+    
         
-        # Simplify the identified problems list if needed
-        simple_identified = []
-        for problem in identified_problems:
-            if isinstance(problem, dict) and "problem" in problem:
-                simple_identified.append(problem["problem"])
-            elif isinstance(problem, str):
-                simple_identified.append(problem)
-        
-        # Simplify the missed problems list if needed
-        simple_missed = []
-        for problem in missed_problems:
-            if isinstance(problem, dict) and "problem" in problem:
-                simple_missed.append(problem["problem"])
-            elif isinstance(problem, str):
-                simple_missed.append(problem)
-        
-        # Simplify the false positives list if needed
-        simple_false_positives = []
-        for false_positive in false_positives:
-            if isinstance(false_positive, dict) and "student_comment" in false_positive:
-                simple_false_positives.append(false_positive["student_comment"])
-            elif isinstance(false_positive, str):
-                simple_false_positives.append(false_positive)
-        
-        # Get overall feedback
-        feedback = get_field_value(analysis_data, "feedback", "")
-        if not feedback:
-            # Generate basic feedback based on performance
-            if identified_percentage >= 80:
-                feedback = "Excellent review! You found most of the issues in the code."
-            elif identified_percentage >= 60:
-                feedback = "Good review. You found many issues, but missed some important ones."
-            elif identified_percentage >= 40:
-                feedback = "Fair review. You found some issues, but missed many important ones."
-            else:
-                feedback = "Your review needs improvement. You missed most of the issues in the code."
         
         # Construct enhanced result using t() function for keys
         enhanced_result = {
             t("identified_problems"): identified_problems,  # Keep the detailed version
             t("missed_problems"): missed_problems,  # Keep the detailed version
             t("false_positives"): false_positives,  # Keep the detailed version
-            t("simple_identified"): simple_identified,  # Add simplified version
-            t("simple_missed"): simple_missed,  # Add simplified version
-            t("simple_false_positives"): simple_false_positives,  # Add simplified version
             t("identified_count"): identified_count,
-            t("missed_count"): missed_count,
-            t("false_positive_count"): false_positive_count,
             t("total_problems"): total_problems,
-            t("identified_percentage"): identified_percentage,
             t("accuracy_percentage"): identified_percentage,  # For backward compatibility
-            t("review_quality_score"): review_quality_score,
-            t("review_sufficient"): review_sufficient,
-            t("feedback"): feedback
+            t("review_sufficient"): review_sufficient
         }
         
         return enhanced_result
@@ -238,13 +186,12 @@ class StudentResponseEvaluator:
             t("identified_percentage"): 0.0,
             t("identified_count"): 0,
             t("total_problems"): len(known_problems),
-            t("review_sufficient"): False,
-            t("feedback"): "Your review needs improvement. Try to identify more issues in the code."
+            t("review_sufficient"): False
         }
             
     def _extract_json_from_text(self, text: str) -> Dict[str, Any]:
         """
-        Extract JSON data from LLM response text.
+        Extract JSON data from LLM response text with full internationalization support.
         
         Args:
             text: Text containing JSON data
@@ -254,7 +201,7 @@ class StudentResponseEvaluator:
         """
         # Handle None or empty text
         if not text:
-            return {"error": "Empty response from LLM"}
+            return {t("error"): t("empty_response_from_llm")}
         
         try:
             # Try to find JSON block with regex
@@ -262,6 +209,7 @@ class StudentResponseEvaluator:
                 r'```json\s*([\s\S]*?)```',  # JSON code block
                 r'```\s*({[\s\S]*?})\s*```',  # Any JSON object in code block
                 r'({[\s\S]*"identified_problems"[\s\S]*"missed_problems"[\s\S]*})',  # Look for our expected fields
+                r'({[\s\S]*"已識別問題"[\s\S]*"遺漏問題"[\s\S]*})',  # Look for Chinese field names
                 r'({[\s\S]*})',  # Any JSON-like structure
             ]
             
@@ -272,93 +220,186 @@ class StudentResponseEvaluator:
                     try:
                         # Clean up the match
                         json_str = match.strip()
+                        # Fix trailing commas which are invalid in JSON
+                        json_str = re.sub(r',\s*}', '}', json_str)
+                        json_str = re.sub(r',\s*]', ']', json_str)
                         # Try to parse as JSON
-                        return json.loads(json_str)
+                        parsed_json = json.loads(json_str)
+                        
+                        # Convert to standardized format with translated keys
+                        result = {}
+                        
+                        # Map keys to translated versions
+                        key_mappings = {
+                            "issues_identified": t("issues_identified"),
+                            "missed_problems": t("missed_problems"),
+                            "false_positives": t("false_positives"),
+                            "identified_count": t("identified_count"),
+                            "total_problems": t("total_problems"),
+                            "identified_percentage": t("identified_percentage"),
+                            "accuracy_percentage": t("accuracy_percentage"),
+                            "review_sufficient": t("review_sufficient"),
+                            
+                            # Chinese key mappings
+                            "已識別問題": t("issues_identified"),
+                            "遺漏問題": t("missed_problems"),
+                            "誤報": t("false_positives"),
+                            "已識別數量": t("identified_count"),
+                            "總問題數": t("total_problems"),
+                            "識別百分比": t("identified_percentage"),
+                            "準確率百分比": t("accuracy_percentage"),
+                            "審查充分": t("review_sufficient"),
+                        }
+                        
+                        # Map all keys to translated versions
+                        for key, value in parsed_json.items():
+                            translated_key = key_mappings.get(key, key)
+                            result[translated_key] = value
+                        
+                        return result
                     except json.JSONDecodeError:
                         continue
             
             # If standard methods fail, try to manually extract fields
-            logger.warning("Could not extract JSON, attempting manual extraction")
+            logger.warning(t("could_not_extract_json"))
             analysis = {}
             
-            # Try to extract identified problems
-            identified_match = re.search(r'"identified_problems"\s*:\s*(\[.*?\])', text, re.DOTALL)
+            # Try to extract identified problems - support both English and Chinese field names
+            identified_match = re.search(r'"(identified_problems|已識別問題)"\s*:\s*(\[.*?\])', text, re.DOTALL)
             if identified_match:
                 try:
-                    identified_str = identified_match.group(1)
-                    analysis["identified_problems"] = json.loads(identified_str)
-                except:
-                    analysis["identified_problems"] = []
+                    identified_str = identified_match.group(2)
+                    # Clean up the JSON string
+                    identified_str = re.sub(r',\s*]', ']', identified_str)
+                    analysis[t("identified_problems")] = json.loads(identified_str)
+                except Exception as e:
+                    logger.warning(f"{t('json_parse_error')}: {str(e)}")
+                    analysis[t("identified_problems")] = []
             else:
-                analysis["identified_problems"] = []
+                analysis[t("identified_problems")] = []
             
-            # Try to extract missed problems
-            missed_match = re.search(r'"missed_problems"\s*:\s*(\[.*?\])', text, re.DOTALL)
+            # Try to extract missed problems - support both English and Chinese field names
+            missed_match = re.search(r'"(missed_problems|遺漏問題)"\s*:\s*(\[.*?\])', text, re.DOTALL)
             if missed_match:
                 try:
-                    missed_str = missed_match.group(1)
-                    analysis["missed_problems"] = json.loads(missed_str)
-                except:
-                    analysis["missed_problems"] = []
+                    missed_str = missed_match.group(2)
+                    # Clean up the JSON string
+                    missed_str = re.sub(r',\s*]', ']', missed_str)
+                    analysis[t("missed_problems")] = json.loads(missed_str)
+                except Exception as e:
+                    logger.warning(f"{t('json_parse_error')}: {str(e)}")
+                    analysis[t("missed_problems")] = []
             else:
-                analysis["missed_problems"] = []
+                analysis[t("missed_problems")] = []
             
-            # Try to extract false positives
-            false_pos_match = re.search(r'"false_positives"\s*:\s*(\[.*?\])', text, re.DOTALL)
+            # Try to extract false positives - support both English and Chinese field names
+            false_pos_match = re.search(r'"(false_positives|誤報)"\s*:\s*(\[.*?\])', text, re.DOTALL)
             if false_pos_match:
                 try:
-                    false_pos_str = false_pos_match.group(1)
-                    analysis["false_positives"] = json.loads(false_pos_str)
-                except:
-                    analysis["false_positives"] = []
+                    false_pos_str = false_pos_match.group(2)
+                    # Clean up the JSON string
+                    false_pos_str = re.sub(r',\s*]', ']', false_pos_str)
+                    analysis[t("false_positives")] = json.loads(false_pos_str)
+                except Exception as e:
+                    logger.warning(f"{t('json_parse_error')}: {str(e)}")
+                    analysis[t("false_positives")] = []
             else:
-                analysis["false_positives"] = []
+                analysis[t("false_positives")] = []
             
-            # Try to extract accuracy percentage
-            accuracy_match = re.search(r'"accuracy_percentage"\s*:\s*([0-9.]+)', text)
+            # Try to extract identified count - support both English and Chinese field names
+            count_match = re.search(r'"(identified_count|已識別數量)"\s*:\s*([0-9]+)', text)
+            if count_match:
+                try:
+                    analysis[t("identified_count")] = int(count_match.group(2))
+                except:
+                    analysis[t("identified_count")] = 0
+            else:
+                analysis[t("identified_count")] = 0
+            
+            # Try to extract total problems - support both English and Chinese field names
+            total_match = re.search(r'"(total_problems|總問題數)"\s*:\s*([0-9]+)', text)
+            if total_match:
+                try:
+                    analysis[t("total_problems")] = int(total_match.group(2))
+                except:
+                    analysis[t("total_problems")] = 0
+            else:
+                analysis[t("total_problems")] = 0
+            
+            # Try to extract accuracy percentage - support both English and Chinese field names
+            accuracy_match = re.search(r'"(accuracy_percentage|準確率百分比|identified_percentage|識別百分比)"\s*:\s*([0-9.]+)', text)
             if accuracy_match:
                 try:
-                    analysis["accuracy_percentage"] = float(accuracy_match.group(1))
+                    analysis[t("accuracy_percentage")] = float(accuracy_match.group(2))
+                    analysis[t("identified_percentage")] = float(accuracy_match.group(2))
                 except:
-                    analysis["accuracy_percentage"] = 0.0
+                    analysis[t("accuracy_percentage")] = 0.0
+                    analysis[t("identified_percentage")] = 0.0
             else:
-                analysis["accuracy_percentage"] = 0.0
+                analysis[t("accuracy_percentage")] = 0.0
+                analysis[t("identified_percentage")] = 0.0
             
-            # Try to extract review_sufficient
-            sufficient_match = re.search(r'"review_sufficient"\s*:\s*(true|false)', text)
+            
+            # Try to extract review_sufficient - support both English and Chinese field names
+            sufficient_match = re.search(r'"(review_sufficient|審查充分)"\s*:\s*(true|false)', text, re.IGNORECASE)
             if sufficient_match:
-                analysis["review_sufficient"] = sufficient_match.group(1) == "true"
+                analysis[t("review_sufficient")] = sufficient_match.group(2).lower() == "true"
             else:
-                analysis["review_sufficient"] = False
+                analysis[t("review_sufficient")] = False
             
-            # Try to extract feedback
-            feedback_match = re.search(r'"feedback"\s*:\s*"(.*?)"', text)
+            # Try to extract feedback - support both English and Chinese field names
+            feedback_match = re.search(r'"(feedback|反饋)"\s*:\s*"(.*?)"', text)
             if feedback_match:
-                analysis["feedback"] = feedback_match.group(1)
+                analysis[t("feedback")] = feedback_match.group(2)
             else:
-                analysis["feedback"] = "The analysis could not extract feedback."
+                analysis[t("feedback")] = t("analysis_could_not_extract_feedback")
+            
             
             if analysis:
+                # Add consistency check - ensure we have the basic required fields
+                required_fields = [
+                    t("identified_problems"),
+                    t("missed_problems"),
+                    t("false_positives"),
+                    t("identified_count"),
+                    t("total_problems"),
+                    t("accuracy_percentage"),
+                    t("review_sufficient"),
+                    t("feedback")
+                ]
+                
+                # Fill in any missing required fields with defaults
+                for field in required_fields:
+                    if field not in analysis:
+                        if field == t("identified_problems") or field == t("missed_problems") or field == t("false_positives"):
+                            analysis[field] = []
+                        elif field == t("identified_count") or field == t("total_problems"):
+                            analysis[field] = 0
+                        elif field == t("accuracy_percentage"):
+                            analysis[field] = 0.0
+                        elif field == t("review_sufficient"):
+                            analysis[field] = False
+                
                 return analysis
             
             # If all else fails, return an error object
-            logger.error("Could not extract analysis data from LLM response")
+            logger.error(t("could_not_extract_analysis_data"))
             return {
-                "error": "Could not parse JSON response",
-                "raw_text": text[:500] + ("..." if len(text) > 500 else "")
+                t("error"): t("could_not_parse_json_response"),
+                t("raw_text"): text[:500] + ("..." if len(text) > 500 else "")
             }
             
         except Exception as e:
-            logger.error(f"Error extracting JSON: {str(e)}")
+            logger.error(f"{t('error_extracting_json')}: {str(e)}")
             return {
-                "error": f"Error extracting JSON: {str(e)}",
-                "raw_text": text[:500] + ("..." if len(text) > 500 else "")
+                t("error"): f"{t('error_extracting_json')}: {str(e)}",
+                t("raw_text"): text[:500] + ("..." if len(text) > 500 else "")
             }
 
     def generate_targeted_guidance(self, code_snippet: str, known_problems: List[str], student_review: str, review_analysis: Dict[str, Any], iteration_count: int, max_iterations: int) -> str:
         """
         Generate targeted guidance for the student to improve their review.
-        Ensures guidance is concise and focused.
+        Ensures guidance is concise and focused with proper language support.
         
         Args:
             code_snippet: The original code snippet with injected errors
@@ -372,7 +413,7 @@ class StudentResponseEvaluator:
             Targeted guidance text
         """        
         if not self.llm:
-            logger.warning("No LLM provided for guidance generation, using concise fallback guidance")
+            logger.warning(t("no_llm_provided_for_guidance"))
             return self._generate_concise_guidance(review_analysis)
         
         try:
@@ -392,15 +433,15 @@ class StudentResponseEvaluator:
             )
 
             metadata = {
-                "iteration": iteration_count,
-                "max_iterations": max_iterations,
-                "identified_count": review_analysis.get("identified_count", 0),
-                "total_problems": review_analysis.get("total_problems", len(known_problems)),
-                "identified_percentage": review_analysis.get("identified_percentage", 0)
+                t("iteration"): iteration_count,
+                t("max_iterations"): max_iterations,
+                t("identified_count"): get_field_value(review_analysis, "identified_count", 0),
+                t("total_problems"): get_field_value(review_analysis, "total_problems", len(known_problems)),
+                t("accuracy_percentage"): get_field_value(review_analysis, "accuracy_percentage", 0)
             }
 
             # Generate the guidance using the LLM
-            logger.info(f"Generating concise targeted guidance for iteration {iteration_count}")
+            logger.info(t("generating_concise_targeted_guidance").format(iteration_count=iteration_count))
             response = self.llm.invoke(prompt)
             guidance = process_llm_response(response)
             
@@ -409,65 +450,113 @@ class StudentResponseEvaluator:
                 # Split into sentences and take the first 3-4
                 sentences = re.split(r'(?<=[.!?])\s+', guidance)
                 guidance = ' '.join(sentences[:4])
-                logger.info(f"Trimmed guidance from {len(guidance.split())} to {len(guidance.split())} words")
+                logger.info(t("trimmed_guidance_words").format(
+                    before=len(guidance.split()), 
+                    after=len(guidance.split())
+                ))
             
             # Log the interaction
             self.llm_logger.log_summary_generation(prompt, guidance, metadata)            
             return guidance
             
         except Exception as e:
-            logger.error(f"Error generating guidance with LLM: {str(e)}")            
+            logger.error(f"{t('error_generating_guidance')}: {str(e)}")            
             # Log the error
             error_metadata = {**metadata, "error": str(e)}
-            self.llm_logger.log_interaction("targeted_guidance", prompt, f"ERROR: {str(e)}", error_metadata)            
+            self.llm_logger.log_interaction(f"{t('targeted_guidance')}", prompt, f"{t('error')}: {str(e)}", error_metadata)            
             # Fallback to concise guidance
             return self._generate_concise_guidance(review_analysis)
         
-    def _generate_concise_guidance(self, review_analysis: Dict[str, Any]) -> str:
+    def generate_targeted_guidance(self, code_snippet: str, known_problems: List[str], student_review: str, review_analysis: Dict[str, Any], iteration_count: int, max_iterations: int) -> str:
         """
-        Generate concise guidance without requiring LLM interaction.
+        Generate targeted guidance for the student to improve their review.
+        Ensures guidance is concise and focused with proper language support.
         
         Args:
-            review_analysis: Analysis of the student's review
+            code_snippet: The original code snippet with injected errors
+            known_problems: List of known problems in the code
+            student_review: The student's review comments
+            review_analysis: Analysis of the student review
+            iteration_count: Current iteration number
+            max_iterations: Maximum number of iterations
             
         Returns:
-            Concise guidance text
-        """
-        # Extract key metrics
-        identified_count = review_analysis.get("identified_count", 0)
-        total_problems = review_analysis.get("total_problems", 0)
-        accuracy = review_analysis.get("identified_percentage", 0)
+            Targeted guidance text
+        """        
+        if not self.llm:
+            logger.warning(t("no_llm_provided_for_guidance"))
+            return self._generate_concise_guidance(review_analysis)
         
-        # Get missed problems
-        missed_problems = review_analysis.get("missed_problems", [])
-        
-        # Create concise guidance based on accuracy
-        if accuracy >= 75:
-            # Good performance - focus on specific missed issues
-            if missed_problems:
-                # Pick the first missed problem to focus on
-                missed = missed_problems[0]
-                missed_text = missed["problem"] if isinstance(missed, dict) and "problem" in missed else str(missed)
-                return f"You're doing well! Try looking for issues related to '{missed_text}'. Check for similar patterns elsewhere in the code."
-            else:
-                return "Excellent work! Try to be even more specific in your explanations of why each issue is problematic."
-        
-        elif accuracy >= 50:
-            # Medium performance - provide general category guidance
-            problem_categories = self._categorize_missed_problems(missed_problems)
-            if problem_categories:
-                # Focus on the first category
-                return f"Look more carefully for {problem_categories[0]} issues. Compare variable types, check method names, and examine control flow statements."
-            else:
-                return "You've found some issues but missed others. Be more methodical - check each line, method signature, and variable declaration carefully."
-        
-        else:
-            # Low performance - provide basic review strategy
-            return "Try a more systematic approach: first check variable declarations, then method signatures, then control flow statements. Look specifically for naming conventions and null handling."
+        try:
+            # Get iteration information to add to review_analysis for context
+            review_context = review_analysis.copy()
+            review_context.update({
+                t("iteration_count"): iteration_count,
+                t("max_iterations"): max_iterations,
+                t("remaining_attempts"): max_iterations - iteration_count
+            })
+
+            # Use the utility function to create the prompt
+            prompt = create_feedback_prompt(
+                code=code_snippet,
+                known_problems=known_problems,
+                review_analysis=review_context
+            )
+
+            metadata = {
+                t("iteration"): iteration_count,
+                t("max_iterations"): max_iterations,
+                t("identified_count"): get_field_value(review_analysis, "identified_count", 0),
+                t("total_problems"): get_field_value(review_analysis, "total_problems", len(known_problems)),
+                t("identified_percentage"): get_field_value(review_analysis, "identified_percentage", 0)
+            }
+
+            # Generate the guidance using the LLM
+            logger.info(t("generating_concise_targeted_guidance").format(iteration_count=iteration_count))
+            response = self.llm.invoke(prompt)
+            guidance = process_llm_response(response)
+            
+            # Ensure response is concise - trim if needed
+            if len(guidance.split()) > 100:
+                # Split into sentences and take the first 3-4
+                sentences = re.split(r'(?<=[.!?])\s+', guidance)
+                guidance = ' '.join(sentences[:4])
+                logger.info(t("trimmed_guidance_words").format(
+                    before=len(guidance.split()), 
+                    after=len(guidance.split())
+                ))
+            
+            # Log the interaction
+            self.llm_logger.log_summary_generation(prompt, guidance, metadata)            
+            return guidance
+            
+        except Exception as e:
+            logger.error(f"{t('error_generating_guidance')}: {str(e)}")            
+            
+            # Create error metadata with translated keys
+            error_metadata = {
+                t("iteration"): iteration_count,
+                t("max_iterations"): max_iterations,
+                t("identified_count"): get_field_value(review_analysis, "identified_count", 0),
+                t("total_problems"): get_field_value(review_analysis, "total_problems", len(known_problems)),
+                t("identified_percentage"): get_field_value(review_analysis, "identified_percentage", 0),
+                t("error"): str(e)
+            }
+            
+            # Log the error
+            self.llm_logger.log_interaction(
+                t('targeted_guidance'), 
+                prompt,
+                f"{t('error')}: {str(e)}", 
+                error_metadata
+            )
+                
+            # Fallback to concise guidance
+            return self._generate_concise_guidance(review_analysis)
 
     def _categorize_missed_problems(self, missed_problems: List[Any]) -> List[str]:
         """
-        Categorize missed problems into general issue types.
+        Categorize missed problems into general issue types with proper translations.
         
         Args:
             missed_problems: List of missed problems
@@ -480,24 +569,31 @@ class StudentResponseEvaluator:
         for problem in missed_problems:
             problem_text = ""
             if isinstance(problem, dict) and "problem" in problem:
-                problem_text = problem["problem"].lower()
+                problem_text = get_field_value(problem, "problem", "").lower()
             else:
                 problem_text = str(problem).lower()
             
-            # Categorize based on keywords
-            if any(word in problem_text for word in ["null", "nullpointer", "npe"]):
-                categories.add("null pointer")
-            elif any(word in problem_text for word in ["name", "convention", "camel"]):
-                categories.add("naming convention")
-            elif any(word in problem_text for word in ["compare", "equals", "=="]):
-                categories.add("object comparison")
-            elif any(word in problem_text for word in ["whitespace", "indent", "format"]):
-                categories.add("code formatting")
-            elif any(word in problem_text for word in ["exception", "throw", "catch"]):
-                categories.add("exception handling")
-            elif any(word in problem_text for word in ["array", "index", "bound"]):
-                categories.add("array handling")
-            else:
-                categories.add("logical error")
+            # Category mappings with translated category names
+            # Each tuple contains (keywords, category_key)
+            category_mappings = [
+                (["null", "nullpointer", "npe"], "null_pointer_category"),
+                (["name", "convention", "camel"], "naming_convention_category"),
+                (["compare", "equals", "=="], "object_comparison_category"),
+                (["whitespace", "indent", "format"], "code_formatting_category"),
+                (["exception", "throw", "catch"], "exception_handling_category"),
+                (["array", "index", "bound"], "array_handling_category")
+            ]
+            
+            # Check problem text against each category
+            categorized = False
+            for keywords, category_key in category_mappings:
+                if any(word in problem_text for word in keywords):
+                    categories.add(t(category_key))
+                    categorized = True
+                    break
+            
+            # Default category if no specific category matched
+            if not categorized:
+                categories.add(t("logical_error_category"))
         
         return list(categories)
