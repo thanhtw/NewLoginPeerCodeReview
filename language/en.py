@@ -348,5 +348,43 @@ translations = {
     "preparing_update_stats": "Preparing to update stats",
     "raw_text": "raw_text",
     "student_evaluator_not_initialized": "Student response evaluator not initialized",
-    "trimmed_guidance_words": "Trimmed guidance from {before} to {after} words"
+    "trimmed_guidance_words": "Trimmed guidance from {before} to {after} words",
+
+
+    # Code generator log messages
+    "generating_java_code_with_provider": "Generating Java code with provider: {provider}",
+    "generating_java_code_with_groq": "Generating Java code with Groq model: {model}",
+    "generating_java_code_with_llm": "Generating Java code with LLM: {length} length, {difficulty} difficulty, {domain} domain",
+    "llm_response_type": "LLM response type: {type}",
+    "error_generating_code_with_llm": "Error generating code with LLM: {error}",
+    "provider": "provider",
+
+    # Code evaluation messages
+    "could_not_evaluate_code": "Could not evaluate code",
+    "please_ensure_code_contains_all": "Please ensure the code contains all",
+    "requested_errors": "requested errors",
+    "no_llm_available_for_code_evaluation": "No LLM available for code evaluation",
+    "sending_code_to_llm_for_evaluation": "Sending code to LLM for evaluation",
+    "failed_to_extract_json_from_evaluation": "Failed to extract JSON from evaluation response or result is not a dictionary",
+    "error_evaluating_code": "Error evaluating code",
+    "extracting_json_from_response": "Extracting JSON from response",
+    "could_not_convert_response_to_string": "Could not convert response to string",
+    "using_manually_extracted_errors": "Using manually extracted errors",
+    "could_not_extract_json_from_response": "Could not extract JSON from response, returning default structure",
+    "extraction_failed": "EXTRACTION_FAILED",
+    "could_not_extract_proper_analysis": "Could not extract proper analysis from model response.",
+    "received_none_result": "Received None result in _process_evaluation_result",
+    "failed_to_process_evaluation_result": "Failed to process evaluation result",
+    "expected_dict_for_result": "Expected dict for result, got",
+    "got": "got",
+    "invalid_evaluation_result_type": "Invalid evaluation result type",
+    "is_not_a_list": "is not a list, got",
+    "skipping_non_dict_error": "Skipping non-dict error in requested_errors",
+    "could_not_process_non_dict_error": "Could not process non-dict error",
+    "all": "All",
+    "requested_errors_are_properly_implemented": "requested errors are properly implemented",
+    "out_of": "out of",
+    "missing": "missing",
+    "errors": "errors",
+    "found": "Found"
 }

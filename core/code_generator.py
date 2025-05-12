@@ -110,19 +110,23 @@ class CodeGenerator:
             
             # Add provider info to metadata if available
             if hasattr(self.llm, 'provider'):
-                metadata["provider"] = self.llm.provider
-                logger.info(f"Generating Java code with provider: {self.llm.provider}")
+                metadata[t("provider")] = self.llm.provider
+                logger.info(t("generating_java_code_with_provider").format(provider=self.llm.provider))
             elif hasattr(self.llm, 'model_name') and 'groq' in type(self.llm).__name__.lower():
-                metadata["provider"] = "groq"
-                logger.info(f"Generating Java code with Groq model: {self.llm.model_name}")
+                metadata[t("provider")] = "groq"
+                logger.info(t("generating_java_code_with_groq").format(model=self.llm.model_name))
             else:
-                logger.info(f"Generating Java code with LLM: {code_length} length, {difficulty_level} difficulty, {domain} domain")
+                logger.info(t("generating_java_code_with_llm").format(
+                    length=code_length, 
+                    difficulty=difficulty_level, 
+                    domain=domain
+                ))
             
             # Generate the code using the LLM
             response = self.llm.invoke(prompt)
             
             # Log the response type
-            logger.info(f"LLM response type: {type(response).__name__}")
+            logger.info(t("llm_response_type").format(type=type(response).__name__))
             
             # Log to the LLM logger
             self.llm_logger.log_code_generation(prompt, response, metadata)
@@ -131,7 +135,7 @@ class CodeGenerator:
             return response
             
         except Exception as e:
-            logger.error(f"Error generating code with LLM: {str(e)}")          
+            logger.error(t("error_generating_code_with_llm").format(error=str(e)))          
             return """
     """
            

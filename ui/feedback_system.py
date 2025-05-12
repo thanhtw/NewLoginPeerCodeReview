@@ -97,6 +97,7 @@ class FeedbackSystem:
             review_analysis: Analysis of student review
             review_history: History of review iterations
         """
+        print("review_historyreview_history: ", review_history)
         if not comparison_report and not review_summary and not review_analysis:
             st.info(t("no_analysis_results"))
             return
@@ -120,48 +121,47 @@ class FeedbackSystem:
             # First show the most recent review prominently
             if review_history:
                 latest_review = review_history[-1]
-                review_analysis = latest_review.get("review_analysis", {})
-                iteration = latest_review.get("iteration_number", 0)
+                review_analysis = get_field_value(latest_review, "review_analysis", {})
+                iteration = get_field_value(latest_review, "iteration_number", 0)
                 
                 st.markdown(f"#### {t('your_final_review').format(iteration=iteration)}")
                 
                 # Format the review text with syntax highlighting
-                st.markdown("```text\n" + latest_review.get("student_review", "") + "\n```")
+                st.markdown("```text\n" + get_field_value(latest_review, "student_review", "") + "\n```")
                 
                 col1, col2, col3 = st.columns(3)
                 with col1:
                     st.metric(
                         t("issues_found"), 
-                        f"{review_analysis.get('identified_count', 0)} {t('of')} {review_analysis.get('total_problems', 0)}",
+                        f"{get_field_value(review_analysis, 'identified_count', 0)} {t('of')} {get_field_value(review_analysis, 'total_problems', 0)}",
                         delta=None
                     )
                 with col2:
                     st.metric(
                         t("accuracy"), 
-                        f"{review_analysis.get('accuracy_percentage', 0):.1f}%",
+                        f"{get_field_value(review_analysis, 'accuracy_percentage', 0):.1f}%",
                         delta=None
                     )
                 with col3:
-                    false_positives = len(review_analysis.get('false_positives', []))
+                    false_positives = len(get_field_value(review_analysis, 'false_positives', []))
                     st.metric(
                         t("false_positives"), 
                         false_positives,
                         delta=None
                     )
-            
             # Show earlier reviews in an expander if there are multiple
             if len(review_history) > 1:
                 with st.expander(t("review_history"), expanded=False):
-                    tabs = st.tabs([f"{t('attempt')} {rev.get('iteration_number', i+1)}" for i, rev in enumerate(review_history)])
+                    tabs = st.tabs([f"{t('attempt')} {get_field_value(rev, 'iteration_number', i+1)}" for i, rev in enumerate(review_history)])
                     
                     for i, (tab, review) in enumerate(zip(tabs, review_history)):
                         with tab:
-                            review_analysis = review.get("review_analysis", {})
-                            st.markdown("```text\n" + review.get("student_review", "") + "\n```")
+                            review_analysis = get_field_value(review, "review_analysis", {})
+                            st.markdown("```text\n" + get_field_value(review, "student_review", "") + "\n```")
                             
-                            st.write(f"**{t('found')}:** {review_analysis.get('identified_count', 0)} {t('of')} "
-                                    f"{review_analysis.get('total_problems', 0)} {t('issues')} "
-                                    f"({review_analysis.get('accuracy_percentage', 0):.1f}% {t('accuracy')})")
+                            st.write(f"**{t('found')}:** {get_field_value(review_analysis, 'identified_count', 0)} {t('of')} "
+                                    f"{get_field_value(review_analysis, 'total_problems', 0)} {t('issues')} "
+                                    f"({get_field_value(review_analysis, 'accuracy_percentage', 0):.1f}% {t('accuracy')})")
         
         # Display analysis details in an expander
         if review_summary or review_analysis:
@@ -313,7 +313,7 @@ class FeedbackSystem:
             # Try to extract category information
             category = None
             if isinstance(issue, dict) and "category" in issue:
-                category = issue.get("category")
+                category = get_field_value(issue, "category", None)
             elif isinstance(issue, str):
                 # Try to extract category from string format like "CATEGORY - Issue name"
                 parts = issue.split(" - ", 1)
@@ -381,7 +381,7 @@ class FeedbackSystem:
             # Extract category similar to identified issues method
             category = None
             if isinstance(issue, dict) and "category" in issue:
-                category = issue.get("category")
+                category = get_field_value(issue, "category", None)
             elif isinstance(issue, str):
                 parts = issue.split(" - ", 1)
                 if len(parts) > 1:
@@ -449,7 +449,7 @@ class FeedbackSystem:
                 logger.info(t("review_completed_sufficient"))
         
         # Check for all errors identified - HIGHEST PRIORITY CHECK
-        if state.review_history and len(state.review_history) > 0:
+        if hasattr(state, 'review_history') and state.review_history and len(state.review_history) > 0:
             latest_review = state.review_history[-1]
             analysis = latest_review.analysis if hasattr(latest_review, 'analysis') else {}
             
@@ -484,16 +484,19 @@ class FeedbackSystem:
         review_history = []
         
         # Make sure we have review history
-        if state.review_history:
-            latest_review = state.review_history[-1]
-            
-            # Convert review history to the format expected by FeedbackDisplayUI
-            for review in state.review_history:
-                review_history.append({
-                    "iteration_number": review.iteration_number,
-                    "student_review": review.student_review,
-                    "review_analysis": review.analysis
-                })
+        if get_state_attribute(state, 'review_history'):
+            review_history_list = get_state_attribute(state, 'review_history')            
+            if review_history_list and len(review_history_list) > 0:
+                latest_review = review_history_list[-1]
+                
+                # Convert review history to the format expected by FeedbackDisplayUI
+                for review in review_history_list:
+                    print("get_field_value=======",type(review))
+                    review_history.append({
+                        "iteration_number": get_field_value(review, "iteration_number", 0),
+                        "student_review": get_field_value(review, "student_review", ""),
+                        "review_analysis": get_field_value(review, "analysis", {})
+                    })
                 
         return latest_review, review_history
     
@@ -542,7 +545,7 @@ class FeedbackSystem:
         if stats_key not in st.session_state and stats_key not in self.stats_updates:
             try:
                 # Extract accuracy and identified_count from the latest review
-                accuracy = get_field_value(latest_analysis, "identified_percentage", 0)
+                accuracy = get_field_value(latest_analysis, "accuracy_percentage", 0)
                     
                 # Log details before update
                 logger.info(f"{t('preparing_update_stats')}: {t('accuracy')}={accuracy:.1f}%, " + 

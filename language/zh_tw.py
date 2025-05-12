@@ -347,5 +347,56 @@ translations = {
     "preparing_update_stats": "準備更新統計數據",
     "raw_text": "原始文本",
     "student_evaluator_not_initialized": "學生回應評估器未初始化",
-    "trimmed_guidance_words": "將指導從 {before} 個詞修剪為 {after} 個詞"
+    "trimmed_guidance_words": "將指導從 {before} 個詞修剪為 {after} 個詞",
+
+    # Add these translations to the existing 'translations' dictionary in zh_tw.py
+
+    # Domain names for code generation
+    "user_management_domain": "使用者管理",
+    "file_processing_domain": "檔案處理",
+    "data_validation_domain": "資料驗證",
+    "calculation_domain": "計算",
+    "inventory_system_domain": "庫存系統",
+    "notification_service_domain": "通知服務",
+    "logging_domain": "日誌紀錄",
+    "banking_domain": "銀行業務",
+    "ecommerce_domain": "電子商務",
+    "student_management_domain": "學生管理",
+
+    # Code generator log messages
+    "generating_java_code_with_provider": "使用提供者生成Java代碼：{provider}",
+    "generating_java_code_with_groq": "使用Groq模型生成Java代碼：{model}",
+    "generating_java_code_with_llm": "使用LLM生成Java代碼：{length}長度，{difficulty}難度，{domain}領域",
+    "llm_response_type": "LLM回應類型：{type}",
+    "error_generating_code_with_llm": "使用LLM生成代碼時出錯：{error}",
+    "provider": "提供者",
+
+    # Code evaluation messages
+    "could_not_evaluate_code": "無法評估代碼",
+    "please_ensure_code_contains_all": "請確保代碼包含所有",
+    "requested_errors": "請求的錯誤",
+    "no_llm_available_for_code_evaluation": "沒有可用於代碼評估的LLM",
+    "sending_code_to_llm_for_evaluation": "發送代碼到LLM進行評估",
+    "failed_to_extract_json_from_evaluation": "無法從評估回應中提取JSON或結果不是字典",
+    "error_evaluating_code": "評估代碼時出錯",
+    "extracting_json_from_response": "從回應中提取JSON",
+    "could_not_convert_response_to_string": "無法將回應轉換為字符串",
+    "using_manually_extracted_errors": "使用手動提取的錯誤",
+    "could_not_extract_json_from_response": "無法從回應中提取JSON，返回默認結構",
+    "extraction_failed": "提取失敗",
+    "could_not_extract_proper_analysis": "無法從模型回應中提取適當的分析。",
+    "received_none_result": "在處理評估結果時收到None結果",
+    "failed_to_process_evaluation_result": "處理評估結果失敗",
+    "expected_dict_for_result": "預期結果為字典，得到",
+    "got": "得到",
+    "invalid_evaluation_result_type": "無效的評估結果類型",
+    "is_not_a_list": "不是列表，得到",
+    "skipping_non_dict_error": "跳過請求錯誤中的非字典錯誤",
+    "could_not_process_non_dict_error": "無法處理非字典錯誤",
+    "all": "所有",
+    "requested_errors_are_properly_implemented": "請求的錯誤已正確實現",
+    "out_of": "中的",
+    "missing": "遺漏",
+    "errors": "錯誤",
+    "found": "找到"
 }

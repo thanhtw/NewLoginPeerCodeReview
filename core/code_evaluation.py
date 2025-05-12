@@ -14,7 +14,7 @@ from langchain_core.language_models import BaseLanguageModel
 
 from utils.llm_logger import LLMInteractionLogger
 from utils.code_utils import create_evaluation_prompt, create_regeneration_prompt, process_llm_response
-from utils.language_utils import t
+from utils.language_utils import t, get_field_value, get_state_attribute
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -53,16 +53,16 @@ class CodeEvaluationAgent:
         """
         # Default result if no evaluation can be performed
         default_result = {
-            "found_errors": [],
-            "missing_errors": [f"{error.get('type', '').upper()} - {error.get('name', '')}" 
+            t("found_errors"): [],
+            t("missing_errors"): [f"{error.get('type', '').upper()} - {error.get('name', '')}" 
                             for error in requested_errors],
-            "valid": False,
-            "feedback": f"Could not evaluate code. Please ensure the code contains all {len(requested_errors)} requested errors."
+            t("valid"): False,
+            t("feedback"): f"{t('could_not_evaluate_code')}. {t('please_ensure_code_contains_all')} {len(requested_errors)} {t('requested_errors')}."
         }
         
         # Check if LLM is available for evaluation
         if not self.llm:
-            logger.warning("No LLM available for code evaluation")
+            logger.warning(t("no_llm_available_for_code_evaluation"))
             return default_result
         
         # Create evaluation prompt
@@ -70,7 +70,7 @@ class CodeEvaluationAgent:
         
         try:
             # Generate the evaluation using the LLM
-            logger.info("Sending code to LLM for evaluation")
+            logger.info(t("sending_code_to_llm_for_evaluation"))
             response = self.llm.invoke(prompt)
             # Process response to ensure it's properly formatted
             processed_response = process_llm_response(response)
@@ -78,8 +78,8 @@ class CodeEvaluationAgent:
             # Log the evaluation
             if self.llm_logger:
                 metadata = {
-                    f"{t('code_length')}": len(code.splitlines()),
-                    f"{t('requested_errors_count')}": len(requested_errors)
+                    t("code_length"): len(code.splitlines()),
+                    t("requested_errors_count"): len(requested_errors)
                 }
                 self.llm_logger.log_code_evaluation(prompt, processed_response, metadata)
             
@@ -88,7 +88,7 @@ class CodeEvaluationAgent:
             
             # IMPORTANT: Check if extraction failed and return default result if it did
             if not evaluation_result or not isinstance(evaluation_result, dict):
-                logger.warning("Failed to extract JSON from evaluation response or result is not a dictionary")
+                logger.warning(t("failed_to_extract_json_from_evaluation"))
                 return default_result
             
             # Process the evaluation result
@@ -97,7 +97,7 @@ class CodeEvaluationAgent:
             return processed_result
             
         except Exception as e:
-            logger.error(f"Error evaluating code: {str(e)}")
+            logger.error(f"{t('error_evaluating_code')}: {str(e)}")
             return default_result
     
     def generate_improved_prompt(self, code: str, requested_errors: List[Dict[str, Any]], 
@@ -122,28 +122,26 @@ class CodeEvaluationAgent:
         found_errors = []
         
         # Process missing errors - handle both string and dictionary formats
-        if f"{t('missing_errors')}" in evaluation:
-            for error in evaluation[f"{t('missing_errors')}"]:
+        if get_field_value(evaluation, t("missing_errors"), None):
+            for error in get_field_value(evaluation, t("missing_errors"), []):
                 if isinstance(error, dict):
-                    error_type = error.get("error_type", "").upper()
-                    error_name = error.get("error_name", "")
+                    error_type = get_field_value(error, "error_type", "").upper()
+                    error_name = get_field_value(error, "error_name", "")
                     missing_errors.append(f"{error_type} - {error_name}")
                 elif isinstance(error, str):
                     missing_errors.append(error)
         
         # Process found errors - handle both string and dictionary formats
-        if "found_errors" in evaluation:
-            for error in evaluation["found_errors"]:
+        if get_field_value(evaluation, t("found_errors"), None):
+            for error in get_field_value(evaluation, t("found_errors"), []):
                 if isinstance(error, dict):
-                    error_type = error.get("error_type", "").upper()
-                    error_name = error.get("error_name", "")
+                    error_type = get_field_value(error, "error_type", "").upper()
+                    error_name = get_field_value(error, "error_name", "")
                     found_errors.append(f"{error_type} - {error_name}")
                 elif isinstance(error, str):
                     found_errors.append(error)
         
         # Use the optimized prompt function
-
-        
         prompt = create_regeneration_prompt(
             code=code,
             domain=domain,
@@ -154,11 +152,11 @@ class CodeEvaluationAgent:
         
         # Log the regeneration prompt
         metadata = {
-             f"{t('requested_errors')}": [f"{error.get('type', '').upper()} - {error.get('name', '')}" for error in requested_errors],
-             f"{t('missing_errors')}": missing_errors,
-             f"{t('found_errors')}": found_errors,
-             f"{t('domain')}": domain,
-             f"{t('attempt')}": self.llm_logger.get_attempt_count("code_generation") + 1
+             t("requested_errors"): [f"{error.get('type', '').upper()} - {error.get('name', '')}" for error in requested_errors],
+             t("missing_errors"): missing_errors,
+             t("found_errors"): found_errors,
+             t("domain"): domain,
+             t("attempt"): self.llm_logger.get_attempt_count("code_generation") + 1
         }
         
         self.llm_logger.log_interaction("regeneration_prompt", prompt, "N/A - Prompt Only", metadata)
@@ -222,11 +220,11 @@ class CodeEvaluationAgent:
             try:
                 response = str(response)
             except:
-                logger.error("Could not convert response to string")
+                logger.error(t("could_not_convert_response_to_string"))
                 return None
         
         # Log first part of response for debugging
-        logger.debug(f"Extracting JSON from response: {response[:200]}...")
+        logger.debug(f"{t('extracting_json_from_response')}: {response[:200]}...")
         
         # First try direct JSON parsing if the response looks like JSON
         if response.strip().startswith('{') and response.strip().endswith('}'):
@@ -247,8 +245,11 @@ class CodeEvaluationAgent:
             r'```json\s*([\s\S]*?)```',  # JSON in code block
             r'```\s*({[\s\S]*?})\s*```',  # Any JSON in code block
             r'({[\s\S]*?"found_errors"[\s\S]*?})',  # JSON with found_errors field
+            r'({[\s\S]*?"已找到錯誤"[\s\S]*?})',  # JSON with Chinese found_errors field
             r'({[\s\S]*?"valid"[\s\S]*?})',  # JSON with valid field
+            r'({[\s\S]*?"有效"[\s\S]*?})',  # JSON with Chinese valid field
             r'({[\s\S]*?"missing_errors"[\s\S]*?})',  # JSON with missing_errors field
+            r'({[\s\S]*?"遺漏錯誤"[\s\S]*?})',  # JSON with Chinese missing_errors field
         ]
         
         for pattern in patterns:
@@ -285,19 +286,19 @@ class CodeEvaluationAgent:
         missing_errors = []
         found_errors = []
         
-        # Try to extract found_errors section
-        found_match = re.search(r'found_errors:?\s*\n(.*?)(?:missing_errors|\n\n)', response, re.DOTALL)
+        # Try to extract found_errors section - support both English and Chinese field names
+        found_match = re.search(r'(found_errors|已找到錯誤):?\s*\n(.*?)(?:(missing_errors|遺漏錯誤)|\n\n)', response, re.DOTALL)
         if found_match:
-            found_section = found_match.group(1)
+            found_section = found_match.group(2)
             # Extract individual errors
             for line in found_section.splitlines():
                 if line.strip() and ":" in line:
                     found_errors.append(line.strip())
         
-        # Try to extract missing_errors section
-        missing_match = re.search(r'missing_errors:?\s*\n(.*?)(?:\n\n|$)', response, re.DOTALL)
+        # Try to extract missing_errors section - support both English and Chinese field names
+        missing_match = re.search(r'(missing_errors|遺漏錯誤):?\s*\n(.*?)(?:\n\n|$)', response, re.DOTALL)
         if missing_match:
-            missing_section = missing_match.group(1)
+            missing_section = missing_match.group(2)
             # Extract individual errors
             for line in missing_section.splitlines():
                 if line.strip() and ":" in line:
@@ -305,22 +306,22 @@ class CodeEvaluationAgent:
         
         # If we extracted at least some structured data, return a constructed result
         if found_errors or missing_errors:
-            logger.info(f"Using manually extracted errors: {len(found_errors)} found, {len(missing_errors)} missing")
+            logger.info(f"{t('using_manually_extracted_errors')}: {len(found_errors)} {t('found')}, {len(missing_errors)} {t('missing')}")
             return {
-                "found_errors": found_errors,
-                "missing_errors": missing_errors,
-                "valid": len(missing_errors) == 0,
-                "feedback": f"Found {len(found_errors)} errors, {len(missing_errors)} missing."
+                t("found_errors"): found_errors,
+                t("missing_errors"): missing_errors,
+                t("valid"): len(missing_errors) == 0,
+                t("feedback"): f"{t('found')} {len(found_errors)} {t('errors')}, {len(missing_errors)} {t('missing')}."
             }
         
         # If all extraction methods fail, return a default result structure
-        logger.warning("Could not extract JSON from response, returning default structure")
+        logger.warning(t("could_not_extract_json_from_response"))
         # Include all requested errors as missing to force regeneration
         return {
-            "found_errors": [],
-            "missing_errors": ["EXTRACTION_FAILED"],  # This will force regeneration
-            "valid": False,
-            "feedback": "Could not extract proper analysis from model response."
+            t("found_errors"): [],
+            t("missing_errors"): [t("extraction_failed")],  # This will force regeneration
+            t("valid"): False,
+            t("feedback"): t("could_not_extract_proper_analysis")
         }
     
     def _process_evaluation_result(self, result: Dict[str, Any], 
@@ -337,47 +338,47 @@ class CodeEvaluationAgent:
         """
         # Handle None result
         if result is None:
-            logger.warning("Received None result in _process_evaluation_result")
+            logger.warning(t("received_none_result"))
             result = {
-                "found_errors": [],
-                "missing_errors": [],
-                "valid": False,
-                "feedback": "Failed to process evaluation result"
+                t("found_errors"): [],
+                t("missing_errors"): [],
+                t("valid"): False,
+                t("feedback"): t("failed_to_process_evaluation_result")
             }
         
         # Ensure result is a dictionary
         if not isinstance(result, dict):
-            logger.error(f"Expected dict for result, got {type(result)}")
+            logger.error(f"{t('expected_dict_for_result')}, {t('got')} {type(result)}")
             result = {
-                "found_errors": [],
-                "missing_errors": [],
-                "valid": False,
-                "feedback": f"Invalid evaluation result type: {type(result)}"
+                t("found_errors"): [],
+                t("missing_errors"): [],
+                t("valid"): False,
+                t("feedback"): f"{t('invalid_evaluation_result_type')}: {type(result)}"
             }
         
         # Ensure all expected fields exist with proper defaults
-        if "found_errors" not in result:
-            result["found_errors"] = []
-        if "missing_errors" not in result:
-            result["missing_errors"] = []
-        if "extra_errors" not in result:
-            result["extra_errors"] = []
+        if get_field_value(result, t("found_errors"), None) is None:
+            result[t("found_errors")] = []
+        if get_field_value(result, t("missing_errors"), None) is None:
+            result[t("missing_errors")] = []
+        if get_field_value(result, t("extra_errors"), None) is None:
+            result[t("extra_errors")] = []
         
         # Ensure found_errors is a list
-        if not isinstance(result["found_errors"], list):
-            logger.warning(f"found_errors is not a list, got {type(result['found_errors'])}")
-            result["found_errors"] = []
+        if not isinstance(get_field_value(result, t("found_errors"), []), list):
+            logger.warning(f"{t('found_errors')} {t('is_not_a_list')}, {t('got')} {type(get_field_value(result, t('found_errors'), []))}")
+            result[t("found_errors")] = []
         
         # Ensure missing_errors is a list
-        if not isinstance(result["missing_errors"], list):
-            logger.warning(f"missing_errors is not a list, got {type(result['missing_errors'])}")
-            result["missing_errors"] = []
+        if not isinstance(get_field_value(result, t("missing_errors"), []), list):
+            logger.warning(f"{t('missing_errors')} {t('is_not_a_list')}, {t('got')} {type(get_field_value(result, t('missing_errors'), []))}")
+            result[t("missing_errors")] = []
         
         # Convert requested errors to keys for easier lookup
         requested_keys = {}
         for error in requested_errors:
             if not isinstance(error, dict):
-                logger.warning(f"Skipping non-dict error in requested_errors: {error}")
+                logger.warning(f"{t('skipping_non_dict_error')}: {error}")
                 continue
                 
             error_type = error.get("type", "").upper()
@@ -388,7 +389,7 @@ class CodeEvaluationAgent:
         # Process found errors to make sure they're in the right format for regeneration
         processed_found_errors = []
         
-        for error in result["found_errors"]:
+        for error in get_field_value(result, t("found_errors"), []):
             # Skip non-dict errors with warning
             if not isinstance(error, dict):
                 try:
@@ -400,13 +401,13 @@ class CodeEvaluationAgent:
                         error_name = match.group(2).strip()
                         processed_found_errors.append(f"{error_type} - {error_name}")
                     else:
-                        logger.warning(f"Could not process non-dict error: {error_str}")
+                        logger.warning(f"{t('could_not_process_non_dict_error')}: {error_str}")
                 except:
-                    logger.warning(f"Could not process non-dict error: {error}")
+                    logger.warning(f"{t('could_not_process_non_dict_error')}: {error}")
                 continue
                 
-            error_type = error.get("error_type", "").upper()
-            error_name = error.get("error_name", "")
+            error_type = get_field_value(error, "error_type", "").upper()
+            error_name = get_field_value(error, "error_name", "")
             
             if error_type and error_name:
                 processed_found_errors.append(f"{error_type} - {error_name}")
@@ -414,7 +415,7 @@ class CodeEvaluationAgent:
         # Process missing errors to ensure they're in the right format for regeneration
         processed_missing_errors = []
         
-        for error in result["missing_errors"]:
+        for error in get_field_value(result, t("missing_errors"), []):
             # Skip non-dict errors with warning
             if not isinstance(error, dict):
                 try:
@@ -426,34 +427,32 @@ class CodeEvaluationAgent:
                         error_name = match.group(2).strip()
                         processed_missing_errors.append(f"{error_type} - {error_name}")
                     else:
-                        logger.warning(f"Could not process non-dict error: {error_str}")
+                        logger.warning(f"{t('could_not_process_non_dict_error')}: {error_str}")
                 except:
-                    logger.warning(f"Could not process non-dict error: {error}")
+                    logger.warning(f"{t('could_not_process_non_dict_error')}: {error}")
                 continue
                 
-            error_type = error.get("error_type", "").upper()
-            error_name = error.get("error_name", "")
+            error_type = get_field_value(error, "error_type", "").upper()
+            error_name = get_field_value(error, "error_name", "")
             
             if error_type and error_name:
                 processed_missing_errors.append(f"{error_type} - {error_name}")
         
         # Update the result with processed data
-        result["found_errors"] = processed_found_errors
-        result["missing_errors"] = processed_missing_errors
+        result[t("found_errors")] = processed_found_errors
+        result[t("missing_errors")] = processed_missing_errors
         
         # Validate the "valid" field based on found vs requested errors
-        result["valid"] = len(processed_missing_errors) == 0 and len(processed_found_errors) == len(requested_errors)
+        result[t("valid")] = len(processed_missing_errors) == 0 and len(processed_found_errors) == len(requested_errors)
         
         # Store the original requested error count
-        result["original_error_count"] = len(requested_errors)
+        result[t("original_error_count")] = len(requested_errors)
         
         # Generate a feedback message
-        if result["valid"]:
-            result["feedback"] = f"All {len(requested_errors)} requested errors are properly implemented."
+        if get_field_value(result, t("valid"), False):
+            result[t("feedback")] = f"{t('all')} {len(requested_errors)} {t('requested_errors_are_properly_implemented')}."
         else:
-            result["feedback"] = (f"Found {len(processed_found_errors)} out of {len(requested_errors)} "
-                            f"requested errors. Missing {len(processed_missing_errors)} errors.")
+            result[t("feedback")] = (f"{t('found')} {len(processed_found_errors)} {t('out_of')} {len(requested_errors)} "
+                            f"{t('requested_errors')}. {t('missing')} {len(processed_missing_errors)} {t('errors')}.")
         
         return result
-    
-    

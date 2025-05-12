@@ -30,6 +30,14 @@ class CodeDisplayUI:
     """
     
     def render_code_display(self, code_snippet, known_problems: List[str] = None, instructor_mode: bool = False) -> None:
+        """
+        Render a code snippet with line numbers.
+        
+        Args:
+            code_snippet: Code snippet object or string
+            known_problems: List of known problems for instructor view
+            instructor_mode: Whether to show instructor view
+        """
         if not code_snippet:
             st.info(t("no_code_generated_use_generate"))
             return
@@ -104,7 +112,7 @@ class CodeDisplayUI:
                             f'<div class="guidance-title"><span class="guidance-icon">📊</span> {t("previous_results")}</div>'
                             f'{t("you_identified")} {get_field_value(review_analysis, "identified_count", 0)} {t("of")} '
                             f'{get_field_value(review_analysis, "total_problems", 0)} {t("issues")} '
-                            f'{get_field_value(review_analysis, "accuracy_percentage", 0):.1f}% '
+                            f'({get_field_value(review_analysis, "accuracy_percentage", 0):.1f}%) '
                             f'{t("try_find_more_issues")}'
                             f'</div>',
                             unsafe_allow_html=True
@@ -312,7 +320,7 @@ def process_student_review(workflow, student_review: str):
             return True
             
         except Exception as e:
-            error_msg = f"{t('error')} processing student review: {str(e)}"
+            error_msg = f"{t('error')} {t('processing_student_review')}: {str(e)}"
             logger.error(error_msg)
             status.update(label=error_msg, state="error")
             st.session_state.error = error_msg
@@ -335,7 +343,7 @@ def render_review_tab(workflow, code_display_ui):
         return
         
     # Check if we have a code snippet in the workflow state
-    if not hasattr(st.session_state.workflow_state, 'code_snippet') or not st.session_state.workflow_state.code_snippet:
+    if not get_state_attribute(st.session_state.workflow_state, 'code_snippet'):
         st.info(f"{t('no_code_generated')}")
         return
     
@@ -343,57 +351,55 @@ def render_review_tab(workflow, code_display_ui):
     known_problems = []
     
     # Extract known problems from evaluation result
-    if (hasattr(st.session_state.workflow_state, 'evaluation_result') and 
-        st.session_state.workflow_state.evaluation_result and 
-        'found_errors' in st.session_state.workflow_state.evaluation_result):
-        found_errors = st.session_state.workflow_state.evaluation_result.get('found_errors', [])
-        if found_errors:
-            known_problems = found_errors
+    evaluation_result = get_state_attribute(st.session_state.workflow_state, 'evaluation_result')
+    if evaluation_result and 'found_errors' in evaluation_result:
+        known_problems = get_field_value(evaluation_result, 'found_errors', [])
     
     # If we couldn't get known problems from evaluation, try to get from selected errors
-    if not known_problems and hasattr(st.session_state.workflow_state, 'selected_specific_errors'):
-        selected_errors = st.session_state.workflow_state.selected_specific_errors
-        if selected_errors:
+    if not known_problems:
+        selected_specific_errors = get_state_attribute(st.session_state.workflow_state, 'selected_specific_errors')
+        if selected_specific_errors:
             # Format selected errors to match expected format
             known_problems = [
                 f"{error.get('type', '').upper()} - {error.get('name', '')}" 
-                for error in selected_errors
+                for error in selected_specific_errors
             ]
     
     # Display the code using the workflow state's code snippet and known problems
     code_display_ui.render_code_display(
-        st.session_state.workflow_state.code_snippet, 
+        get_state_attribute(st.session_state.workflow_state, 'code_snippet'), 
         known_problems=known_problems
     )
     
     # Get current review state
-    current_iteration = getattr(st.session_state.workflow_state, 'current_iteration', 1)
-    max_iterations = getattr(st.session_state.workflow_state, 'max_iterations', 3)
+    current_iteration = get_state_attribute(st.session_state.workflow_state, 'current_iteration', 1)
+    max_iterations = get_state_attribute(st.session_state.workflow_state, 'max_iterations', 3)
     
     # Get the latest review if available
     latest_review = None
     targeted_guidance = None
     review_analysis = None
     
-    if hasattr(st.session_state.workflow_state, 'review_history') and st.session_state.workflow_state.review_history:
-        if len(st.session_state.workflow_state.review_history) > 0:
-            latest_review = st.session_state.workflow_state.review_history[-1]
-            targeted_guidance = getattr(latest_review, 'targeted_guidance', None)
-            review_analysis = getattr(latest_review, 'analysis', {})
+    review_history = get_state_attribute(st.session_state.workflow_state, 'review_history')
+    if review_history and len(review_history) > 0:
+        latest_review = review_history[-1]
+        targeted_guidance = get_state_attribute(latest_review, 'targeted_guidance', None)
+        review_analysis = get_state_attribute(latest_review, 'analysis', {})
 
     all_errors_found = False
     if review_analysis:
-        identified_count = review_analysis.get("identified_count", 0)
-        total_problems = review_analysis.get("total_problems", 0)
+        identified_count = get_field_value(review_analysis, "identified_count", 0)
+        total_problems = get_field_value(review_analysis, "total_problems", 0)
         if identified_count == total_problems and total_problems > 0:
             all_errors_found = True
     
     # Only allow submission if we're under the max iterations
-    if current_iteration <= max_iterations and not st.session_state.workflow_state.review_sufficient and not all_errors_found:
+    review_sufficient = get_state_attribute(st.session_state.workflow_state, 'review_sufficient', False)
+    if current_iteration <= max_iterations and not review_sufficient and not all_errors_found:
         # Get the current student review (empty for first iteration)
         student_review = ""
         if latest_review is not None:
-            student_review = latest_review.student_review
+            student_review = get_state_attribute(latest_review, 'student_review', "")
         
         # Define submission callback
         def on_submit_review(review_text):
@@ -411,7 +417,7 @@ def render_review_tab(workflow, code_display_ui):
         )
     else:
         # Display appropriate message based on why review is blocked
-        if st.session_state.workflow_state.review_sufficient or all_errors_found:
+        if review_sufficient or all_errors_found:
             st.success(f"{t('all_errors_found')}")
         else:
             st.warning(t("iterations_completed").format(max_iterations=max_iterations))

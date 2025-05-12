@@ -55,7 +55,7 @@ class StudentResponseEvaluator:
             logger.info("Evaluating student review with code_utils prompt")
             
             if not self.llm:
-                logger.warning("No LLM provided for evaluation, falling back to basic evaluation")
+                logger.warning(t("no_llm_provided_for_evaluation"))
                 return self._fallback_evaluation(known_problems)
             
             # Create a review analysis prompt using the utility function
@@ -68,9 +68,9 @@ class StudentResponseEvaluator:
             try:
                 # Metadata for logging
                 metadata = {
-                    f"{t('code_length')}": len(code_snippet.splitlines()),
-                    f"{t('known_problems_count')}": len(known_problems),
-                    f"{t('student_review_length')}": len(student_review.splitlines())
+                    t("code_length"): len(code_snippet.splitlines()),
+                    t("known_problems_count"): len(known_problems),
+                    t("student_review_length"): len(student_review.splitlines())
                 }
                 # Get the evaluation from the LLM
                 logger.info("Sending student review to LLM for evaluation")
@@ -82,7 +82,7 @@ class StudentResponseEvaluator:
                 
                 # Make sure we have a response
                 if not response:
-                    logger.error("LLM returned None or empty response for review evaluation")
+                    logger.error(t("empty_response_from_llm"))
                     return self._fallback_evaluation(known_problems)
                 
                 # Extract JSON data from the response
@@ -90,7 +90,8 @@ class StudentResponseEvaluator:
                 
                 # Make sure we have analysis data
                 if not analysis_data or "error" in analysis_data:
-                    logger.error(f"Failed to extract valid analysis data: {analysis_data.get('error', 'Unknown error')}")
+                    error_msg = get_field_value(analysis_data, "error", t("unknown_error")) if analysis_data else t("no_result_returned")
+                    logger.error(f"{t('failed_to_extract_valid_analysis_data')}: {error_msg}")
                     return self._fallback_evaluation(known_problems)
                 
                 # Process the analysis data
@@ -102,14 +103,14 @@ class StudentResponseEvaluator:
                 return enhanced_analysis
                 
             except Exception as e:
-                logger.error(f"Error evaluating review with LLM: {str(e)}")                
+                logger.error(f"{t('error')} {t('evaluating_review_with_llm')}: {str(e)}")                
                 # Log the error
                 error_metadata = {**metadata, "error": str(e)}
-                self.llm_logger.log_review_analysis(prompt, f"ERROR: {str(e)}", error_metadata)                
+                self.llm_logger.log_review_analysis(prompt, f"{t('error')}: {str(e)}", error_metadata)                
                 return self._fallback_evaluation(known_problems)
             
         except Exception as e:
-            logger.error(f"Exception in evaluate_review: {str(e)}")
+            logger.error(f"{t('exception_in_evaluate_review')}: {str(e)}")
             return self._fallback_evaluation(known_problems)
             
     def _process_enhanced_analysis(self, analysis_data: Dict[str, Any], known_problems: List[str]) -> Dict[str, Any]:
@@ -137,7 +138,6 @@ class StudentResponseEvaluator:
         else:
             identified_percentage = 100.0
         
-        
         # Determine if review is sufficient
         # Use LLM's determination if available, otherwise calculate based on percentage
         if "review_sufficient" in analysis_data:
@@ -148,8 +148,6 @@ class StudentResponseEvaluator:
         # Extract problem lists
         identified_problems = get_field_value(analysis_data, "identified_problems", [])
         missed_problems = get_field_value(analysis_data, "missed_problems", [])
-    
-        
         
         # Construct enhanced result using t() function for keys
         enhanced_result = {
@@ -173,7 +171,7 @@ class StudentResponseEvaluator:
         Returns:
             Basic evaluation dictionary
         """
-        logger.warning("Using fallback evaluation due to LLM error")
+        logger.warning(t("using_fallback_evaluation"))
         
         # Create a basic fallback evaluation using t() function for keys
         return {
@@ -284,8 +282,6 @@ class StudentResponseEvaluator:
             else:
                 analysis[t("missed_problems")] = []
             
-           
-            
             # Try to extract identified count - support both English and Chinese field names
             count_match = re.search(r'"(identified_count|已識別數量)"\s*:\s*([0-9]+)', text)
             if count_match:
@@ -316,7 +312,6 @@ class StudentResponseEvaluator:
             else:
                 analysis[t("accuracy_percentage")] = 0.0
             
-            
             # Try to extract review_sufficient - support both English and Chinese field names
             sufficient_match = re.search(r'"(review_sufficient|審查充分)"\s*:\s*(true|false)', text, re.IGNORECASE)
             if sufficient_match:
@@ -330,7 +325,6 @@ class StudentResponseEvaluator:
                 analysis[t("feedback")] = feedback_match.group(2)
             else:
                 analysis[t("feedback")] = t("analysis_could_not_extract_feedback")
-            
             
             if analysis:
                 # Add consistency check - ensure we have the basic required fields
@@ -394,77 +388,6 @@ class StudentResponseEvaluator:
             # Get iteration information to add to review_analysis for context
             review_context = review_analysis.copy()
             review_context.update({
-                "iteration_count": iteration_count,
-                "max_iterations": max_iterations,
-                "remaining_attempts": max_iterations - iteration_count
-            })
-
-            # Use the utility function to create the prompt
-            prompt = create_feedback_prompt(
-                code=code_snippet,
-                known_problems=known_problems,
-                review_analysis=review_context
-            )
-
-            metadata = {
-                t("iteration"): iteration_count,
-                t("max_iterations"): max_iterations,
-                t("identified_count"): get_field_value(review_analysis, "identified_count", 0),
-                t("total_problems"): get_field_value(review_analysis, "total_problems", len(known_problems)),
-                t("accuracy_percentage"): get_field_value(review_analysis, "accuracy_percentage", 0)
-            }
-
-            # Generate the guidance using the LLM
-            logger.info(t("generating_concise_targeted_guidance").format(iteration_count=iteration_count))
-            response = self.llm.invoke(prompt)
-            guidance = process_llm_response(response)
-            
-            # Ensure response is concise - trim if needed
-            if len(guidance.split()) > 100:
-                # Split into sentences and take the first 3-4
-                sentences = re.split(r'(?<=[.!?])\s+', guidance)
-                guidance = ' '.join(sentences[:4])
-                logger.info(t("trimmed_guidance_words").format(
-                    before=len(guidance.split()), 
-                    after=len(guidance.split())
-                ))
-            
-            # Log the interaction
-            self.llm_logger.log_summary_generation(prompt, guidance, metadata)            
-            return guidance
-            
-        except Exception as e:
-            logger.error(f"{t('error_generating_guidance')}: {str(e)}")            
-            # Log the error
-            error_metadata = {**metadata, "error": str(e)}
-            self.llm_logger.log_interaction(f"{t('targeted_guidance')}", prompt, f"{t('error')}: {str(e)}", error_metadata)            
-            # Fallback to concise guidance
-            return self._generate_concise_guidance(review_analysis)
-        
-    def generate_targeted_guidance(self, code_snippet: str, known_problems: List[str], student_review: str, review_analysis: Dict[str, Any], iteration_count: int, max_iterations: int) -> str:
-        """
-        Generate targeted guidance for the student to improve their review.
-        Ensures guidance is concise and focused with proper language support.
-        
-        Args:
-            code_snippet: The original code snippet with injected errors
-            known_problems: List of known problems in the code
-            student_review: The student's review comments
-            review_analysis: Analysis of the student review
-            iteration_count: Current iteration number
-            max_iterations: Maximum number of iterations
-            
-        Returns:
-            Targeted guidance text
-        """        
-        if not self.llm:
-            logger.warning(t("no_llm_provided_for_guidance"))
-            return self._generate_concise_guidance(review_analysis)
-        
-        try:
-            # Get iteration information to add to review_analysis for context
-            review_context = review_analysis.copy()
-            review_context.update({
                 t("iteration_count"): iteration_count,
                 t("max_iterations"): max_iterations,
                 t("remaining_attempts"): max_iterations - iteration_count
@@ -482,6 +405,7 @@ class StudentResponseEvaluator:
                 t("max_iterations"): max_iterations,
                 t("identified_count"): get_field_value(review_analysis, "identified_count", 0),
                 t("total_problems"): get_field_value(review_analysis, "total_problems", len(known_problems)),
+                t("accuracy_percentage"): get_field_value(review_analysis, "accuracy_percentage", 0)
             }
 
             # Generate the guidance using the LLM
@@ -525,6 +449,42 @@ class StudentResponseEvaluator:
                 
             # Fallback to concise guidance
             return self._generate_concise_guidance(review_analysis)
+        
+    def _generate_concise_guidance(self, review_analysis: Dict[str, Any]) -> str:
+        """
+        Generate a concise guidance message based on the review analysis without using LLM.
+        
+        Args:
+            review_analysis: Analysis of the student review
+            
+        Returns:
+            Concise guidance text
+        """
+        # Extract key metrics with proper field access
+        identified_count = get_field_value(review_analysis, "identified_count", 0)
+        total_problems = get_field_value(review_analysis, "total_problems", 0)
+        accuracy = get_field_value(review_analysis, "accuracy_percentage", 0)
+        
+        # Get missed problems
+        missed_problems = get_field_value(review_analysis, "missed_problems", [])
+        
+        # Categorize missed problems to provide more targeted guidance
+        missed_categories = self._categorize_missed_problems(missed_problems)
+        
+        # Generate appropriate guidance based on performance
+        if accuracy >= 80:
+            # High performance - specific praise with minor suggestions
+            return t("excellent_work_guidance")
+        elif accuracy >= 40:
+            # Medium performance - provide category-specific guidance
+            if missed_categories:
+                category = missed_categories[0]  # Use first missed category for guidance
+                return t("medium_performance_guidance").format(category=category)
+            else:
+                return t("medium_performance_general_guidance")
+        else:
+            # Low performance - provide more detailed guidance on approach
+            return t("low_performance_guidance")
 
     def _categorize_missed_problems(self, missed_problems: List[Any]) -> List[str]:
         """
