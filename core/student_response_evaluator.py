@@ -68,9 +68,9 @@ class StudentResponseEvaluator:
             try:
                 # Metadata for logging
                 metadata = {
-                    "code_length": len(code_snippet.splitlines()),
-                    "known_problems_count": len(known_problems),
-                    "student_review_length": len(student_review.splitlines())
+                    f"{t('code_length')}": len(code_snippet.splitlines()),
+                    f"{t('known_problems_count')}": len(known_problems),
+                    f"{t('student_review_length')}": len(student_review.splitlines())
                 }
                 # Get the evaluation from the LLM
                 logger.info("Sending student review to LLM for evaluation")
@@ -148,7 +148,6 @@ class StudentResponseEvaluator:
         # Extract problem lists
         identified_problems = get_field_value(analysis_data, "identified_problems", [])
         missed_problems = get_field_value(analysis_data, "missed_problems", [])
-        false_positives = get_field_value(analysis_data, "false_positives", [])
     
         
         
@@ -156,7 +155,6 @@ class StudentResponseEvaluator:
         enhanced_result = {
             t("identified_problems"): identified_problems,  # Keep the detailed version
             t("missed_problems"): missed_problems,  # Keep the detailed version
-            t("false_positives"): false_positives,  # Keep the detailed version
             t("identified_count"): identified_count,
             t("total_problems"): total_problems,
             t("accuracy_percentage"): identified_percentage,  # For backward compatibility
@@ -181,9 +179,7 @@ class StudentResponseEvaluator:
         return {
             t("identified_problems"): [],
             t("missed_problems"): known_problems,
-            t("false_positives"): [],
             t("accuracy_percentage"): 0.0,
-            t("identified_percentage"): 0.0,
             t("identified_count"): 0,
             t("total_problems"): len(known_problems),
             t("review_sufficient"): False
@@ -233,20 +229,16 @@ class StudentResponseEvaluator:
                         key_mappings = {
                             "issues_identified": t("issues_identified"),
                             "missed_problems": t("missed_problems"),
-                            "false_positives": t("false_positives"),
                             "identified_count": t("identified_count"),
                             "total_problems": t("total_problems"),
-                            "identified_percentage": t("identified_percentage"),
                             "accuracy_percentage": t("accuracy_percentage"),
                             "review_sufficient": t("review_sufficient"),
                             
                             # Chinese key mappings
                             "已識別問題": t("issues_identified"),
                             "遺漏問題": t("missed_problems"),
-                            "誤報": t("false_positives"),
                             "已識別數量": t("identified_count"),
                             "總問題數": t("total_problems"),
-                            "識別百分比": t("identified_percentage"),
                             "準確率百分比": t("accuracy_percentage"),
                             "審查充分": t("review_sufficient"),
                         }
@@ -292,19 +284,7 @@ class StudentResponseEvaluator:
             else:
                 analysis[t("missed_problems")] = []
             
-            # Try to extract false positives - support both English and Chinese field names
-            false_pos_match = re.search(r'"(false_positives|誤報)"\s*:\s*(\[.*?\])', text, re.DOTALL)
-            if false_pos_match:
-                try:
-                    false_pos_str = false_pos_match.group(2)
-                    # Clean up the JSON string
-                    false_pos_str = re.sub(r',\s*]', ']', false_pos_str)
-                    analysis[t("false_positives")] = json.loads(false_pos_str)
-                except Exception as e:
-                    logger.warning(f"{t('json_parse_error')}: {str(e)}")
-                    analysis[t("false_positives")] = []
-            else:
-                analysis[t("false_positives")] = []
+           
             
             # Try to extract identified count - support both English and Chinese field names
             count_match = re.search(r'"(identified_count|已識別數量)"\s*:\s*([0-9]+)', text)
@@ -327,17 +307,14 @@ class StudentResponseEvaluator:
                 analysis[t("total_problems")] = 0
             
             # Try to extract accuracy percentage - support both English and Chinese field names
-            accuracy_match = re.search(r'"(accuracy_percentage|準確率百分比|identified_percentage|識別百分比)"\s*:\s*([0-9.]+)', text)
+            accuracy_match = re.search(r'"(accuracy_percentage|準確率百分比)"\s*:\s*([0-9.]+)', text)
             if accuracy_match:
                 try:
                     analysis[t("accuracy_percentage")] = float(accuracy_match.group(2))
-                    analysis[t("identified_percentage")] = float(accuracy_match.group(2))
                 except:
                     analysis[t("accuracy_percentage")] = 0.0
-                    analysis[t("identified_percentage")] = 0.0
             else:
                 analysis[t("accuracy_percentage")] = 0.0
-                analysis[t("identified_percentage")] = 0.0
             
             
             # Try to extract review_sufficient - support both English and Chinese field names
@@ -360,7 +337,6 @@ class StudentResponseEvaluator:
                 required_fields = [
                     t("identified_problems"),
                     t("missed_problems"),
-                    t("false_positives"),
                     t("identified_count"),
                     t("total_problems"),
                     t("accuracy_percentage"),
@@ -371,9 +347,7 @@ class StudentResponseEvaluator:
                 # Fill in any missing required fields with defaults
                 for field in required_fields:
                     if field not in analysis:
-                        if field == t("identified_problems") or field == t("missed_problems") or field == t("false_positives"):
-                            analysis[field] = []
-                        elif field == t("identified_count") or field == t("total_problems"):
+                        if field == t("identified_count") or field == t("total_problems"):
                             analysis[field] = 0
                         elif field == t("accuracy_percentage"):
                             analysis[field] = 0.0
@@ -508,7 +482,6 @@ class StudentResponseEvaluator:
                 t("max_iterations"): max_iterations,
                 t("identified_count"): get_field_value(review_analysis, "identified_count", 0),
                 t("total_problems"): get_field_value(review_analysis, "total_problems", len(known_problems)),
-                t("identified_percentage"): get_field_value(review_analysis, "identified_percentage", 0)
             }
 
             # Generate the guidance using the LLM
@@ -539,7 +512,6 @@ class StudentResponseEvaluator:
                 t("max_iterations"): max_iterations,
                 t("identified_count"): get_field_value(review_analysis, "identified_count", 0),
                 t("total_problems"): get_field_value(review_analysis, "total_problems", len(known_problems)),
-                t("identified_percentage"): get_field_value(review_analysis, "identified_percentage", 0),
                 t("error"): str(e)
             }
             

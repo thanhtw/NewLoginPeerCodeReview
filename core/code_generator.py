@@ -11,6 +11,7 @@ import logging
 from langchain_core.language_models import BaseLanguageModel
 from utils.code_utils import create_code_generation_prompt
 from utils.llm_logger import LLMInteractionLogger
+from utils.language_utils import t
 
 # Configure logging
 logging.basicConfig(
@@ -101,10 +102,10 @@ class CodeGenerator:
         try:
             # Metadata for logging
             metadata = {
-                "code_length": code_length,
-                "difficulty_level": difficulty_level,
-                "domain": domain,
-                "selected_errors": selected_errors or []
+                f"{t('code_length')}": code_length,
+                f"{t('difficulty_level')}": difficulty_level,
+                f"{t('domain')}": domain,
+                f"{t('selected_errors')}": selected_errors or []
             }
             
             # Add provider info to metadata if available

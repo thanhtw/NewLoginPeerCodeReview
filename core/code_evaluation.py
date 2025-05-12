@@ -14,6 +14,7 @@ from langchain_core.language_models import BaseLanguageModel
 
 from utils.llm_logger import LLMInteractionLogger
 from utils.code_utils import create_evaluation_prompt, create_regeneration_prompt, process_llm_response
+from utils.language_utils import t
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -77,8 +78,8 @@ class CodeEvaluationAgent:
             # Log the evaluation
             if self.llm_logger:
                 metadata = {
-                    "code_length": len(code.splitlines()),
-                    "requested_errors_count": len(requested_errors)
+                    f"{t('code_length')}": len(code.splitlines()),
+                    f"{t('requested_errors_count')}": len(requested_errors)
                 }
                 self.llm_logger.log_code_evaluation(prompt, processed_response, metadata)
             
@@ -121,8 +122,8 @@ class CodeEvaluationAgent:
         found_errors = []
         
         # Process missing errors - handle both string and dictionary formats
-        if "missing_errors" in evaluation:
-            for error in evaluation["missing_errors"]:
+        if f"{t('missing_errors')}" in evaluation:
+            for error in evaluation[f"{t('missing_errors')}"]:
                 if isinstance(error, dict):
                     error_type = error.get("error_type", "").upper()
                     error_name = error.get("error_name", "")
@@ -153,11 +154,11 @@ class CodeEvaluationAgent:
         
         # Log the regeneration prompt
         metadata = {
-            "requested_errors": [f"{error.get('type', '').upper()} - {error.get('name', '')}" for error in requested_errors],
-            "missing_errors": missing_errors,
-            "found_errors": found_errors,
-            "domain": domain,
-            "attempt": self.llm_logger.get_attempt_count("code_generation") + 1
+             f"{t('requested_errors')}": [f"{error.get('type', '').upper()} - {error.get('name', '')}" for error in requested_errors],
+             f"{t('missing_errors')}": missing_errors,
+             f"{t('found_errors')}": found_errors,
+             f"{t('domain')}": domain,
+             f"{t('attempt')}": self.llm_logger.get_attempt_count("code_generation") + 1
         }
         
         self.llm_logger.log_interaction("regeneration_prompt", prompt, "N/A - Prompt Only", metadata)
