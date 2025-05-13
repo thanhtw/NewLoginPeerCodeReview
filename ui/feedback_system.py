@@ -369,9 +369,8 @@ class FeedbackSystem:
                 #st.markdown(f"### {category} ({len(issues)})")
                 for i, issue in enumerate(issues, 1):
                     if isinstance(issue, dict):
-                        # Use get_field_value for proper language handling
                         problem = issue[t('problem')]
-                        hint =  issue[t('hint')]
+                        hint = issue[t('hint')]
                         
                         st.markdown(
                             f"""
@@ -474,8 +473,9 @@ class FeedbackSystem:
         try:
             # Get the known problems from the evaluation result instead of code_snippet.known_problems
             if get_state_attribute(state, 'evaluation_result') and 'found_errors' in get_state_attribute(state, 'evaluation_result'):
-                steamp1 = get_state_attribute(state, 'evaluation_result')
-                found_errors = steamp1[t("found_errors")]
+                stamp = get_state_attribute(state, 'evaluation_result')
+                found_errors = stamp[t("found_errors")]
+                #print("get_state_attribute(state, 'evaluation_result'): ", get_state_attribute(state, 'evaluation_result'))
                 # Generate a comparison report if it doesn't exist
                 state.comparison_report = generate_comparison_report(
                     found_errors,

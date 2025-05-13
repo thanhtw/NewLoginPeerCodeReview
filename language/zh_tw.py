@@ -121,7 +121,6 @@ translations = {
     "reevaluating_code": "正在重新評估程式碼...",
     "regenerating_code": "重新生成程式碼",
     "remove": "移除",
-    "requested_errors": "請求的錯誤",
     "select": "選擇",
     "select_error_categories": "選擇錯誤類別",
     "select_specific_errors": "選擇特定錯誤",
@@ -377,7 +376,6 @@ translations = {
     # Code evaluation messages
     "could_not_evaluate_code": "無法評估代碼",
     "please_ensure_code_contains_all": "請確保代碼包含所有",
-    "requested_errors": "請求的錯誤",
     "no_llm_available_for_code_evaluation": "沒有可用於代碼評估的LLM",
     "sending_code_to_llm_for_evaluation": "發送代碼到LLM進行評估",
     "failed_to_extract_json_from_evaluation": "無法從評估回應中提取JSON或結果不是字典",
@@ -402,7 +400,6 @@ translations = {
     "missing": "遺漏",
     "errors": "錯誤",
     "found": "找到",
-    "found_errors": "發現錯誤",
     "error_type": "錯誤類型",
     "error_name": "錯誤名稱",
     "line_number": "行號",
@@ -412,5 +409,10 @@ translations = {
     "name":"name",
     "error_name":"錯誤名稱",
     "description":"描述",
-    "implementation_guide":"實作範例"
+    "implementation_guide":"實作範例",
+    "requested_errors":"請求的錯誤",
+    "missing_errors":"缺少的錯誤",
+    "found_errors":"發現的錯誤",
+    "domain":"領域",
+    "attempt":"嘗試"
 }

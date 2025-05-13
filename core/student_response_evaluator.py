@@ -159,57 +159,6 @@ class StudentResponseEvaluator:
             return {t("error"): t("empty_response_from_llm")}
         
         try:
-            # Try to find JSON block with regex
-            patterns = [
-                r'```json\s*([\s\S]*?)```',  # JSON code block
-                r'```\s*({[\s\S]*?})\s*```',  # Any JSON object in code block
-                r'({[\s\S]*"Identified Problems"[\s\S]*"Missed Problems"[\s\S]*})',  # Look for our expected fields
-                r'({[\s\S]*"已識別的問題"[\s\S]*"遺漏的問題"[\s\S]*})',  # Look for Chinese field names
-                r'({[\s\S]*})',  # Any JSON-like structure
-            ]
-            
-            # Try each pattern
-            for pattern in patterns:
-                matches = re.findall(pattern, text, re.DOTALL)
-                for match in matches:
-                    try:
-                        # Clean up the match
-                        json_str = match.strip()
-                        # Fix trailing commas which are invalid in JSON
-                        json_str = re.sub(r',\s*}', '}', json_str)
-                        json_str = re.sub(r',\s*]', ']', json_str)
-                        # Try to parse as JSON
-                        parsed_json = json.loads(json_str)
-                        
-                        # Convert to standardized format with translated keys
-                        result = {}
-                        
-                        # Map keys to translated versions
-                        key_mappings = {
-                            "issues_identified": t("issues_identified"),
-                            "missed_problems": t("missed_problems"),
-                            "identified_count": t("identified_count"),
-                            "total_problems": t("total_problems"),
-                            "accuracy_percentage": t("accuracy_percentage"),
-                            "review_sufficient": t("review_sufficient"),
-                            
-                            # Chinese key mappings
-                            "已識別問題": t("issues_identified"),
-                            "遺漏問題": t("missed_problems"),
-                            "已識別數量": t("identified_count"),
-                            "總問題數": t("total_problems"),
-                            "準確率百分比": t("accuracy_percentage"),
-                            "審查充分": t("review_sufficient"),
-                        }
-                        
-                        # Map all keys to translated versions
-                        for key, value in parsed_json.items():
-                            translated_key = key_mappings.get(key, key)
-                            result[translated_key] = value
-                        
-                        return result
-                    except json.JSONDecodeError:
-                        continue
             
             # If standard methods fail, try to manually extract fields
             logger.warning(t("could_not_extract_json"))

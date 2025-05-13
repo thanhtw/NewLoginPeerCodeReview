@@ -417,7 +417,6 @@ def create_comparison_report_prompt(evaluation_errors: List[str], review_analysi
     # Format identified problems for the prompt
     identified_text = "\n".join(f"- {p}" for p in identified_str)
     missed_text = "\n".join(f"- {p}" for p in missed_str)
-    false_positive_text = "\n".join(f"- {p}" for p in false_str)
     
     # Create progress tracking info if multiple attempts exist
     progress_info = ""
@@ -437,7 +436,6 @@ def create_comparison_report_prompt(evaluation_errors: List[str], review_analysi
         len_missed_str=len(missed_str),
         identified_text=identified_text,
         missed_text=missed_text,
-        false_positive_text=false_positive_text,
         progress_info=progress_info
     )
 

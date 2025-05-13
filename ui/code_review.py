@@ -354,6 +354,7 @@ def render_review_tab(workflow, code_display_ui):
     evaluation_result = get_state_attribute(st.session_state.workflow_state, 'evaluation_result')
     if evaluation_result and 'found_errors' in evaluation_result:
         known_problems = evaluation_result[t('found_errors')]
+       
     
     # If we couldn't get known problems from evaluation, try to get from selected errors
     if not known_problems:

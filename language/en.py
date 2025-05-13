@@ -217,8 +217,7 @@ translations = {
     "generated_comparison_report": "Generated comparison report for feedback tab",
     "generating_comparison_report": "generating comparison report",
     "good_performance_guidance": "You're doing well! Try looking for issues related to '{missed_text}'. Check for similar patterns elsewhere in the code.",
-    "hintt": "hint",
-    "hint": "Hint",
+    "hint": "hint",
     "identified_count": "Identified Count",
     "identified_issues": "Identified Issues",
     "identified_percentage": "Identified Percentage",
@@ -399,6 +398,11 @@ translations = {
     "name":"name",
     "error_name":"error_name",
     "description":"description",
-    "implementation_guide":"implementation_guide"
+    "implementation_guide":"implementation_guide",
+    "requested_errors":"requested_errors",
+    "missing_errors":"missing_errors",
+    "found_errors":"found_errors",
+    "domain":"domain",
+    "attempt":"attempt"
 
 }

@@ -55,8 +55,7 @@ class WorkflowConditions:
 
         # Check if we have missing or extra errors and haven't reached max attempts
         has_missing_errors = evaluation_result and len(evaluation_result.get("missing_errors", [])) > 0
-        has_extra_errors = evaluation_result and len(evaluation_result.get("extra_errors", [])) > 0
-        needs_regeneration = has_missing_errors or has_extra_errors
+        needs_regeneration = has_missing_errors
         
         # If we need regeneration and haven't reached max attempts, regenerate
         if needs_regeneration and evaluation_attempts < max_evaluation_attempts:

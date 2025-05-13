@@ -54,7 +54,7 @@ class CodeEvaluationAgent:
         # Default result if no evaluation can be performed
         default_result = {
             t("found_errors"): [],
-            t("missing_errors"): [f"{error.get('type', '').upper()} - {error.get('name', '')}" 
+            t("missing_errors"): [f"{error.get('type', '').upper()} - {error.get(t('name'), '')}" 
                             for error in requested_errors],
             t("valid"): False,
             t("feedback"): f"{t('could_not_evaluate_code')}. {t('please_ensure_code_contains_all')} {len(requested_errors)} {t('requested_errors')}."
@@ -125,8 +125,8 @@ class CodeEvaluationAgent:
         if get_field_value(evaluation, t("missing_errors"), None):
             for error in get_field_value(evaluation, t("missing_errors"), []):
                 if isinstance(error, dict):
-                    error_type = get_field_value(error, "error_type", "").upper()
-                    error_name = get_field_value(error, "error_name", "")
+                    error_type = error[t("error_type")]
+                    error_name = error[t("error_name")]
                     missing_errors.append(f"{error_type} - {error_name}")
                 elif isinstance(error, str):
                     missing_errors.append(error)
@@ -135,8 +135,8 @@ class CodeEvaluationAgent:
         if get_field_value(evaluation, t("found_errors"), None):
             for error in get_field_value(evaluation, t("found_errors"), []):
                 if isinstance(error, dict):
-                    error_type = get_field_value(error, "error_type", "").upper()
-                    error_name = get_field_value(error, "error_name", "")
+                    error_type = error[t("error_type")]
+                    error_name = error[t("error_name")]
                     found_errors.append(f"{error_type} - {error_name}")
                 elif isinstance(error, str):
                     found_errors.append(error)
@@ -152,7 +152,7 @@ class CodeEvaluationAgent:
         
         # Log the regeneration prompt
         metadata = {
-             t("requested_errors"): [f"{error.get('type', '').upper()} - {error.get('name', '')}" for error in requested_errors],
+             t("requested_errors"): [f"{error.get(t('type'), '').upper()} - {error.get(t('name'), '')}" for error in requested_errors],
              t("missing_errors"): missing_errors,
              t("found_errors"): found_errors,
              t("domain"): domain,
@@ -244,11 +244,11 @@ class CodeEvaluationAgent:
         patterns = [
             r'```json\s*([\s\S]*?)```',  # JSON in code block
             r'```\s*({[\s\S]*?})\s*```',  # Any JSON in code block
-            r'({[\s\S]*?"found_errors"[\s\S]*?})',  # JSON with found_errors field
+            r'({[\s\S]*?"Found Errors"[\s\S]*?})',  # JSON with found_errors field
             r'({[\s\S]*?"已找到錯誤"[\s\S]*?})',  # JSON with Chinese found_errors field
-            r'({[\s\S]*?"valid"[\s\S]*?})',  # JSON with valid field
+            r'({[\s\S]*?"Valid"[\s\S]*?})',  # JSON with valid field
             r'({[\s\S]*?"有效"[\s\S]*?})',  # JSON with Chinese valid field
-            r'({[\s\S]*?"missing_errors"[\s\S]*?})',  # JSON with missing_errors field
+            r'({[\s\S]*?"Missing Errors"[\s\S]*?})',  # JSON with missing_errors field
             r'({[\s\S]*?"遺漏錯誤"[\s\S]*?})',  # JSON with Chinese missing_errors field
         ]
         
@@ -361,8 +361,6 @@ class CodeEvaluationAgent:
             result[t("found_errors")] = []
         if get_field_value(result, t("missing_errors"), None) is None:
             result[t("missing_errors")] = []
-        if get_field_value(result, t("extra_errors"), None) is None:
-            result[t("extra_errors")] = []
         
         # Ensure found_errors is a list
         if not isinstance(get_field_value(result, t("found_errors"), []), list):
@@ -381,8 +379,8 @@ class CodeEvaluationAgent:
                 logger.warning(f"{t('skipping_non_dict_error')}: {error}")
                 continue
                 
-            error_type = error.get("type", "").upper()
-            error_name = error.get("name", "")
+            error_type = error.get(t("type"), "").upper()
+            error_name = error.get(t("name"), "")
             key = f"{error_type} - {error_name}"
             requested_keys[key] = error
         
@@ -406,8 +404,8 @@ class CodeEvaluationAgent:
                     logger.warning(f"{t('could_not_process_non_dict_error')}: {error}")
                 continue
                 
-            error_type = get_field_value(error, "error_type", "").upper()
-            error_name = get_field_value(error, "error_name", "")
+            error_type = error[t('error_type')]
+            error_name = error[t('error_name')]
             
             if error_type and error_name:
                 processed_found_errors.append(f"{error_type} - {error_name}")
@@ -432,8 +430,8 @@ class CodeEvaluationAgent:
                     logger.warning(f"{t('could_not_process_non_dict_error')}: {error}")
                 continue
                 
-            error_type = get_field_value(error, "error_type", "").upper()
-            error_name = get_field_value(error, "error_name", "")
+            error_type =  error[t('error_type')]
+            error_name =  error[t('error_name')]
             
             if error_type and error_name:
                 processed_missing_errors.append(f"{error_type} - {error_name}")
