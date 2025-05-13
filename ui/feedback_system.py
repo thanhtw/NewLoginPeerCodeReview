@@ -369,8 +369,8 @@ class FeedbackSystem:
                 for i, issue in enumerate(issues, 1):
                     if isinstance(issue, dict):
                         # Use get_field_value for proper language handling
-                        problem = issue['problem']
-                        hint =  issue['hint']
+                        problem = issue[t('problem')]
+                        hint =  issue[t('hint')]
                         
                         st.markdown(
                             f"""
@@ -532,9 +532,9 @@ class FeedbackSystem:
                         st.success(f"{t('statistics_updated')}! {t('added')} {identified_count} {t('to_your_score')}.")
                         
                         # Show level promotion message if level changed
-                        if result[t('level_changed')]:
-                            old_level = result[t('old_level')].capitalize()
-                            new_level = result[t('new_level')].capitalize()
+                        if result.get(t('level_changed'), False):
+                            old_level = result.get(t('old_level'), '').capitalize()
+                            new_level = result.get(t('new_level'), '').capitalize()
                             st.balloons()  # Add visual celebration effect
                             st.success(f"🎉 {t('congratulations')}! {t('level_upgraded')} {old_level} {t('to')} {new_level}!")
                         

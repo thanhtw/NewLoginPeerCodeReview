@@ -329,29 +329,29 @@ def create_feedback_prompt(code: str, known_problems: list, review_analysis: dic
         Feedback prompt string
     """
     # Extract data from review analysis using direct access
-    identified = review_analysis.get("identified_count", 0)
-    total = review_analysis.get("total_problems", len(known_problems))
-    accuracy = review_analysis.get("identified_percentage", 0)
-    iteration = review_analysis.get("iteration_count", 1)
-    max_iterations = review_analysis.get("max_iterations", 3)
-    remaining = review_analysis.get("remaining_attempts", max_iterations - iteration)
+    identified = review_analysis.get(t("identified_count"), 0)
+    total = review_analysis.get(t("total_problems"), len(known_problems))
+    accuracy = review_analysis.get(t("identified_percentage"), 0)
+    iteration = review_analysis.get(t("iteration_count"), 1)
+    max_iterations = review_analysis.get(t("max_iterations"), 3)
+    remaining = review_analysis.get(t("remaining_attempts"), max_iterations - iteration)
     
     # Format identified problems with direct access
-    identified_problems = review_analysis.get("identified_problems", [])
+    identified_problems = review_analysis.get(t("identified_problems"), [])
     identified_text = ""
     for problem in identified_problems:
         if isinstance(problem, dict):
-            problem_text = problem.get("problem", "")
+            problem_text = problem.get(t("problem"), "")
             identified_text += f"- {problem_text}\n"
         else:
             identified_text += f"- {problem}\n"
     
     # Format missed problems with direct access
-    missed_problems = review_analysis.get("missed_problems", [])
+    missed_problems = review_analysis.get(t("missed_problems"), [])
     missed_text = ""
     for problem in missed_problems:
         if isinstance(problem, dict):
-            problem_text = problem.get("problem", "")
+            problem_text = problem.get(t("problem"), "")
             missed_text += f"- {problem_text}\n"
         else:
             missed_text += f"- {problem}\n"
@@ -391,13 +391,13 @@ def create_comparison_report_prompt(evaluation_errors: List[str], review_analysi
         Comparison report prompt string
     """
     # Extract performance metrics from latest review using direct access
-    identified_problems = review_analysis.get("identified_problems", [])
-    missed_problems = review_analysis.get("missed_problems", [])
-    false_positives = review_analysis.get("false_positives", [])
+    identified_problems = review_analysis.get(t("identified_problems"), [])
+    missed_problems = review_analysis.get(t("missed_problems"), [])
+    false_positives = review_analysis.get(t("false_positives"), [])
     
     # Get total problems count using direct access
-    total_problems = (review_analysis.get("total_problems", 0) or 
-                      review_analysis.get("original_error_count", 0) or 
+    total_problems = (review_analysis.get(t("total_problems"), 0) or 
+                      review_analysis.get(t("original_error_count"), 0) or 
                       len(evaluation_errors))
     
     # Calculate metrics
@@ -407,22 +407,22 @@ def create_comparison_report_prompt(evaluation_errors: List[str], review_analysi
     # Format the problems for the prompt
     identified_str = []
     for problem in identified_problems:
-        if isinstance(problem, dict) and "problem" in problem:
-            identified_str.append(problem.get("problem", ""))
+        if isinstance(problem, dict) and t("problem") in problem:
+            identified_str.append(problem.get(t("problem"), ""))
         elif isinstance(problem, str):
             identified_str.append(problem)
     
     missed_str = []
     for problem in missed_problems:
-        if isinstance(problem, dict) and "problem" in problem:
-            missed_str.append(problem.get("problem", ""))
+        if isinstance(problem, dict) and t("problem") in problem:
+            missed_str.append(problem.get(t("problem"), ""))
         elif isinstance(problem, str):
             missed_str.append(problem)
     
     false_str = []
     for problem in false_positives:
-        if isinstance(problem, dict) and "student_comment" in problem:
-            false_str.append(problem.get("student_comment", ""))
+        if isinstance(problem, dict) and t("student_comment") in problem:
+            false_str.append(problem.get(t("student_comment"), ""))
         elif isinstance(problem, str):
             false_str.append(problem)
     

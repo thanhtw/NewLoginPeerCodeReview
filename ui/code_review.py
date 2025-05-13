@@ -38,6 +38,7 @@ class CodeDisplayUI:
             known_problems: List of known problems for instructor view
             instructor_mode: Whether to show instructor view
         """
+        print("code_snippet: ",code_snippet)
         if not code_snippet:
             st.info(t("no_code_generated_use_generate"))
             return
@@ -50,7 +51,9 @@ class CodeDisplayUI:
             else:
                 st.warning(t("code_exists_but_empty"))
                 return
+        #print("display_code: ", display_code)
         numbered_code = self._add_line_numbers(display_code)
+        #print("numbered_code: ",numbered_code)
         st.code(numbered_code, language="java")
                
     def _add_line_numbers(self, code: str) -> str:
@@ -107,7 +110,6 @@ class CodeDisplayUI:
                     
                     # Show previous attempt results if available
                     if review_analysis:
-                        print(review_analysis)
                         st.markdown(
                             f'<div class="analysis-box">'
                             f'<div class="guidance-title"><span class="guidance-icon">📊</span> {t("previous_results")}</div>'
@@ -354,7 +356,7 @@ def render_review_tab(workflow, code_display_ui):
     # Extract known problems from evaluation result
     evaluation_result = get_state_attribute(st.session_state.workflow_state, 'evaluation_result')
     if evaluation_result and 'found_errors' in evaluation_result:
-        known_problems = get_field_value(evaluation_result, 'found_errors', [])
+        known_problems = evaluation_result[t('found_errors')]
     
     # If we couldn't get known problems from evaluation, try to get from selected errors
     if not known_problems:
@@ -365,8 +367,7 @@ def render_review_tab(workflow, code_display_ui):
                 f"{error.get('type', '').upper()} - {error.get('name', '')}" 
                 for error in selected_specific_errors
             ]
-    
-    # Display the code using the workflow state's code snippet and known problems
+   
     code_display_ui.render_code_display(
         get_state_attribute(st.session_state.workflow_state, 'code_snippet'), 
         known_problems=known_problems
@@ -392,8 +393,8 @@ def render_review_tab(workflow, code_display_ui):
 
     all_errors_found = False
     if review_analysis:
-        identified_count = get_field_value(review_analysis, "identified_count", 0)
-        total_problems = get_field_value(review_analysis, "total_problems", 0)
+        identified_count = review_analysis[t('identified_count')] 
+        total_problems =  review_analysis[t('total_problems')]
         if identified_count == total_problems and total_problems > 0:
             all_errors_found = True
     
@@ -423,14 +424,22 @@ def render_review_tab(workflow, code_display_ui):
         # Display appropriate message based on why review is blocked
         if review_sufficient or all_errors_found:
             st.success(f"{t('all_errors_found')}")
+            
+            # Add the View Feedback button
+            if st.button(f"{t('view_feedback')}", key="automatic_feedback_button"):
+                st.session_state.active_tab = 2  # 2 is the index of the feedback tab
+                st.rerun()
+                
+            # Add a flag to prevent infinite reruns
+            if not st.session_state.get("feedback_tab_switch_attempted", False):
+                # Set the flag to indicate we've attempted to switch
+                st.session_state.feedback_tab_switch_attempted = True
+                st.session_state.active_tab = 2
+                st.rerun()
         else:
+            # For normal completion (not all errors found), just show the warning
             st.warning(t("iterations_completed").format(max_iterations=max_iterations))
-        
-        if st.button(f"{t('view_feedback')}"):
-            st.session_state.active_tab = 2  # 2 is the index of the feedback tab
-            st.rerun()
-        
-        # Automatically switch to feedback tab if not already there
-        if st.session_state.active_tab != 2:
-            st.session_state.active_tab = 2
-            st.rerun()
+            
+            if st.button(f"{t('view_feedback')}", key="manual_feedback_button"):
+                st.session_state.active_tab = 2
+                st.rerun()
