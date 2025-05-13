@@ -417,7 +417,7 @@ class WorkflowNodes:
             # IMPROVED: Update analysis using t() function for key translation
             if original_error_count > 0:
                 found_problems_count = len(known_problems)
-                identified_count = get_field_value(analysis, "identified_count", 0)
+                identified_count = analysis[t('identified_count')]
                 
                 # Use translated keys with t() function
                 analysis[t("total_problems")] = original_error_count

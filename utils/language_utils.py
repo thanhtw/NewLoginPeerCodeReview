@@ -111,31 +111,30 @@ def get_field_value(data: dict, english_name: str, default=None):
         
     # If field exists with English name, return it
     if english_name in data:
-        return data[t(english_name)]
+        return data[english_name]  # Fixed: use original key, not translated
         
-    # # Common Chinese translations for field names
-    # chinese_mappings = {
-    #     "identified_count": ["已識別數量", "識別數量"],
-    #     "total_problems": ["總問題數", "問題總數"],
-    #     "identified_percentage": ["識別百分比", "識別百分率"],
-    #     "review_sufficient": ["審查充分", "審查足夠"],
-    #     "feedback": ["反饋", "回饋"],
-    #     "identified_problems": ["已識別問題", "識別問題","已識別的問題"],
-    #     "missed_problems": ["遺漏問題", "漏掉的問題", "遺漏的問題"],
-    #     "false_positives": ["誤報", "假陽性"],
-    #     "accuracy_percentage": ["準確率百分比", "準確率"],
-    #     "false_positive_count": ["誤報數量", "假陽性數量"],
-    #     "valid": ["有效", "有效性"],
-    #     "error": ["錯誤", "錯誤訊息"],
-    #     "original_error_count": ["原始錯誤數量", "原始錯誤計數"]
-
-    # }
+    # Common Chinese translations for field names
+    chinese_mappings = {
+        "identified_count": ["已識別數量", "識別數量"],
+        "total_problems": ["總問題數", "問題總數"],
+        "identified_percentage": ["識別百分比", "識別百分率"],
+        "review_sufficient": ["審查充分", "審查足夠"],
+        "feedback": ["反饋", "回饋"],
+        "identified_problems": ["已識別問題", "識別問題","已識別的問題"],
+        "missed_problems": ["遺漏問題", "漏掉的問題", "遺漏的問題"],
+        "false_positives": ["誤報", "假陽性"],
+        "accuracy_percentage": ["準確率百分比", "準確率"],
+        "false_positive_count": ["誤報數量", "假陽性數量"],
+        "valid": ["有效", "有效性"],
+        "error": ["錯誤", "錯誤訊息"],
+        "original_error_count": ["原始錯誤數量", "原始錯誤計數"]
+    }
     
-    # # Try possible Chinese field names
-    # if english_name in chinese_mappings:
-    #     for chinese_name in chinese_mappings[english_name]:
-    #         if chinese_name in data:
-    #             return data[chinese_name]
+    # Try possible Chinese field names
+    if english_name in chinese_mappings:
+        for chinese_name in chinese_mappings[english_name]:
+            if chinese_name in data:
+                return data[chinese_name]
                 
     # Return default if field not found
     return default

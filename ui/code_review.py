@@ -107,13 +107,13 @@ class CodeDisplayUI:
                     
                     # Show previous attempt results if available
                     if review_analysis:
-                        print("review_analysisreview_analysis: ", review_analysis)
+                        print(review_analysis)
                         st.markdown(
                             f'<div class="analysis-box">'
                             f'<div class="guidance-title"><span class="guidance-icon">📊</span> {t("previous_results")}</div>'
                             f'{t("you_identified")} {review_analysis[t("identified_count")]} {t("of")} '
                             f'{review_analysis[t("total_problems")]} {t("issues")} '
-                            f'({review_analysis[t("identified_percentage")]}) %'
+                            f'({review_analysis[t("identified_percentage")]}) % '
                             f'{t("try_find_more_issues")}'
                             f'</div>',
                             unsafe_allow_html=True
@@ -382,7 +382,7 @@ def render_review_tab(workflow, code_display_ui):
     review_analysis = None
     
     review_history = get_state_attribute(st.session_state.workflow_state, 'review_history')
-    print("st.session_state.workflow_state", st.session_state.workflow_state.dict().get("review_history", None))
+    
     
     if review_history and len(review_history) > 0:
         latest_review = review_history[-1]       

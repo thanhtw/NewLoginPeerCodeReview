@@ -118,8 +118,8 @@ class StudentResponseEvaluator:
         if not analysis_data:
             return ""
         # Extract core metrics with defaults
-        identified_count = analysis_data[f"{t('identified_count')}"]
-        total_problems = analysis_data[f"{t('total_problems')}"]
+        identified_count = analysis_data.get(f"{t('identified_count')}",0)
+        total_problems = analysis_data.get(f"{t('total_problems')}",len(known_problems))
 
         # Calculate percentages
         if total_problems > 0:
@@ -128,9 +128,9 @@ class StudentResponseEvaluator:
             identified_percentage = 100.0
 
 
-        review_sufficient = analysis_data[f"{t('review_sufficient')}"]
-        identified_problems =  analysis_data[f"{t('identified_problems')}"] 
-        missed_problems = analysis_data[f"{t('missed_problems')}"] 
+        review_sufficient = analysis_data.get(f"{t('review_sufficient')}", False)
+        identified_problems =  analysis_data.get(f"{t('identified_problems')}", False)
+        missed_problems = analysis_data.get(f"{t('missed_problems')}", False)
         # Construct enhanced result using t() function for keys
 
         enhanced_result = {

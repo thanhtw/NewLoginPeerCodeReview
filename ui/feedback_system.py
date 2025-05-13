@@ -121,41 +121,27 @@ class FeedbackSystem:
             # First show the most recent review prominently
             if review_history:
                 latest_review = review_history[-1]
-                review_analysis = get_field_value(latest_review, "review_analysis", {})
-                iteration = get_field_value(latest_review, "iteration_number", 0)
+                review_analysis = latest_review[t("review_analysis")]
+                iteration = latest_review[t("iteration_number")]
                 
                 st.markdown(f"#### {t('your_final_review').format(iteration=iteration)}")
                 
                 # Format the review text with syntax highlighting
-                st.markdown("```text\n" + get_field_value(latest_review, "student_review", "") + "\n```")
-                
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.metric(
-                        t("issues_found"), 
-                        f"{get_field_value(review_analysis, 'identified_count', 0)} {t('of')} {get_field_value(review_analysis, 'total_problems', 0)}",
-                        delta=None
-                    )
-                with col2:
-                    st.metric(
-                        t("accuracy"), 
-                        f"{get_field_value(review_analysis, 'accuracy_percentage', 0):.1f}%",
-                        delta=None
-                    )
-                
+                st.markdown("```text\n" +latest_review[t("student_review")] + "\n```")
+                                
             # Show earlier reviews in an expander if there are multiple
             if len(review_history) > 1:
                 with st.expander(t("review_history"), expanded=False):
-                    tabs = st.tabs([f"{t('attempt')} {get_field_value(rev, 'iteration_number', i+1)}" for i, rev in enumerate(review_history)])
+                    tabs = st.tabs([f"{t('attempt')} {rev[t('iteration_number')]}" for i, rev in enumerate(review_history)])
                     
                     for i, (tab, review) in enumerate(zip(tabs, review_history)):
                         with tab:
-                            review_analysis = get_field_value(review, "review_analysis", {})
-                            st.markdown("```text\n" + get_field_value(review, "student_review", "") + "\n```")
+                            review_analysis = review[t("review_analysis")]
+                            st.markdown("```text\n" + review[t('student_review')] + "\n```")
                             
-                            st.write(f"**{t('found')}:** {get_field_value(review_analysis, 'identified_count', 0)} {t('of')} "
-                                    f"{get_field_value(review_analysis, 'total_problems', 0)} {t('issues')} "
-                                    f"({get_field_value(review_analysis, 'accuracy_percentage', 0):.1f}% {t('accuracy')})")
+                            st.write(f"**{t('found')}:** {review_analysis[t('identified_count')]} {t('of')} "
+                                    f"{review_analysis[t('total_problems')]} {t('issues')} "
+                                    f"({review_analysis[t('accuracy_percentage')]:.1f}% {t('accuracy')})")
         
         # Display analysis details in an expander
         if review_summary or review_analysis:
@@ -179,9 +165,9 @@ class FeedbackSystem:
         col1, col2 = st.columns(2)
         
         # Get the correct total_problems count from original_error_count if available
-        original_error_count = get_field_value(review_analysis, "total_problems", 0)
+        original_error_count = review_analysis[t('total_problems')]
         # Calculate metrics using the original count for consistency
-        identified_count = get_field_value(review_analysis, "identified_count", 0)
+        identified_count = review_analysis[t('identified_count')]
         accuracy = (identified_count / original_error_count * 100) if original_error_count > 0 else 0
                 
         with col1:
@@ -199,7 +185,6 @@ class FeedbackSystem:
                 delta=None
             )
             
-        
         # Create a progress chart if multiple iterations
         if len(review_history) > 1:
             # Extract data for chart
@@ -208,11 +193,10 @@ class FeedbackSystem:
             accuracy_percentages = []
             
             for review in review_history:
-                analysis = get_field_value(review, "review_analysis", {})
-                iterations.append(get_field_value(review, "iteration_number", 0))
-                
+                analysis = review[t("review_analysis")]
+                iterations.append(review[t("iteration_number")])
                 # Use consistent error count for all iterations
-                review_identified = get_field_value(analysis, "identified_count", 0)
+                review_identified = analysis[t("identified_count")]
                 identified_counts.append(review_identified)
                 
                 # Calculate accuracy consistently
@@ -281,7 +265,7 @@ class FeedbackSystem:
     
     def _render_identified_issues(self, review_analysis: Dict[str, Any]):
         """Render identified issues section with enhanced styling and proper language support"""
-        identified_problems = get_field_value(review_analysis, f"{t('identified_problems')}", [])       
+        identified_problems = review_analysis[t("identified_problems")]
 
         if not identified_problems:
             st.info(t("no_identified_issues"))
@@ -296,7 +280,7 @@ class FeedbackSystem:
             # Try to extract category information
             category = None
             if isinstance(issue, dict) and "category" in issue:
-                category = get_field_value(issue, "category", None)
+                category = issue[t('category')]
             elif isinstance(issue, str):
                 # Try to extract category from string format like "CATEGORY - Issue name"
                 parts = issue.split(" - ", 1)
@@ -316,21 +300,20 @@ class FeedbackSystem:
         # Display issues by category with collapsible sections
         for category, issues in categorized_issues.items():
             if category and issues:
-                st.markdown(f"### {category} ({len(issues)})")
+                #st.markdown(f"### {category} ({len(issues)})")
                 for i, issue in enumerate(issues, 1):
                     if isinstance(issue, dict):
-                        # Use get_field_value for proper language handling
-                        problem = get_field_value(issue, f"{t('problemt')}", "")
-                        student_comment = get_field_value(issue, f"{t('student_commentt')}", "")
-                        feedback = get_field_value(issue, f"{t('feedbackt')}", "")
                         
+                        problem = issue[t('problem')]
+                        student_comment = issue[t('student_comment')]
+                        feedback = issue[t('feedback')]                        
                         st.markdown(
                             f"""
                             <div style="border-left: 4px solid #4CAF50; padding: 10px; margin: 10px 0;
                                         border-radius: 4px; background-color: rgba(76, 175, 80, 0.1);">
-                                <div style="margin-bottom: 5px;"><strong>{t("problemt")}:</strong> {problem}</div>
-                                <div style="margin-bottom: 5px;"><strong>{t("student_commentt")}:</strong> {student_comment}</div>
-                                <div><strong>{t("feedbackt")}:</strong> {feedback}</div>
+                                <div style="margin-bottom: 5px;"><strong>{t("problem")}:</strong> {problem}</div>
+                                <div style="margin-bottom: 5px;"><strong>{t("student_comment")}:</strong> {student_comment}</div>
+                                <div><strong>{t("feedback")}:</strong> {feedback}</div>
                             </div>
                             """,
                             unsafe_allow_html=True
@@ -350,10 +333,7 @@ class FeedbackSystem:
     def _render_missed_issues(self, review_analysis: Dict[str, Any]):
         """Render missed issues section with enhanced styling and proper language support"""
         
-        missed_problems = get_field_value(review_analysis, t("missed_problems"), [])
-        
-        print("missed_problemsmissed_problems: ", review_analysis)
-        #print("review_analysisreview_analysis: ", review_analysis)
+        missed_problems = review_analysis[t("missed_problems")]
         
         if not missed_problems:
             st.success(t("all_issues_found"))
@@ -368,7 +348,7 @@ class FeedbackSystem:
             # Extract category similar to identified issues method
             category = None
             if isinstance(issue, dict) and "category" in issue:
-                category = get_field_value(issue, "category", None)
+                category = issue[t("category")]
             elif isinstance(issue, str):
                 parts = issue.split(" - ", 1)
                 if len(parts) > 1:
@@ -385,19 +365,19 @@ class FeedbackSystem:
         # Display issues by category with collapsible sections
         for category, issues in categorized_issues.items():
             if category and issues:
-                st.markdown(f"### {category} ({len(issues)})")
+                #st.markdown(f"### {category} ({len(issues)})")
                 for i, issue in enumerate(issues, 1):
                     if isinstance(issue, dict):
                         # Use get_field_value for proper language handling
-                        problem = get_field_value(issue, f"{t('problemt')}", "")
-                        hint = get_field_value(issue, f"{t('hintt')}", "")
+                        problem = issue['problem']
+                        hint =  issue['hint']
                         
                         st.markdown(
                             f"""
                             <div style="border-left: 4px solid #dc3545; padding: 10px; margin: 10px 0;
                                         border-radius: 4px; background-color: rgba(220, 53, 69, 0.1);">
-                                <div style="margin-bottom: 5px;"><strong>{t("problemt")}:</strong> {problem}</div>
-                                {f'<div style="margin-bottom: 5px;"><strong>{t("hintt")}:</strong> {hint}</div>' if hint else ''}
+                                <div style="margin-bottom: 5px;"><strong>{t("problem")}:</strong> {problem}</div>
+                                {f'<div style="margin-bottom: 5px;"><strong>{t("hint")}:</strong> {hint}</div>' if hint else ''}
                             </div>
                             """,
                             unsafe_allow_html=True
@@ -440,8 +420,8 @@ class FeedbackSystem:
             latest_review = state.review_history[-1]
             analysis = latest_review.analysis if hasattr(latest_review, 'analysis') else {}
             
-            identified_count = get_field_value(analysis, "identified_count", 0)
-            total_problems = get_field_value(analysis, "total_problems", 0) 
+            identified_count = analysis[t('identified_count')]
+            total_problems = analysis[t('total_problems')]
             
             if identified_count == total_problems and total_problems > 0:
                 review_completed = True
@@ -497,8 +477,8 @@ class FeedbackSystem:
         try:
             # Get the known problems from the evaluation result instead of code_snippet.known_problems
             if get_state_attribute(state, 'evaluation_result') and 'found_errors' in get_state_attribute(state, 'evaluation_result'):
-                found_errors = get_field_value(get_state_attribute(state, 'evaluation_result'), 'found_errors', [])
-                
+                steamp1 = get_state_attribute(state, 'evaluation_result')
+                found_errors = steamp1[t("found_errors")]
                 # Generate a comparison report if it doesn't exist
                 state.comparison_report = generate_comparison_report(
                     found_errors,
@@ -525,13 +505,13 @@ class FeedbackSystem:
         """
         # Check if we already updated stats for this iteration
         current_iteration = get_state_attribute(state, 'current_iteration', 1)
-        identified_count = get_field_value(latest_analysis, "identified_count", 0)
+        identified_count = latest_analysis[t("identified_count")]
         stats_key = f"stats_updated_{current_iteration}_{identified_count}"
     
         if stats_key not in st.session_state and stats_key not in self.stats_updates:
             try:
                 # Extract accuracy and identified_count from the latest review
-                accuracy = get_field_value(latest_analysis, "accuracy_percentage", 0)
+                accuracy = latest_analysis[t("accuracy_percentage")]
                     
                 # Log details before update
                 logger.info(f"{t('preparing_update_stats')}: {t('accuracy')}={accuracy:.1f}%, " + 
@@ -545,23 +525,23 @@ class FeedbackSystem:
                 self.stats_updates[stats_key] = True
                 
                 # Log the update result
-                if result and get_field_value(result, "success", False):
+                if result and result[t("success")] == True:
                         logger.info(f"{t('successfully_updated_statistics')}: {result}")
                         
                         # Add explicit UI message about the update
                         st.success(f"{t('statistics_updated')}! {t('added')} {identified_count} {t('to_your_score')}.")
                         
                         # Show level promotion message if level changed
-                        if get_field_value(result, "level_changed", False):
-                            old_level = get_field_value(result, "old_level", "").capitalize()
-                            new_level = get_field_value(result, "new_level", "").capitalize()
+                        if result[t('level_changed')]:
+                            old_level = result[t('old_level')].capitalize()
+                            new_level = result[t('new_level')].capitalize()
                             st.balloons()  # Add visual celebration effect
                             st.success(f"🎉 {t('congratulations')}! {t('level_upgraded')} {old_level} {t('to')} {new_level}!")
                         
                         # Give the database a moment to complete the update
                         time.sleep(0.5)
                 else:
-                    err_msg = get_field_value(result, 'error', t('unknown_error')) if result else t('no_result_returned')
+                    err_msg =  get_field_value(result, 'error', t('unknown_error')) if result else t('no_result_returned')
                     logger.error(f"{t('failed_update_statistics')}: {err_msg}")
                     st.error(f"{t('failed_update_statistics')}: {err_msg}")
             except Exception as e:
