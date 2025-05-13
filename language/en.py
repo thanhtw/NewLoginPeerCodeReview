@@ -218,6 +218,7 @@ translations = {
     "generating_comparison_report": "generating comparison report",
     "good_performance_guidance": "You're doing well! Try looking for issues related to '{missed_text}'. Check for similar patterns elsewhere in the code.",
     "hintt": "hint",
+    "hint": "Hint",
     "identified_count": "Identified Count",
     "identified_issues": "Identified Issues",
     "identified_percentage": "Identified Percentage",
@@ -241,6 +242,7 @@ translations = {
     "no_result_returned": "No result returned",
     "overall_accuracy": "Overall Accuracy",
     "problemt": "problem",
+    "problem": "Problem",
     "progress_across_iterations": "Progress Across Iterations",
     "remaining_attempts": "remaining_attempts",
     "review_completed_all_identified": "Review completed: all",
@@ -253,6 +255,7 @@ translations = {
     "start_new_session": "Start New Session",
     "statistics_updated": "Statistics updated",
     "student_commentt": "student_comment",
+    "student_comment": "Student Comment",
     "successfully_updated_statistics": "Successfully updated user statistics",
     "targeted_guidance": "Targeted Guidance",
     "to": "to",
@@ -386,5 +389,12 @@ translations = {
     "out_of": "out of",
     "missing": "missing",
     "errors": "errors",
-    "found": "Found"
+    "found": "Found",
+    "error_type": "Error Type",
+    "error_name":"Error Name",
+    "line_number": "Line Number",
+    "explanation": "Expanation",
+    "valid": "Valid",
+    "code_segment": "Code Segment"
+
 }

@@ -129,7 +129,7 @@ class FeedbackSystem:
                 # Format the review text with syntax highlighting
                 st.markdown("```text\n" + get_field_value(latest_review, "student_review", "") + "\n```")
                 
-                col1, col2, col3 = st.columns(3)
+                col1, col2 = st.columns(2)
                 with col1:
                     st.metric(
                         t("issues_found"), 
@@ -142,13 +142,7 @@ class FeedbackSystem:
                         f"{get_field_value(review_analysis, 'accuracy_percentage', 0):.1f}%",
                         delta=None
                     )
-                with col3:
-                    false_positives = len(get_field_value(review_analysis, 'false_positives', []))
-                    st.metric(
-                        t("false_positives"), 
-                        false_positives,
-                        delta=None
-                    )
+                
             # Show earlier reviews in an expander if there are multiple
             if len(review_history) > 1:
                 with st.expander(t("review_history"), expanded=False):
@@ -182,18 +176,14 @@ class FeedbackSystem:
         st.subheader(t("review_performance_summary"))
         
         # Create performance metrics using the original error count if available
-        col1, col2, col3 = st.columns(3)
+        col1, col2 = st.columns(2)
         
         # Get the correct total_problems count from original_error_count if available
-        original_error_count = get_field_value(review_analysis, "original_error_count", 0)
-        if original_error_count <= 0:
-            original_error_count = get_field_value(review_analysis, "total_problems", 0)
-        
+        original_error_count = get_field_value(review_analysis, "total_problems", 0)
         # Calculate metrics using the original count for consistency
         identified_count = get_field_value(review_analysis, "identified_count", 0)
         accuracy = (identified_count / original_error_count * 100) if original_error_count > 0 else 0
-        false_positives = len(get_field_value(review_analysis, "false_positives", []))
-        
+                
         with col1:
             st.metric(
                 t("overall_accuracy"), 
@@ -209,14 +199,7 @@ class FeedbackSystem:
                 delta=None
             )
             
-        with col3:
-            st.metric(
-                t("false_positives"), 
-                f"{false_positives}",
-                delta=None
-            )
         
-                
         # Create a progress chart if multiple iterations
         if len(review_history) > 1:
             # Extract data for chart
@@ -298,7 +281,8 @@ class FeedbackSystem:
     
     def _render_identified_issues(self, review_analysis: Dict[str, Any]):
         """Render identified issues section with enhanced styling and proper language support"""
-        identified_problems = get_field_value(review_analysis, "identified_problems", [])       
+        identified_problems = get_field_value(review_analysis, f"{t('identified_problems')}", [])       
+
         if not identified_problems:
             st.info(t("no_identified_issues"))
             return
@@ -368,8 +352,8 @@ class FeedbackSystem:
         
         missed_problems = get_field_value(review_analysis, t("missed_problems"), [])
         
-        print("missed_problemsmissed_problems: ", missed_problems)
-        print("review_analysisreview_analysis: ", review_analysis)
+        print("missed_problemsmissed_problems: ", review_analysis)
+        #print("review_analysisreview_analysis: ", review_analysis)
         
         if not missed_problems:
             st.success(t("all_issues_found"))

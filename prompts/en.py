@@ -116,26 +116,26 @@ Your evaluation must be returned in this JSON format:
 
 ```json
 {{
-"found_errors": [
+"Identified Problems": [
     {{
-    "error_type": "BUILD",  
-    "error_name": "NullPointerException",
-    "line_number": 42,
-    "code_segment": "String str = null; int length = str.length();",
-    "explanation": "This code will cause a NullPointerException because it calls length() on a null String"
+    "Error Type": "BUILD",  
+    "Error Name": "NullPointerException",
+    "Line Number": 42,
+    "Code Segment": "String str = null; int length = str.length();",
+    "Expanation": "This code will cause a NullPointerException because it calls length() on a null String"
     }}
     // List all implemented errors that match the requested list
 ],
-"missing_errors": [
+"Missed Problems": [
     {{
-    "error_type": "CHECKSTYLE",
-    "error_name": "MemberName",
-    "explanation": "The code doesn't contain any variable names that violate member naming conventions"
+    "Error Type": "CHECKSTYLE",
+    "Error Name": "MemberName",
+    "Expanation": "The code doesn't contain any variable names that violate member naming conventions"
     }}
     // List all requested errors that aren't implemented
 ],
-"valid": true,  // Set to true ONLY if ALL requested errors are implemented, no more and no fewer
-"feedback": "The code successfully implements all {error_count} requested errors."  // Provide brief overall assessment
+"Valid": true,  // Set to true ONLY if ALL requested errors are implemented, no more and no fewer
+"Feedback": "The code successfully implements all {error_count} requested errors."  // Provide brief overall assessment
 }}
 ```
 
@@ -171,43 +171,35 @@ ANALYSIS INSTRUCTIONS:
 1. Carefully read both the code and the student's review
 2. Identify which of the known issues the student correctly found
 3. Note which known issues the student missed
-4. Identify any false positives (things the student flagged as issues that aren't actual problems)
-5. Evaluate the review quality (accuracy, completeness, clarity, and specificity)
-6. Determine if the review is sufficient (>= 60% of issues correctly identified)
+4. Evaluate the review quality (accuracy, completeness, clarity, and specificity)
+5. Determine if the review is sufficient (>= 60% of issues correctly identified)
 
 RESPONSE REQUIREMENTS:
 Provide your analysis in JSON format with these components:
 
 ```json
 {
-"identified_problems": [
+"Identified Problems": [
     {
-    "problem": "SPECIFIC KNOWN ISSUE TEXT",
-    "student_comment": "STUDENT'S RELEVANT COMMENT",
-    "accuracy": 0.9,
-    "feedback": "Brief feedback on this identification"
+    "Problem": "SPECIFIC KNOWN ISSUE TEXT",
+    "Student Comment": "STUDENT'S RELEVANT COMMENT",
+    "Accuracy": 0.9,
+    "Feedback": "Brief feedback on this identification"
     }
     // Include all correctly identified issues
 ],
-"missed_problems": [
+"Missed Problems": [
     {
-    "problem": "SPECIFIC KNOWN ISSUE TEXT",
+    "Problem": "SPECIFIC KNOWN ISSUE TEXT",
     "hint": "A helpful educational hint for finding this type of issue"
     }
     // Include all missed issues
 ],
-"false_positives": [
-    {
-    "student_comment": "STUDENT'S INCORRECT COMMENT",
-    "explanation": "Why this isn't actually an issue"
-    }
-    // Include any incorrect identifications
-],
-"identified_count": 3,  // Number of correctly identified issues
-"total_problems": {problem_count},  // Total number of known issues
-"identified_percentage": 60.0,  // Percentage of issues correctly identified
-"review_sufficient": true,  // true if >= 60% of issues identified
-"feedback": "Overall assessment with specific improvement suggestions"
+"Identified Count": 3,  // Number of correctly identified issues
+"Total Problems": {problem_count},  // Total number of known issues
+"Identified Percentage": 60.0,  // Percentage of issues correctly identified
+"Review Sufficient": true,  // true if >= 60% of issues identified
+"Feedback": "Overall assessment with specific improvement suggestions"
 }
 ```
 
@@ -270,7 +262,6 @@ PERFORMANCE METRICS:
 - Total issues in the code: {total_problems}
 - Issues correctly identified: {identified_count} ({accuracy:.1f}%)
 - Issues missed: {len_missed_str}
-- False positives (things incorrectly flagged as issues): {len_false_str}
 
 CORRECTLY IDENTIFIED ISSUES:
 {identified_text}
@@ -278,8 +269,6 @@ CORRECTLY IDENTIFIED ISSUES:
 MISSED ISSUES:
 {missed_text}
 
-FALSE POSITIVES:
-{false_positive_text}
 
 {progress_info}
 
@@ -289,7 +278,6 @@ REPORT REQUIREMENTS:
 - Performance Summary (with metrics and overall assessment)
 - Correctly Identified Issues (with praise for what they found correctly)
 - Missed Issues (with educational explanations of why they matter)
-- False Positives (if any, with explanations of why these aren't actual issues)
 - Progress Analysis (if multiple attempts, analyzing their improvement)
 - Tips for Improvement (specific, actionable advice based on their performance)
 

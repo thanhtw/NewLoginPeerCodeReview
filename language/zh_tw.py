@@ -218,6 +218,7 @@ translations = {
     "generating_comparison_report": "生成比較報告",
     "good_performance_guidance": "做得很好！嘗試尋找與「{missed_text}」相關的問題。檢查代碼中其他地方的類似模式。",
     "hintt": "提示",
+    "hint": "提示",
     "identified_count": "已識別數量",
     "identified_issues": "已識別的問題",
     "identified_percentage": "識別百分比",
@@ -240,6 +241,7 @@ translations = {
     "no_result_returned": "未返回結果",
     "overall_accuracy": "整體準確度",
     "problemt": "問題",
+    "problem": "問題",
     "progress_across_iterations": "迭代進度",
     "remaining_attempts": "剩餘嘗試次數",
     "review_completed_all_identified": "審查已完成：所有",
@@ -252,6 +254,7 @@ translations = {
     "start_new_session": "開始新會話",
     "statistics_updated": "統計數據已更新",
     "student_commentt": "學生評論",
+    "student_comment": "學生評論",
     "successfully_updated_statistics": "成功更新用戶統計數據",
     "targeted_guidance": "針對性指導",
     "to": "升級到",
@@ -398,5 +401,12 @@ translations = {
     "out_of": "中的",
     "missing": "遺漏",
     "errors": "錯誤",
-    "found": "找到"
+    "found": "找到",
+    "found_errors": "發現錯誤",
+    "error_type": "錯誤類型",
+    "error_name": "錯誤名稱",
+    "line_number": "行號",
+    "explanation": "說明",
+    "valid": "有效",
+    "code_segment": "程式碼片段"
 }
