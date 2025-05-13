@@ -198,23 +198,17 @@ def create_evaluation_prompt(code: str, requested_errors: list) -> str:
         
         # Handle language variations for field names
         name = None
-        if "name" in error:
+        if t("name") in error:
             name = error.get("name", "")
-        elif "error_name" in error:
+        elif t("error_name") in error:
             name = error.get("error_name", "")
-        elif "錯誤名稱" in error:  # Traditional Chinese field name
-            name = error.get("錯誤名稱", "")
+        
             
         # Get description with language variations
         description = ""
-        if "description" in error:
+        if t("description") in error:
             description = error.get("description", "")
-        elif "描述" in error:  # Traditional Chinese field name
-            description = error.get("描述", "")
         
-        # If we still don't have a name, use a fallback
-        if not name:
-            name = "Unknown Error"
             
         error_list.append(f"{i}. {error_type} - {name}: {description}")
     
@@ -229,7 +223,7 @@ def create_evaluation_prompt(code: str, requested_errors: list) -> str:
     # Create the prompt by filling in the template safely
     prompt = f"{language_instructions}. " + format_template_safely(
         template,
-        code=code,
+        code=add_line_numbers(code),
         error_count=error_count,
         error_instructions=error_instructions
     )
@@ -393,7 +387,7 @@ def create_comparison_report_prompt(evaluation_errors: List[str], review_analysi
     # Extract performance metrics from latest review using direct access
     identified_problems = review_analysis.get(t("identified_problems"), [])
     missed_problems = review_analysis.get(t("missed_problems"), [])
-    false_positives = review_analysis.get(t("false_positives"), [])
+
     
     # Get total problems count using direct access
     total_problems = (review_analysis.get(t("total_problems"), 0) or 
@@ -419,12 +413,6 @@ def create_comparison_report_prompt(evaluation_errors: List[str], review_analysi
         elif isinstance(problem, str):
             missed_str.append(problem)
     
-    false_str = []
-    for problem in false_positives:
-        if isinstance(problem, dict) and t("student_comment") in problem:
-            false_str.append(problem.get(t("student_comment"), ""))
-        elif isinstance(problem, str):
-            false_str.append(problem)
     
     # Format identified problems for the prompt
     identified_text = "\n".join(f"- {p}" for p in identified_str)
@@ -447,7 +435,6 @@ def create_comparison_report_prompt(evaluation_errors: List[str], review_analysi
         identified_count=identified_count,
         accuracy=accuracy,
         len_missed_str=len(missed_str),
-        len_false_str=len(false_str),
         identified_text=identified_text,
         missed_text=missed_text,
         false_positive_text=false_positive_text,
@@ -519,10 +506,19 @@ def extract_both_code_versions(response) -> Tuple[str, str]:
     
     # For Groq responses: If we found annotated but no clean code, create clean code by removing error comments
     if annotated_code and not clean_code:
-        # Remove lines with error comments
+        # Process line by line to remove only the error comments, not the entire line
         clean_lines = []
         for line in annotated_code.splitlines():
-            if "// ERROR:" not in line:
+            if "// ERROR:" in line:
+                # Remove only the error comment part, keep the code
+                error_comment_index = line.find("// ERROR:")
+                # Only take the part before the error comment
+                cleaned_line = line[:error_comment_index].rstrip()
+                # Only add non-empty lines
+                if cleaned_line:
+                    clean_lines.append(cleaned_line)
+            else:
+                # Line doesn't have an error comment, keep it as is
                 clean_lines.append(line)
         clean_code = "\n".join(clean_lines)
     
@@ -568,7 +564,6 @@ def generate_comparison_report(evaluation_errors: List[str], review_analysis: Di
             
             # Clean up the report
             report = report.replace('\\n', '\n')
-            
             return report
         except Exception as e:
             # Log the error

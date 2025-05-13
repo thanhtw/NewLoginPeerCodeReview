@@ -106,6 +106,7 @@ class FeedbackSystem:
         if review_history and len(review_history) > 0 and review_analysis:
             self._render_performance_summary(review_analysis, review_history)
         
+        print("comparison_report: ", comparison_report)
         # Display the comparison report
         if comparison_report:
             st.subheader(t("educational_feedback"))
@@ -419,15 +420,11 @@ class FeedbackSystem:
         if hasattr(state, 'review_history') and state.review_history and len(state.review_history) > 0:
             latest_review = state.review_history[-1]
             analysis = latest_review.analysis if hasattr(latest_review, 'analysis') else {}
-            
             identified_count = analysis[t('identified_count')]
             total_problems = analysis[t('total_problems')]
             
             if identified_count == total_problems and total_problems > 0:
                 review_completed = True
-                if not get_state_attribute(state, 'review_sufficient'):
-                    # Ensure state is consistent
-                    state.review_sufficient = True
                 logger.info(f"{t('review_completed_all_identified')} {total_problems} {t('issues')}")
                 
         return review_completed

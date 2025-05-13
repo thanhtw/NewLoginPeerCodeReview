@@ -408,5 +408,9 @@ translations = {
     "line_number": "行號",
     "explanation": "說明",
     "valid": "有效",
-    "code_segment": "程式碼片段"
+    "code_segment": "程式碼片段",
+    "name":"name",
+    "error_name":"錯誤名稱",
+    "description":"描述",
+    "implementation_guide":"實作範例"
 }

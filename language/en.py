@@ -395,6 +395,10 @@ translations = {
     "line_number": "Line Number",
     "explanation": "Expanation",
     "valid": "Valid",
-    "code_segment": "Code Segment"
+    "code_segment": "Code Segment",
+    "name":"name",
+    "error_name":"error_name",
+    "description":"description",
+    "implementation_guide":"implementation_guide"
 
 }

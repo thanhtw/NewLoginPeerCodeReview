@@ -38,7 +38,6 @@ class CodeDisplayUI:
             known_problems: List of known problems for instructor view
             instructor_mode: Whether to show instructor view
         """
-        print("code_snippet: ",code_snippet)
         if not code_snippet:
             st.info(t("no_code_generated_use_generate"))
             return
@@ -51,9 +50,7 @@ class CodeDisplayUI:
             else:
                 st.warning(t("code_exists_but_empty"))
                 return
-        #print("display_code: ", display_code)
         numbered_code = self._add_line_numbers(display_code)
-        #print("numbered_code: ",numbered_code)
         st.code(numbered_code, language="java")
                
     def _add_line_numbers(self, code: str) -> str:
