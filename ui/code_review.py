@@ -91,9 +91,8 @@ class CodeDisplayUI:
             st.markdown(f'<div class="review-header"><span class="review-title">{t("submit_review")}</span></div>', unsafe_allow_html=True)
         
         # Create a layout for guidance and history
-        if targeted_guidance or (review_analysis and iteration_count > 1):
-            guidance_col, history_col = st.columns([2, 1])
-            print("targeted_guidance: ", targeted_guidance)
+        if targeted_guidance:
+            guidance_col, history_col = st.columns([2, 1])           
             # Display targeted guidance if available (for iterations after the first)
             with guidance_col:
                 if targeted_guidance and iteration_count > 1:
@@ -384,19 +383,19 @@ def render_review_tab(workflow, code_display_ui):
     )
     
     # Get current review state
-    current_iteration = get_state_attribute(st.session_state.workflow_state, t('current_iteration'),1)
-    max_iterations = get_state_attribute(st.session_state.workflow_state, t('max_iterations'),3)
+    current_iteration = get_state_attribute(st.session_state.workflow_state, 'current_iteration',1)
+    max_iterations = get_state_attribute(st.session_state.workflow_state, 'max_iterations',3)
     
     # Get the latest review if available
     latest_review = None
     targeted_guidance = None
     review_analysis = None
     
-    review_history = get_state_attribute(st.session_state.workflow_state, t('review_history'))
+    review_history = get_state_attribute(st.session_state.workflow_state, 'review_history')
     
     
     if review_history and len(review_history) > 0:
-        latest_review = review_history[-1]         
+        latest_review = review_history[-1]    
         targeted_guidance = latest_review.dict().get("targeted_guidance", None)
         review_analysis = latest_review.dict().get("analysis", None)
       

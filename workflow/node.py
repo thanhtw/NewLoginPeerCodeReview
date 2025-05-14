@@ -456,9 +456,8 @@ class WorkflowNodes:
                     review_analysis=analysis,
                     iteration_count=state.current_iteration,
                     max_iterations=state.max_iterations
-                )
-                latest_review.targeted_guidance = targeted_guidance
-            
+                )               
+                latest_review.targeted_guidance = targeted_guidance              
             # Increment iteration count
             state.current_iteration += 1
             

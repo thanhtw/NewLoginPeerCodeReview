@@ -81,6 +81,7 @@ class WorkflowConditions:
             "continue_review" if more review iterations are needed
             "generate_summary" if the review is sufficient or max iterations reached or all issues identified
         """
+        print("state: ",state)
         # Extract state attributes for clearer code
         current_iteration = getattr(state, "current_iteration", 1)
         max_iterations = getattr(state, "max_iterations", 3)
@@ -92,15 +93,24 @@ class WorkflowConditions:
      
         # Get the latest review analysis
         latest_review = review_history[-1] if review_history else None
-        
+
+        print("latest_review: ", latest_review)
         if latest_review and hasattr(latest_review, "analysis"):
             analysis = latest_review.analysis
             identified_count = analysis.get("identified_count", 0)
             total_problems = analysis.get("total_problems", 0)
             
             # Check if all issues have been identified OR we've reached the max iterations
-            if (identified_count == total_problems and total_problems > 0) or current_iteration > max_iterations:
-                # Set review_sufficient to True to maintain state consistency
+            if (identified_count == total_problems and total_problems > 0) or current_iteration > max_iterations:              
                 state.review_sufficient = True
                 if identified_count == total_problems:
                     logger.info(f"Review path decision: generate_summary (all {total_problems} issues identified)")
+                else:
+                    logger.info(f"Review path decision: generate_summary (max iterations {max_iterations} reached)")
+                return "generate_summary"
+        if review_sufficient:
+            logger.info("Review path decision: generate_summary (review marked sufficient)")
+            return "generate_summary"
+        
+        logger.info(f"Review path decision: continue_review (iteration {current_iteration}/{max_iterations})")
+        return "continue_review"
