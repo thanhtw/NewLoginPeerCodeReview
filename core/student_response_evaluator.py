@@ -4,10 +4,9 @@ import json
 from typing import List, Dict, Any
 from langchain_core.language_models import BaseLanguageModel
 
-from utils.code_utils import create_review_analysis_prompt, create_feedback_prompt, process_llm_response
+from utils.code_utils import create_review_analysis_prompt, create_feedback_prompt, create_comparison_report_prompt, process_llm_response
 from utils.llm_logger import LLMInteractionLogger
-from utils.language_utils import t, get_field_value, get_current_language
-
+from utils.language_utils import t
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -359,3 +358,55 @@ class StudentResponseEvaluator:
                 
             # Fallback to concise guidance
             return ""
+        
+    def generate_comparison_report(self, evaluation_errors: List[str], review_analysis: Dict[str, Any], 
+                                  review_history: List[Dict[str, Any]] = None) -> str:
+        """
+        Generate a comparison report showing progress across review attempts.
+        Uses the LLM instance that's already available in the class.
+        
+        Args:
+            evaluation_errors: List of errors found by the evaluation
+            review_analysis: Analysis of the latest student review
+            review_history: History of all review attempts
+            
+        Returns:
+            Formatted comparison report
+        """
+        try:
+            # Check if LLM is available
+            if not self.llm:
+                logger.error(f"{t('error')} generating comparison report: No LLM available")
+                return ""
+                
+            # Create the prompt for the LLM
+            prompt = create_comparison_report_prompt(evaluation_errors, review_analysis, review_history)
+            
+            # Generate the report with the LLM
+            response = self.llm.invoke(prompt)
+            
+            # Process the response
+            if hasattr(response, 'content'):
+                report = response.content
+            elif isinstance(response, dict) and 'content' in response:
+                report = response['content']
+            else:
+                report = str(response)
+            
+            # Clean up the report
+            report = report.replace('\\n', '\n')
+            
+            # Log the report generation
+            self.llm_logger.log_interaction("comparison_report", prompt, report, {
+                "evaluation_errors_count": len(evaluation_errors),
+                "review_analysis": review_analysis,
+                "review_history_count": len(review_history) if review_history else 0
+            })
+            
+            return report
+        except Exception as e:
+            # Log the error
+            logger.error(f"Error generating comparison report with LLM: {str(e)}")
+            # Return an empty string
+            return ""
+    

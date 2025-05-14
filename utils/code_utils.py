@@ -528,50 +528,6 @@ def extract_both_code_versions(response) -> Tuple[str, str]:
     
     return annotated_code, clean_code
 
-def generate_comparison_report(evaluation_errors: List[str], review_analysis: Dict[str, Any], 
-                              review_history: List[Dict[str, Any]] = None, llm = None) -> str:
-    """
-    Generate a comparison report showing progress across review attempts.
-    Uses an LLM when available, with fallback to static generation.
-    
-    Args:
-        evaluation_errors: List of errors found by the evaluation
-        review_analysis: Analysis of the latest student review
-        review_history: History of all review attempts
-        llm: Optional language model to generate the report
-        
-    Returns:
-        Formatted comparison report
-    """
-    # If LLM is provided, use it to generate the report
-    if llm:
-        try:
-            # Create the prompt for the LLM
-            prompt = create_comparison_report_prompt(evaluation_errors, review_analysis, review_history)
-            
-            # Generate the report with the LLM
-            response = llm.invoke(prompt)
-            
-            # Process the response
-            if hasattr(response, 'content'):
-                report = response.content
-            elif isinstance(response, dict) and 'content' in response:
-                report = response['content']
-            else:
-                report = str(response)
-            
-            # Clean up the report
-            report = report.replace('\\n', '\n')
-            return report
-        except Exception as e:
-            # Log the error
-            logger.error(f"Error generating comparison report with LLM: {str(e)}")
-            # Fall back to static generation
-            return ""
-    else:
-        # If no LLM is provided, use static generation
-        return ""
-
 def process_llm_response(response):
     """
     Process LLM response to handle different formats from different providers

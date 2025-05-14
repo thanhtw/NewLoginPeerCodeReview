@@ -475,13 +475,24 @@ class FeedbackSystem:
             if get_state_attribute(state, 'evaluation_result') and 'found_errors' in get_state_attribute(state, 'evaluation_result'):
                 stamp = get_state_attribute(state, 'evaluation_result')
                 found_errors = stamp[t("found_errors")]
-                #print("get_state_attribute(state, 'evaluation_result'): ", get_state_attribute(state, 'evaluation_result'))
-                # Generate a comparison report if it doesn't exist
-                state.comparison_report = generate_comparison_report(
-                    found_errors,
-                    latest_review.analysis
-                )
-                logger.info(t("generated_comparison_report"))
+                
+                # Get the evaluator from the workflow
+                evaluator = self.workflow.workflow_nodes.evaluator
+                
+                if evaluator:
+                    # Generate a comparison report using the evaluator's method
+                    state.comparison_report = evaluator.generate_comparison_report(
+                        found_errors,
+                        latest_review.analysis
+                    )
+                    logger.info(t("generated_comparison_report"))
+                else:
+                    logger.error("Evaluator not available for generating comparison report")
+                    state.comparison_report = (
+                        f"# {t('review_feedback')}\n\n"
+                        f"{t('error_generating_report')} "
+                        f"{t('check_review_history')}."
+                    )
         except Exception as e:
             logger.error(f"{t('error')} {t('generating_comparison_report')}: {str(e)}")
             logger.error(traceback.format_exc())  # Log full stacktrace

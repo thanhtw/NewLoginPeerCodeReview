@@ -238,7 +238,7 @@ class CodeDisplayUI:
 def process_student_review(workflow, student_review: str):
     """
     Process a student review with progress indicator and improved error handling.
-    Show immediate feedback to the student.
+    Validate the format and show immediate feedback to the student.
     
     Args:
         workflow: The JavaCodeReviewGraph workflow instance
@@ -269,6 +269,18 @@ def process_student_review(workflow, student_review: str):
                 status.update(label=f"{t('error')}: {t('review_cannot_be_empty')}", state="error")
                 st.session_state.error = t("please_enter_review")
                 return False
+            
+            # Get the evaluator from the workflow to validate the format
+            evaluator = workflow.workflow_nodes.evaluator
+            
+            if evaluator:
+                # Validate the review format
+                is_valid, reason = evaluator.validate_review_format(student_review)
+                
+                if not is_valid:
+                    status.update(label=f"{t('error')}: {reason}", state="error")
+                    st.session_state.error = reason
+                    return False
             
             # Store the current review in session state for display consistency
             current_iteration = get_state_attribute(state, "current_iteration")

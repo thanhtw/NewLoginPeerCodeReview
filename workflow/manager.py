@@ -23,8 +23,7 @@ from workflow.conditions import WorkflowConditions
 from workflow.builder import GraphBuilder
 
 from utils.llm_logger import LLMInteractionLogger
-from utils.code_utils import generate_comparison_report, process_llm_response
-from utils.language_utils import t, get_field_value, get_llm_instructions
+from utils.language_utils import t, get_field_value
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -247,14 +246,14 @@ class WorkflowManager:
                         "targeted_guidance": review.targeted_guidance
                     })
                         
-                # Generate the comparison report
-                state.comparison_report = generate_comparison_report(
-                    found_errors,
-                    latest_review.analysis,
-                    converted_history,
-                    llm=self.summary_model
-                )
-                logger.info(t("generated_comparison_report"))
+                # # Generate the comparison report
+                # state.comparison_report = generate_comparison_report(
+                #     found_errors,
+                #     latest_review.analysis,
+                #     converted_history,
+                #     llm=self.summary_model
+                # )
+                # logger.info(t("generated_comparison_report"))
                     
             except Exception as e:
                 logger.error(f"{t('error')} {t('generating_comparison_report')}: {str(e)}")

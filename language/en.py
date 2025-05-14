@@ -403,6 +403,10 @@ translations = {
     "missing_errors":"missing_errors",
     "found_errors":"found_errors",
     "domain":"domain",
-    "attempt":"attempt"
+    "attempt":"attempt",
+    "line_X_invalid_format": "Line {line} does not follow the required format.",
+    "lines_X_invalid_format": "Lines {lines} do not follow the required format.",
+    "please_use_format_line_description": "Please use the format 'Line X: description of problem' for each issue you identify.",
+    "no_review_history_found": "No review history found."
 
 }

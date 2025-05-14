@@ -414,5 +414,9 @@ translations = {
     "missing_errors":"缺少的錯誤",
     "found_errors":"發現的錯誤",
     "domain":"領域",
-    "attempt":"嘗試"
+    "attempt":"嘗試",
+    "line_X_invalid_format": "第 {line} 行不符合要求的格式。",
+    "lines_X_invalid_format": "第 {lines} 行不符合要求的格式。",
+    "please_use_format_line_description": "請為每個您識別的問題使用「Line X: 問題描述」的格式。",
+    "no_review_history_found": "找不到審查歷史記錄。"
 }
