@@ -12,7 +12,7 @@ from typing import Dict, Any, List, Tuple, Optional
 from state_schema import WorkflowState, CodeSnippet
 from utils.code_utils import extract_both_code_versions, create_regeneration_prompt, get_error_count_from_state
 import random
-from utils.language_utils import get_field_value, get_state_attribute, t
+from utils.language_utils import get_state_attribute, t
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -94,7 +94,7 @@ class WorkflowNodes:
                 original_error_count = len(selected_errors)
             else:
                 # Using category-based selection mode
-                if not selected_error_categories or not get_field_value(selected_error_categories, "java_errors", []):  # CHANGE
+                if not selected_error_categories or not selected_error_categories.get("java_errors", []):
                     state.error = t("no_categories")
                     return state
                             
@@ -279,14 +279,14 @@ class WorkflowNodes:
                 evaluation_result["original_error_count"] = original_error_count
 
                 # IMPORTANT: Explicitly set valid flag based on missing and extra errors
-                missing_errors = get_field_value(evaluation_result, 'missing_errors', [])  # CHANGE
+                missing_errors = evaluation_result.get(t('missing_errors'), [])
                 
                 # Only valid if no missing errors and no extra errors
                 has_missing = len(missing_errors) > 0               
                 evaluation_result['valid'] = not (has_missing)
                 
                 # Log explicit validation status
-                logger.info(f"Code validation: valid={get_field_value(evaluation_result, 'valid', False)}, " +  # CHANGE
+                logger.info(f"Code validation: valid={evaluation_result.get(t('valid'), False)}, " +  # CHANGE
                         f"missing={len(missing_errors)}")
                 
             # Update state with evaluation results
@@ -294,8 +294,8 @@ class WorkflowNodes:
             state.evaluation_attempts += 1
             
             # Log evaluation results
-            found_count = len(get_field_value(evaluation_result, 'found_errors', []))  # CHANGE
-            missing_count = len(get_field_value(evaluation_result, 'missing_errors', []))  # CHANGE
+            found_count = len(evaluation_result.get(t('found_errors'), []))  # CHANGE
+            missing_count = len(evaluation_result.get(t('missing_errors'), []))  # CHANGE
             logger.info(f"Code evaluation complete: {found_count}/{original_error_count} errors implemented, {missing_count} missing")
             
             feedback = None
@@ -316,9 +316,9 @@ class WorkflowNodes:
                     # Use the regeneration prompt with emphasis on adding missing errors
                     feedback = create_regeneration_prompt(
                         code=code,
-                        domain=get_state_attribute(state, "domain"),  # CHANGE
-                        missing_errors=get_field_value(evaluation_result, 'missing_errors', []),  # CHANGE
-                        found_errors=get_field_value(evaluation_result, 'found_errors', []),  # CHANGE
+                        domain=get_state_attribute(state, "domain"),
+                        missing_errors=evaluation_result.get('missing_errors', []),
+                        found_errors=evaluation_result.get('found_errors', []), 
                         requested_errors=requested_errors
                     )
             else:
@@ -327,9 +327,9 @@ class WorkflowNodes:
                             
                 feedback = create_regeneration_prompt(
                     code=code,
-                    domain=get_state_attribute(state, "domain"),  # CHANGE
+                    domain=get_state_attribute(state, "domain"),  
                     missing_errors=[],
-                    found_errors=get_field_value(evaluation_result, 'found_errors', []),  # CHANGE
+                    found_errors=evaluation_result.get(t('found_errors'), []),
                     requested_errors=requested_errors                    
                 )
                     
@@ -337,7 +337,7 @@ class WorkflowNodes:
         
             # IMPROVED DECISION LOGIC: Prioritize fixing missing errors over max attempts
             # If evaluation passed (all errors implemented with exact count)
-            if get_field_value(evaluation_result, "valid", False):  # CHANGE
+            if evaluation_result.get(t("valid"), False):
                 state.current_step = "review"
                 logger.info("All errors successfully implemented, proceeding to review")
             elif needs_regeneration and get_state_attribute(state, "evaluation_attempts") < get_state_attribute(state, "max_evaluation_attempts"):  # CHANGE
@@ -395,8 +395,8 @@ class WorkflowNodes:
             known_problems = []
             original_error_count = get_state_attribute(state, "original_error_count")
             
-            if get_state_attribute(state, "evaluation_result") and 'found_errors' in get_state_attribute(state, "evaluation_result"):
-                known_problems = get_field_value(get_state_attribute(state, "evaluation_result"), "found_errors", [])
+            if get_state_attribute(state, "evaluation_result") and t('found_errors') in get_state_attribute(state, "evaluation_result"):
+                known_problems = state.evaluation_result.get("found_errors", [])
             
             # Get the student response evaluator
             evaluator = getattr(self, "evaluator", None)
@@ -443,8 +443,8 @@ class WorkflowNodes:
             latest_review.analysis = analysis
 
         
-            # Use get_field_value to retrieve values consistently
-            review_sufficient = get_field_value(analysis, "review_sufficient", False)
+            
+            review_sufficient = analysis.get("review_sufficient", False)
             state.review_sufficient = review_sufficient
             
             # Generate targeted guidance if needed
@@ -499,7 +499,7 @@ class WorkflowNodes:
             
             # Extract errors from java_errors key
             if "java_errors" in raw_errors:
-                errors = get_field_value(raw_errors, "java_errors", [])  # CHANGE
+                errors = raw_errors.get("java_errors", [])
                 if not isinstance(errors, list):
                     logger.warning(f"Expected list for java_errors, got {type(errors)}")
                     return requested_errors
@@ -515,10 +515,10 @@ class WorkflowNodes:
                         error["type"] = "java_error"  # Use a default type if not specified
                     
                     if "name" not in error and "error_name" in error:
-                        error["name"] = get_field_value(error, "error_name", "")  # CHANGE
+                        error["name"] = error.get("error_name", "")
                     
                     if "name" not in error and "check_name" in error:
-                        error["name"] = get_field_value(error, "check_name", "")  # CHANGE
+                        error["name"] = error.get("check_name", "")
                     
                     # Only add the error if it has a name
                     if "name" in error:

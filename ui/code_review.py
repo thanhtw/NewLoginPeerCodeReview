@@ -11,7 +11,7 @@ import time
 import datetime
 from typing import List, Dict, Any, Optional, Tuple, Callable
 from utils.code_utils import add_line_numbers
-from utils.language_utils import t, get_current_language, get_state_attribute, get_field_value
+from utils.language_utils import t, get_state_attribute
 
 
 # Configure logging
@@ -105,6 +105,7 @@ class CodeDisplayUI:
                     )
                     
                     # Show previous attempt results if available
+                    print("review_analysis: ", review_analysis)
                     if review_analysis:
                         st.markdown(
                             f'<div class="analysis-box">'
@@ -258,7 +259,7 @@ def process_student_review(workflow, student_review: str):
             state = st.session_state.workflow_state
             
             # Check if code snippet exists
-            if not get_state_attribute(state, "code_snippet"):
+            if not hasattr(state, "code_snippet") or state.code_snippet is None:
                 status.update(label=f"{t('error')}: {t('no_code_snippet_available')}", state="error")
                 st.session_state.error = t("please_generate_problem_first")
                 return False
@@ -282,7 +283,7 @@ def process_student_review(workflow, student_review: str):
                     return False
             
             # Store the current review in session state for display consistency
-            current_iteration = get_state_attribute(state, "current_iteration")
+            current_iteration = getattr(state, "current_iteration", 1)
             st.session_state[f"submitted_review_{current_iteration}"] = student_review
             
             # Update status
@@ -354,7 +355,7 @@ def render_review_tab(workflow, code_display_ui):
         return
         
     # Check if we have a code snippet in the workflow state
-    if not get_state_attribute(st.session_state.workflow_state, 'code_snippet'):
+    if not hasattr(st.session_state.workflow_state, 'code_snippet') or not st.session_state.workflow_state.code_snippet:
         st.info(f"{t('no_code_generated')}")
         return
     

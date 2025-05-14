@@ -217,7 +217,7 @@ translations = {
     "generated_comparison_report": "Generated comparison report for feedback tab",
     "generating_comparison_report": "generating comparison report",
     "good_performance_guidance": "You're doing well! Try looking for issues related to '{missed_text}'. Check for similar patterns elsewhere in the code.",
-    "hint": "hint",
+    "hint": "Hint",
     "identified_count": "Identified Count",
     "identified_issues": "Identified Issues",
     "identified_percentage": "Identified Percentage",

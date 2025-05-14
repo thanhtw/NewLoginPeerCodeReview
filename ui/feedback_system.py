@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import time
 import traceback
 from typing import List, Dict, Any, Optional, Tuple, Callable
-from utils.language_utils import t, get_field_value, get_state_attribute
+from utils.language_utils import t, get_state_attribute
 
 # Configure logging
 logging.basicConfig(
@@ -73,8 +73,8 @@ class FeedbackSystem:
         
         # Display the feedback results
         self.render_results(
-            comparison_report=get_state_attribute(state, 'comparison_report'),
-            review_summary=get_state_attribute(state, 'review_summary'),
+            comparison_report=get_state_attribute(state, t('comparison_report')),
+            review_summary=get_state_attribute(state, t('review_summary')),
             review_analysis=latest_analysis,
             review_history=review_history        
         )
@@ -108,11 +108,10 @@ class FeedbackSystem:
         # Display the comparison report
         if comparison_report:
             st.subheader(t("educational_feedback"))
-            # First display the comparison report as proper Markdown
-            st.markdown(comparison_report)
-            
-            # Optionally add styling with a separator for better visual organization
-            st.markdown('<hr style="margin: 20px 0; border-color: rgba(76, 104, 215, 0.2);">', unsafe_allow_html=True)
+            st.markdown(
+                f'<div class="comparison-report">{comparison_report}</div>',
+                unsafe_allow_html=True
+            )
         
         # Always show review history for better visibility
         if review_history and len(review_history) > 0:
@@ -365,12 +364,11 @@ class FeedbackSystem:
         # Display issues by category with collapsible sections
         for category, issues in categorized_issues.items():
             if category and issues:
-                #st.markdown(f"### {category} ({len(issues)})")
+                print("iisue: ", issue)
                 for i, issue in enumerate(issues, 1):
                     if isinstance(issue, dict):
                         problem = issue[t('problem')]
                         hint = issue[t('hint')]
-                        
                         st.markdown(
                             f"""
                             <div style="border-left: 4px solid #dc3545; padding: 10px; margin: 10px 0;
@@ -547,10 +545,9 @@ class FeedbackSystem:
                         
                         # Give the database a moment to complete the update
                         time.sleep(0.5)
-                else:
-                    err_msg =  get_field_value(result, 'error', t('unknown_error')) if result else t('no_result_returned')
-                    logger.error(f"{t('failed_update_statistics')}: {err_msg}")
-                    st.error(f"{t('failed_update_statistics')}: {err_msg}")
+                else:                 
+                    logger.error(f"{t('failed_update_statistics')}:")
+                    st.error(f"{t('failed_update_statistics')}:")
             except Exception as e:
                 logger.error(f"{t('error')} {t('updating_user_statistics')}: {str(e)}")
                 logger.error(traceback.format_exc())
