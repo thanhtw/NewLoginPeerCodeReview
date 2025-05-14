@@ -1,7 +1,7 @@
 import re
 import logging
 import json
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional, Tuple
 from langchain_core.language_models import BaseLanguageModel
 
 from utils.code_utils import create_review_analysis_prompt, create_feedback_prompt, create_comparison_report_prompt, process_llm_response
@@ -21,20 +21,16 @@ class StudentResponseEvaluator:
     This class analyzes how thoroughly and accurately a student identified 
     issues in a code snippet, providing detailed feedback and metrics.
     """    
-    def __init__(self, llm: BaseLanguageModel = None,
-                 min_identified_percentage: float = 60.0,
+    def __init__(self, llm: BaseLanguageModel = None,                 
                  llm_logger: LLMInteractionLogger = None):
         """
         Initialize the StudentResponseEvaluator.
         
         Args:
-            llm: Language model to use for evaluation
-            min_identified_percentage: Minimum percentage of problems that
-                                     should be identified for a sufficient review
+            llm: Language model to use for evaluation           
             llm_logger: Logger for tracking LLM interactions
         """
         self.llm = llm
-        self.min_identified_percentage = min_identified_percentage
         self.llm_logger = llm_logger or LLMInteractionLogger()
     
     def evaluate_review(self, code_snippet: str, known_problems: List[str], student_review: str) -> Dict[str, Any]:
@@ -359,6 +355,35 @@ class StudentResponseEvaluator:
             # Fallback to concise guidance
             return ""
         
+    def validate_review_format(self, student_review: str) -> Tuple[bool, str]:
+        """
+        Validate the format of a student review.
+        
+        Args:
+            student_review: The student's review text
+            
+        Returns:
+            Tuple[bool, str]: (is_valid, reason) where is_valid is True if the review
+                            format is valid, and reason explains any validation errors
+        """
+        if not student_review or not student_review.strip():
+            return False, t("review_cannot_be_empty")
+        
+        # Check if the review has at least one line that follows the expected format
+        # Expected format: "Line X: Description of issue"
+        valid_line_pattern = re.compile(r'(?:Line|行)\s*\d+\s*[:：]')
+        
+        # Split the review into lines and check each line
+        lines = student_review.strip().split('\n')
+        valid_lines = [i+1 for i, line in enumerate(lines) if valid_line_pattern.search(line)]
+        
+        # If we have at least one valid line, the review is valid
+        if valid_lines:
+            return True, ""
+        
+        # Otherwise, return a validation error
+        return False, t("please_use_format_line_description")
+   
     def generate_comparison_report(self, evaluation_errors: List[str], review_analysis: Dict[str, Any], 
                                   review_history: List[Dict[str, Any]] = None) -> str:
         """
@@ -398,9 +423,9 @@ class StudentResponseEvaluator:
             
             # Log the report generation
             self.llm_logger.log_interaction("comparison_report", prompt, report, {
-                "evaluation_errors_count": len(evaluation_errors),
-                "review_analysis": review_analysis,
-                "review_history_count": len(review_history) if review_history else 0
+                t("evaluation_errors_count"): len(evaluation_errors),
+                t("review_analysis"): review_analysis,
+                t("review_history_count"): len(review_history) if review_history else 0
             })
             
             return report

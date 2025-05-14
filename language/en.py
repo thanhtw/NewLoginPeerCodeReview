@@ -252,8 +252,7 @@ translations = {
     "review_sufficient": "Review Sufficient",
     "review_summary": "Review Summary",
     "start_new_session": "Start New Session",
-    "statistics_updated": "Statistics updated",
-    "student_commentt": "student_comment",
+    "statistics_updated": "Statistics updated",    
     "student_comment": "Student Comment",
     "successfully_updated_statistics": "Successfully updated user statistics",
     "targeted_guidance": "Targeted Guidance",
@@ -407,6 +406,10 @@ translations = {
     "line_X_invalid_format": "Line {line} does not follow the required format.",
     "lines_X_invalid_format": "Lines {lines} do not follow the required format.",
     "please_use_format_line_description": "Please use the format 'Line X: description of problem' for each issue you identify.",
-    "no_review_history_found": "No review history found."
+    "no_review_history_found": "No review history found.",
+    "iteration_number":"Iteration Number",
+    "review_analysis":"Review Analysis",
+    "original_error_count": "Original Error Count",
+    "comparison_report": "Comparison Report"   
 
 }

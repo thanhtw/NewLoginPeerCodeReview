@@ -23,7 +23,7 @@ from workflow.conditions import WorkflowConditions
 from workflow.builder import GraphBuilder
 
 from utils.llm_logger import LLMInteractionLogger
-from utils.language_utils import t, get_field_value
+from utils.language_utils import t
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -200,7 +200,6 @@ class WorkflowManager:
         
         return updated_state
     
-    
     def _generate_review_feedback(self, state: WorkflowState) -> None:
         """
         Generate feedback for review completion with proper language support.
@@ -222,38 +221,38 @@ class WorkflowManager:
                 logger.info(t("generating_comparison_report"))
                 
                 # Extract error information from evaluation results
-                found_errors = state.evaluation_result.get('found_errors', [])
+                found_errors = state.evaluation_result.get(t('found_errors'), [])
                 
                 # Get original error count for consistent metrics
                 original_error_count = state.original_error_count
                 
                 # Update the analysis with the original error count if needed
-                if original_error_count > 0 and "original_error_count" not in latest_review.analysis:
-                    latest_review.analysis["original_error_count"] = original_error_count
+                if original_error_count > 0 and t("original_error_count") not in latest_review.analysis:
+                    latest_review.analysis[t("original_error_count")] = original_error_count
                     
                     # Recalculate percentages based on original count
-                    identified_count = get_field_value(latest_review.analysis, "identified_count", 0) 
-                    latest_review.analysis["identified_percentage"] = (identified_count / original_error_count) * 100
-                    latest_review.analysis["accuracy_percentage"] = (identified_count / original_error_count) * 100
+                    identified_count = latest_review.analysis[t('identified_count')]
+                    latest_review.analysis[t("identified_percentage")] = (identified_count / original_error_count) * 100
+                    latest_review.analysis[t("accuracy_percentage")] = (identified_count / original_error_count) * 100
                         
                 # Convert review history to format expected by generate_comparison_report
                 converted_history = []
                 for review in state.review_history:
                     converted_history.append({
                         "iteration_number": review.iteration_number,
-                        "student_review": review.student_review,
+                        "student_comment": review.student_review,
                         "review_analysis": review.analysis,
                         "targeted_guidance": review.targeted_guidance
                     })
                         
-                # # Generate the comparison report
-                # state.comparison_report = generate_comparison_report(
-                #     found_errors,
-                #     latest_review.analysis,
-                #     converted_history,
-                #     llm=self.summary_model
-                # )
-                # logger.info(t("generated_comparison_report"))
+                if hasattr(self, "evaluator") and self.evaluator:
+                    state.comparison_report = self.evaluator.generate_comparison_report(
+                        found_errors,
+                        latest_review.analysis,
+                        converted_history
+                    )
+                    logger.info(t("generated_comparison_report"))
+                
                     
             except Exception as e:
                 logger.error(f"{t('error')} {t('generating_comparison_report')}: {str(e)}")

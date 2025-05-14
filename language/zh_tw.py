@@ -418,5 +418,9 @@ translations = {
     "line_X_invalid_format": "第 {line} 行不符合要求的格式。",
     "lines_X_invalid_format": "第 {lines} 行不符合要求的格式。",
     "please_use_format_line_description": "請為每個您識別的問題使用「Line X: 問題描述」的格式。",
-    "no_review_history_found": "找不到審查歷史記錄。"
+    "no_review_history_found": "找不到審查歷史記錄。",
+    "iteration_number":"迭代次數",
+    "review_analysis":"審查分析",
+    "original_error_count": "原始錯誤數量",
+    "comparison_report": "比較報告" 
 }

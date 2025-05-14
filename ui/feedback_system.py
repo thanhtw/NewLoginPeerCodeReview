@@ -13,7 +13,6 @@ import time
 import traceback
 from typing import List, Dict, Any, Optional, Tuple, Callable
 from utils.language_utils import t, get_field_value, get_state_attribute
-from utils.code_utils import generate_comparison_report
 
 # Configure logging
 logging.basicConfig(
@@ -62,7 +61,7 @@ class FeedbackSystem:
         latest_review, review_history = self._extract_review_data(state)
         
         # Generate comparison report if needed
-        if latest_review and latest_review.analysis and not get_state_attribute(state, 'comparison_report'):
+        if latest_review and latest_review.analysis and not get_state_attribute(state, t('comparison_report')):
             self._generate_comparison_report(state, latest_review)
         
         # Get the latest review analysis
@@ -106,14 +105,14 @@ class FeedbackSystem:
         if review_history and len(review_history) > 0 and review_analysis:
             self._render_performance_summary(review_analysis, review_history)
         
-        print("comparison_report: ", comparison_report)
         # Display the comparison report
         if comparison_report:
             st.subheader(t("educational_feedback"))
-            st.markdown(
-                f'<div class="comparison-report">{comparison_report}</div>',
-                unsafe_allow_html=True
-            )
+            # First display the comparison report as proper Markdown
+            st.markdown(comparison_report)
+            
+            # Optionally add styling with a separator for better visual organization
+            st.markdown('<hr style="margin: 20px 0; border-color: rgba(76, 104, 215, 0.2);">', unsafe_allow_html=True)
         
         # Always show review history for better visibility
         if review_history and len(review_history) > 0:
@@ -121,28 +120,28 @@ class FeedbackSystem:
             
             # First show the most recent review prominently
             if review_history:
-                latest_review = review_history[-1]
-                review_analysis = latest_review[t("review_analysis")]
-                iteration = latest_review[t("iteration_number")]
+                latest_review = review_history[-1]    
+                review_analysis = latest_review["review_analysis"]
+                iteration = latest_review["iteration_number"]
                 
                 st.markdown(f"#### {t('your_final_review').format(iteration=iteration)}")
                 
                 # Format the review text with syntax highlighting
-                st.markdown("```text\n" +latest_review[t("student_review")] + "\n```")
+                st.markdown("```text\n" +latest_review["student_review"] + "\n```")
                                 
             # Show earlier reviews in an expander if there are multiple
             if len(review_history) > 1:
                 with st.expander(t("review_history"), expanded=False):
-                    tabs = st.tabs([f"{t('attempt')} {rev[t('iteration_number')]}" for i, rev in enumerate(review_history)])
+                    tabs = st.tabs([f"{t('attempt')} {rev['iteration_number']}" for i, rev in enumerate(review_history)])
                     
                     for i, (tab, review) in enumerate(zip(tabs, review_history)):
                         with tab:
-                            review_analysis = review[t("review_analysis")]
+                            review_analysis = review["review_analysis"]
                             st.markdown("```text\n" + review[t('student_review')] + "\n```")
                             
                             st.write(f"**{t('found')}:** {review_analysis[t('identified_count')]} {t('of')} "
                                     f"{review_analysis[t('total_problems')]} {t('issues')} "
-                                    f"({review_analysis[t('accuracy_percentage')]:.1f}% {t('accuracy')})")
+                                    f"({review_analysis[t('identified_percentage')]:.1f}% {t('accuracy')})")
         
         # Display analysis details in an expander
         if review_summary or review_analysis:
@@ -194,8 +193,8 @@ class FeedbackSystem:
             accuracy_percentages = []
             
             for review in review_history:
-                analysis = review[t("review_analysis")]
-                iterations.append(review[t("iteration_number")])
+                analysis = review["review_analysis"]
+                iterations.append(review["iteration_number"])
                 # Use consistent error count for all iterations
                 review_identified = analysis[t("identified_count")]
                 identified_counts.append(review_identified)

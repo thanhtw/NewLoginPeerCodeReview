@@ -93,7 +93,7 @@ class CodeDisplayUI:
         # Create a layout for guidance and history
         if targeted_guidance or (review_analysis and iteration_count > 1):
             guidance_col, history_col = st.columns([2, 1])
-            
+            print("targeted_guidance: ", targeted_guidance)
             # Display targeted guidance if available (for iterations after the first)
             with guidance_col:
                 if targeted_guidance and iteration_count > 1:
@@ -364,7 +364,7 @@ def render_review_tab(workflow, code_display_ui):
     
     # Extract known problems from evaluation result
     evaluation_result = get_state_attribute(st.session_state.workflow_state, 'evaluation_result')
-    if evaluation_result and 'found_errors' in evaluation_result:
+    if evaluation_result and t('found_errors') in evaluation_result:
         known_problems = evaluation_result[t('found_errors')]
        
     
@@ -374,7 +374,7 @@ def render_review_tab(workflow, code_display_ui):
         if selected_specific_errors:
             # Format selected errors to match expected format
             known_problems = [
-                f"{error.get('type', '').upper()} - {error.get('name', '')}" 
+                f"{error.get(t('type'), '').upper()} - {error.get(t('name'), '')}" 
                 for error in selected_specific_errors
             ]
    
@@ -384,19 +384,19 @@ def render_review_tab(workflow, code_display_ui):
     )
     
     # Get current review state
-    current_iteration = get_state_attribute(st.session_state.workflow_state, 'current_iteration', 1)
-    max_iterations = get_state_attribute(st.session_state.workflow_state, 'max_iterations', 3)
+    current_iteration = get_state_attribute(st.session_state.workflow_state, t('current_iteration'),1)
+    max_iterations = get_state_attribute(st.session_state.workflow_state, t('max_iterations'),3)
     
     # Get the latest review if available
     latest_review = None
     targeted_guidance = None
     review_analysis = None
     
-    review_history = get_state_attribute(st.session_state.workflow_state, 'review_history')
+    review_history = get_state_attribute(st.session_state.workflow_state, t('review_history'))
     
     
     if review_history and len(review_history) > 0:
-        latest_review = review_history[-1]       
+        latest_review = review_history[-1]         
         targeted_guidance = latest_review.dict().get("targeted_guidance", None)
         review_analysis = latest_review.dict().get("analysis", None)
       
@@ -409,18 +409,17 @@ def render_review_tab(workflow, code_display_ui):
             all_errors_found = True
     
     # Only allow submission if we're under the max iterations
-    review_sufficient = get_state_attribute(st.session_state.workflow_state, 'review_sufficient', False)
+    review_sufficient = get_state_attribute(st.session_state.workflow_state, t('review_sufficient'), False)
     if current_iteration <= max_iterations and not review_sufficient and not all_errors_found:
         # Get the current student review (empty for first iteration)
         student_review = ""
         if latest_review is not None:
-            student_review = get_state_attribute(latest_review, 'student_review', "")
+            student_review = get_state_attribute(latest_review, t('student_review'), "")
         
         # Define submission callback
         def on_submit_review(review_text):
             logger.info(f"Submitting review (iteration {current_iteration})")
-            process_student_review(workflow, review_text)
-        
+            process_student_review(workflow, review_text)        
         # Render review input with current state
         code_display_ui.render_review_input(
             student_review=student_review,
