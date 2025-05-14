@@ -397,13 +397,6 @@ class JsonErrorRepository:
                 category = error.get("category", "")
                 
                 problem_descriptions.append(f"Java Error - {name}: {description} (Category: {category})")
-            
-            # Print final selected errors
-            print("\n--- FINAL SELECTED ERRORS ---")
-            for i, error in enumerate(selected_errors, 1):
-                print(f"  {i}. {error.get('type', 'Unknown')} - {error.get('name', 'Unknown')} ({error.get('category', 'Unknown')})")
-            print("======================================")
-            
             return selected_errors, problem_descriptions
         
         # If no selection method was provided, return empty lists

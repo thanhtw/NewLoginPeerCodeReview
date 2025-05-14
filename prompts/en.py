@@ -172,7 +172,8 @@ ANALYSIS INSTRUCTIONS:
 2. Identify which of the known issues the student correctly found
 3. Note which known issues the student missed
 4. Evaluate the review quality (accuracy, completeness, clarity, and specificity)
-5. Determine if the review is sufficient (>= 60% of issues correctly identified)
+5. IMPORTANT: Assess the meaningfulness of each comment (does it provide sufficient explanation of the issue?)
+6. Determine if the review is sufficient (>= 70% of issues correctly identified)
 
 RESPONSE REQUIREMENTS:
 Provide your analysis in JSON format with these components:
@@ -184,6 +185,7 @@ Provide your analysis in JSON format with these components:
     "Problem": "SPECIFIC KNOWN ISSUE TEXT",
     "Student Comment": "STUDENT'S RELEVANT COMMENT",
     "Accuracy": 0.9,
+    "Meaningfulness": 0.8,
     "Feedback": "Brief feedback on this identification"
     }
     // Include all correctly identified issues
@@ -197,8 +199,8 @@ Provide your analysis in JSON format with these components:
 ],
 "Identified Count": 3,  // Number of correctly identified issues
 "Total Problems": {problem_count},  // Total number of known issues
-"Identified Percentage": 60.0,  // Percentage of issues correctly identified
-"Review Sufficient": true,  // true if >= 60% of issues identified
+"Identified Percentage": 70.0,  // Percentage of issues correctly identified
+"Review Sufficient": true,  // true if >= 70% of issues identified
 "Feedback": "Overall assessment with specific improvement suggestions"
 }
 ```
@@ -208,14 +210,17 @@ EVALUATION CRITERIA:
 - Correct identification of the issue type
 - Accurate location (line number or description)
 - Understanding of why it's a problem
-- Consider partial credit if they identified an issue but misunderstood it
-- A review is sufficient if the student correctly identified at least 60% of known issues
+- MEANINGFULNESS: The comment must be complete and explain the issue sufficiently
+- Consider an issue as properly identified ONLY IF:
+    + The student correctly identifies the location AND
+    + The student's comment is meaningful (explains the problem adequately)
+- Even if a student identifies the correct line, if their comment is too brief, vague, or incomplete (e.g., "Line 11: The object may be"), it should NOT count as properly identified
 
 TIPS FOR ANALYSIS:
 - Be thorough in examining every part of the student's review
+- Be strict about meaningfulness - a comment must actually explain the issue to count
 - Be generous in matching student comments to issues if they show understanding
 - Provide educational feedback that helps the student improve their code review skills
-- If the student uses different terminology but correctly identifies an issue, count it as correct
 """
 
 # Feedback Prompt Template
@@ -225,6 +230,10 @@ CONTEXT:
 - Student completed review attempt {iteration} of {max_iterations}
 - Found {identified}/{total} issues ({accuracy:.1f}%)
 - {remaining} review attempts remaining
+
+REVIEW QUALITY ISSUES:
+- Some identified issues lack meaningful comments
+- A meaningful comment must explain WHAT the issue is and WHY it's problematic
 
 CORRECTLY IDENTIFIED ISSUES:
 {identified_text}
@@ -240,7 +249,7 @@ GUIDANCE REQUIREMENTS:
 2. Target the most important 1-2 areas for improvement
 3. Provide specific, actionable strategies (what to look for)
 4. Be encouraging but direct
-5. Focus only on helping them find missed issues, not general code review skills
+5. Include an example of how to turn a vague comment into a meaningful one
 
 EXAMPLE GOOD GUIDANCE:
 "Look more carefully at method parameters and return types. Several issues involve type mismatches that can be spotted by comparing declared types with actual values. Also check for proper null handling before method calls."

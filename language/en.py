@@ -410,6 +410,7 @@ translations = {
     "iteration_number":"Iteration Number",
     "review_analysis":"Review Analysis",
     "original_error_count": "Original Error Count",
-    "comparison_report": "Comparison Report"   
+    "comparison_report": "Comparison Report",
+    "Meaningfulness" : "Meaningfulness"
 
 }

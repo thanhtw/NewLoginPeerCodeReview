@@ -116,12 +116,34 @@ class StudentResponseEvaluator:
         identified_count = analysis_data.get(f"{t('identified_count')}",0)
         total_problems = analysis_data.get(f"{t('total_problems')}",len(known_problems))
 
+        # Track meaningful comments separately
+        meaningful_comments = 0
+        identified_problems = analysis_data.get(f"{t('identified_problems')}", [])
+
+        # Count meaningful comments
+        for problem in identified_problems:
+            if isinstance(problem, dict) and t("Meaningfulness") in problem:
+                # Consider comments with meaningfulness score above 0.6 as meaningful
+                if float(problem[t("Meaningfulness")]) >= 0.7:
+                    meaningful_comments += 1
+
+        # Update identified count to only include meaningful comments
+        identified_count = meaningful_comments
+
+
         # Calculate percentages
         if total_problems > 0:
             identified_percentage = (identified_count / total_problems) * 100
         else:
             identified_percentage = 100.0
 
+         # Check if review is sufficient based on meaningful comments
+        review_sufficient = analysis_data.get(f"{t('review_sufficient')}", False)
+        # Override review_sufficient based on meaningful comments
+        if meaningful_comments / total_problems >= 0.6 if total_problems > 0 else False:
+            review_sufficient = True
+        else:
+            review_sufficient = False
 
         review_sufficient = analysis_data.get(f"{t('review_sufficient')}", False)
         identified_problems =  analysis_data.get(f"{t('identified_problems')}", False)
@@ -129,12 +151,13 @@ class StudentResponseEvaluator:
         # Construct enhanced result using t() function for keys
 
         enhanced_result = {
-            t("identified_problems"): identified_problems,  # Keep the detailed version
-            t("missed_problems"): missed_problems,  # Keep the detailed version
+            t("identified_problems"): identified_problems,
+            t("missed_problems"): missed_problems,
             t("identified_count"): identified_count,
             t("total_problems"): total_problems,
-            t("identified_percentage"): identified_percentage,  # For backward compatibility
-            t("review_sufficient"): review_sufficient
+            t("identified_percentage"): identified_percentage,
+            t("review_sufficient"): review_sufficient,
+            t("meaningful_comments"): meaningful_comments
         }
         
         return enhanced_result
@@ -298,6 +321,9 @@ class StudentResponseEvaluator:
                 t("remaining_attempts"): max_iterations - iteration_count
             })
 
+            meaningful_comments = review_context.get(t("meaningful_comments"), 0)
+            identified_count = review_context.get(t("identified_count"), 0)
+
             # Use the utility function to create the prompt
             prompt = create_feedback_prompt(
                 code=code_snippet,
@@ -305,18 +331,21 @@ class StudentResponseEvaluator:
                 review_analysis=review_context
             )
 
+            #prompt += "\n\nIMPORTANT: Focus on helping the student make more meaningful comments. A good comment should clearly explain WHAT the issue is and WHY it's a problem, not just identify where it is. For example, instead of just 'Line 11: null issue', guide them to write 'Line 11: Object is accessed before null check, which could cause NullPointerException'."
+
             metadata = {
                 t("iteration"): iteration_count,
                 t("max_iterations"): max_iterations,
                 t("identified_count"):  review_analysis[t('identified_count')],
                 t("total_problems"): review_analysis[t('total_problems')],
-                t("accuracy_percentage"): review_analysis[t('accuracy_percentage')]
+                t("accuracy_percentage"): review_analysis[t('accuracy_percentage')],
+                t("meaningful_comments"): meaningful_comments
             }
 
-            # Generate the guidance using the LLM
             logger.info(t("generating_concise_targeted_guidance").format(iteration_count=iteration_count))
             response = self.llm.invoke(prompt)
             guidance = process_llm_response(response)
+            
             
             # Ensure response is concise - trim if needed
             if len(guidance.split()) > 100:
