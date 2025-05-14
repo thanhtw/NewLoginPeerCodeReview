@@ -1,4 +1,5 @@
 import re
+import os
 import logging
 import json
 from typing import List, Dict, Any, Optional, Tuple
@@ -32,6 +33,14 @@ class StudentResponseEvaluator:
         """
         self.llm = llm
         self.llm_logger = llm_logger or LLMInteractionLogger()
+
+        # Load meaningful score threshold from environment variable with default fallback to 0.6
+        try:
+            self.meaningful_score_threshold = float(os.getenv("MEANINGFUL_SCORE", "0.6"))
+            logger.info(f"Using meaningful score threshold: {self.meaningful_score_threshold}")
+        except (ValueError, TypeError):
+            logger.warning("Invalid MEANINGFUL_SCORE in environment, defaulting to 0.6")
+            self.meaningful_score_threshold = 0.6
     
     def evaluate_review(self, code_snippet: str, known_problems: List[str], student_review: str) -> Dict[str, Any]:
         """
@@ -124,7 +133,7 @@ class StudentResponseEvaluator:
         for problem in identified_problems:
             if isinstance(problem, dict) and t("Meaningfulness") in problem:
                 # Consider comments with meaningfulness score above 0.6 as meaningful
-                if float(problem[t("Meaningfulness")]) >= 0.6:
+                if float(problem[t("Meaningfulness")]) >= self.meaningful_score_threshold::
                     meaningful_comments += 1
 
         # Update identified count to only include meaningful comments
