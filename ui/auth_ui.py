@@ -141,7 +141,7 @@ class AuthUI:
                         display_name=display_name,
                         level=level.lower()
                     )
-                    
+    
                     if result.get("success", False):
                         # Set authenticated state
                         st.session_state.auth["is_authenticated"] = True

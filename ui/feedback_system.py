@@ -61,8 +61,7 @@ class FeedbackSystem:
         latest_review, review_history = self._extract_review_data(state)
         
         # Generate comparison report if needed
-        #if latest_review and latest_review.analysis and not get_state_attribute(state, 'comparison_report'):
-        if latest_review and latest_review.analysis:
+        if latest_review and latest_review.analysis and not get_state_attribute(state, 'comparison_report'):
             self._generate_comparison_report(state, latest_review)
         
         # Get the latest review analysis
@@ -71,7 +70,8 @@ class FeedbackSystem:
         # Update user statistics if AuthUI is provided and we have analysis
         if self.auth_ui and latest_analysis:
             self._update_user_statistics(state, latest_analysis)
-        # Display the feedback results        
+        # Display the feedback results       
+       
         self.render_results(
             comparison_report=get_state_attribute(state, 'comparison_report'),           
             review_analysis=latest_analysis,

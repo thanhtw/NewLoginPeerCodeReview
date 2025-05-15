@@ -213,22 +213,18 @@ class WorkflowManager:
             return
                 
         # Get latest review
-        latest_review = state.review_history[-1]
-        
+        latest_review = state.review_history[-1]       
         # Generate comparison report if not already generated
         if not state.comparison_report and state.evaluation_result:
             try:
                 logger.info(t("generating_comparison_report"))
-                
                 # Extract error information from evaluation results
-                found_errors = state.evaluation_result.get(t('found_errors'), [])
-                
+                found_errors = state.evaluation_result.get(t('found_errors'), [])                
                 # Get original error count for consistent metrics
-                original_error_count = state.original_error_count
-                
+                original_error_count = state.original_error_count                
                 # Update the analysis with the original error count if needed
-                if original_error_count > 0 and t("original_error_count") not in latest_review.analysis:
-                    latest_review.analysis[t("original_error_count")] = original_error_count
+                if original_error_count > 0 and "original_error_count" not in latest_review.analysis:
+                    latest_review.analysis["original_error_count"] = original_error_count
                     
                     # Recalculate percentages based on original count
                     identified_count = latest_review.analysis[t('identified_count')]

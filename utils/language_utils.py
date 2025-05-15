@@ -119,7 +119,6 @@ def get_state_attribute(state, english_name, default=None):
         "current_step": ["當前步驟", "目前步驟"],
         "current_iteration": ["當前迭代", "目前迭代"],
         "max_iterations": ["最大迭代次數", "最大迭代"],
-        "review_summary": ["審查摘要", "審查總結"],
         "comparison_report": ["比較報告", "對比報告"],
         "code_snippet": ["代碼片段", "程式碼片段"],
         "evaluation_result": ["評估結果", "評價結果"],

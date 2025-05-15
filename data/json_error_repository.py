@@ -37,7 +37,6 @@ class JsonErrorRepository:
         # Get current language
         self.current_language = get_current_language()
         self.java_errors_path = java_errors_path
-        print('self.current_language', self.current_language)
         # Determine file path based on language
         if java_errors_path is None:
             self.java_errors_path = f"{self.current_language}_Java_code_review_errors.json"
@@ -343,8 +342,7 @@ class JsonErrorRepository:
             return selected_errors, problem_descriptions
         
         # Otherwise use category-based selection
-        elif selected_categories:
-            print("Selection Method: Using category-based selection")
+        elif selected_categories:          
             print(f"Selected Categories: {selected_categories}")
             
             # Check if any categories are actually selected

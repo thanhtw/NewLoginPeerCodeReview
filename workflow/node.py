@@ -435,7 +435,7 @@ class WorkflowNodes:
                 
                 # Mark review as sufficient if all errors are found
                 if identified_count == original_error_count:
-                    analysis[t("review_sufficient")] = True
+                    analysis["review_sufficient"] = True
                     logger.info("All errors found! Marking review as sufficient.")
 
           

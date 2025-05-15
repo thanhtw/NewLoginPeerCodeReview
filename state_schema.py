@@ -60,8 +60,7 @@ class WorkflowState(BaseModel):
     max_iterations: int = Field(3, description="Maximum number of iterations")
     
     # Analysis results
-    review_sufficient: bool = Field(False, description="Whether the review is sufficient")
-    review_summary: Optional[str] = Field(None, description="Final review summary")
+    review_sufficient: bool = Field(False, description="Whether the review is sufficient")    
     comparison_report: Optional[str] = Field(None, description="Comparison report")
     
     # Error handling
