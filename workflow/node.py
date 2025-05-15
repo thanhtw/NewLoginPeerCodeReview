@@ -12,7 +12,7 @@ from typing import Dict, Any, List, Tuple, Optional
 from state_schema import WorkflowState, CodeSnippet
 from utils.code_utils import extract_both_code_versions, create_regeneration_prompt, get_error_count_from_state
 import random
-from utils.language_utils import get_state_attribute, t
+from utils.language_utils import t
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -53,10 +53,10 @@ class WorkflowNodes:
         """
         try:
             # Get parameters from state
-            code_length = get_state_attribute(state, "code_length")  # CHANGE
-            difficulty_level = get_state_attribute(state, "difficulty_level")  # CHANGE
-            selected_error_categories = get_state_attribute(state, "selected_error_categories")  # CHANGE
-            selected_specific_errors = get_state_attribute(state, "selected_specific_errors")  # CHANGE
+            code_length = getattr(state, "code_length", "medium")
+            difficulty_level = getattr(state, "difficulty_level", "medium")
+            selected_error_categories = getattr(state, "selected_error_categories", {})
+            selected_specific_errors = getattr(state, "selected_specific_errors", [])
             
             # Reset state for a fresh generation
             state.evaluation_attempts = 0
@@ -64,7 +64,7 @@ class WorkflowNodes:
             state.code_generation_feedback = None
 
             # Randomly select a domain if not already set
-            if not get_state_attribute(state, "domain"):  # CHANGE
+            if not hasattr(state, "domain") or not state.domain:
                 # Use the domains from code_generator if available
                 if hasattr(self.code_generator, 'domains') and self.code_generator.domains:
                     state.domain = random.choice(self.code_generator.domains)
@@ -77,7 +77,7 @@ class WorkflowNodes:
                     ]
                     state.domain = random.choice(domains)
                 
-                logger.info(f"Selected domain for code generation: {get_state_attribute(state, 'domain')}")  # CHANGE
+                logger.info(f"Selected domain for code generation: {state.domain}")
             
             # Determine whether we're using specific errors or categories
             using_specific_errors = len(selected_specific_errors) > 0
@@ -129,7 +129,7 @@ class WorkflowNodes:
                 code_length=code_length,
                 difficulty_level=difficulty_level,
                 selected_errors=selected_errors,
-                domain=get_state_attribute(state, "domain")  # CHANGE
+                domain=getattr(state, "domain", "")
             )
 
             # Extract both annotated and clean versions
@@ -169,21 +169,21 @@ class WorkflowNodes:
             Updated workflow state with regenerated code
         """
         try:
-            logger.info(f"Starting enhanced code regeneration (Attempt {get_state_attribute(state, 'evaluation_attempts')})")  # CHANGE
+            logger.info(f"Starting enhanced code regeneration (Attempt {getattr(state, 'evaluation_attempts', 0)})")
             
             # Use the code generation feedback to generate improved code
-            feedback_prompt = get_state_attribute(state, "code_generation_feedback")  # CHANGE
+            feedback_prompt = getattr(state, "code_generation_feedback", None)
             
             # Generate code with feedback prompt
             if hasattr(self.code_generator, 'llm') and self.code_generator.llm:
                 # Log the regeneration prompt before sending to LLM
                 metadata = {
-                    "code_length": get_state_attribute(state, "code_length"),  # CHANGE
-                    "difficulty_level": get_state_attribute(state, "difficulty_level"),  # CHANGE
-                    "domain": get_state_attribute(state, "domain"),  # CHANGE
-                    "selected_errors": get_state_attribute(state, "selected_error_categories"),  # CHANGE
-                    "attempt": get_state_attribute(state, "evaluation_attempts"),  # CHANGE
-                    "max_attempts": get_state_attribute(state, "max_evaluation_attempts")  # CHANGE
+                    "code_length": getattr(state, "code_length", "medium"),
+                    "difficulty_level": getattr(state, "difficulty_level", "medium"),
+                    "domain": getattr(state, "domain", ""),
+                    "selected_errors": getattr(state, "selected_error_categories", {}),
+                    "attempt": getattr(state, "evaluation_attempts", 0),
+                    "max_attempts": getattr(state, "max_evaluation_attempts", 3)
                 }
                 
                 # Log the prompt before it's sent to the LLM
@@ -206,13 +206,13 @@ class WorkflowNodes:
                     code=annotated_code,
                     clean_code=clean_code,
                     raw_errors={
-                        "java_errors": selected_errors  # Note: this variable is not defined, which is a bug
+                        "java_errors": requested_errors
                     }
                 )
                 
                 # Move to evaluation step again
                 state.current_step = "evaluate"
-                logger.info(f"Code regenerated successfully on attempt {get_state_attribute(state, 'evaluation_attempts')}")  # CHANGE
+                logger.info(f"Code regenerated successfully on attempt {getattr(state, 'evaluation_attempts', 0)}")
                 
                 return state
             else:
@@ -230,22 +230,22 @@ class WorkflowNodes:
             logger.info("Starting code evaluation node")
             
             # Validate code snippet
-            if not get_state_attribute(state, "code_snippet"): # CHANGE
+            if not hasattr(state, 'code_snippet') or state.code_snippet is None:
                 state.error = t("no_code_snippet_evaluation")
                 return state
                     
             # Get the code with annotations
-            code = get_state_attribute(state, "code_snippet").code  # CHANGE
+            code = state.code_snippet.code if hasattr(state, "code_snippet") and state.code_snippet else None
             
             # Get requested errors from state
             requested_errors = self._extract_requested_errors(state)
             requested_count = len(requested_errors)
             
             # Ensure we're using the original error count for consistency
-            original_error_count = get_state_attribute(state, "original_error_count", 0)  # CHANGE
-            if original_error_count == 0 and hasattr(get_state_attribute(state, "code_snippet"), 'expected_error_count'):  # CHANGE
+            original_error_count = getattr(state, "original_error_count", 0)
+            if original_error_count == 0 and hasattr(state, "code_snippet") and hasattr(state.code_snippet, 'expected_error_count'):
                 # If not set in state, try to get it from code snippet
-                original_error_count = get_state_attribute(state, "code_snippet").expected_error_count  # CHANGE
+                original_error_count = state.code_snippet.expected_error_count
                 # Update state with this count
                 state.original_error_count = original_error_count
                 
@@ -316,7 +316,7 @@ class WorkflowNodes:
                     # Use the regeneration prompt with emphasis on adding missing errors
                     feedback = create_regeneration_prompt(
                         code=code,
-                        domain=get_state_attribute(state, "domain"),
+                        domain=getattr(state, "domain", ""),
                         missing_errors=evaluation_result.get('missing_errors', []),
                         found_errors=evaluation_result.get('found_errors', []), 
                         requested_errors=requested_errors
@@ -327,7 +327,7 @@ class WorkflowNodes:
                             
                 feedback = create_regeneration_prompt(
                     code=code,
-                    domain=get_state_attribute(state, "domain"),  
+                    domain=getattr(state, "domain", ""),  
                     missing_errors=[],
                     found_errors=evaluation_result.get(t('found_errors'), []),
                     requested_errors=requested_errors                    
@@ -340,7 +340,7 @@ class WorkflowNodes:
             if evaluation_result.get(t("valid"), False):
                 state.current_step = "review"
                 logger.info("All errors successfully implemented, proceeding to review")
-            elif needs_regeneration and get_state_attribute(state, "evaluation_attempts") < get_state_attribute(state, "max_evaluation_attempts"):  # CHANGE
+            elif needs_regeneration and state.evaluation_attempts < getattr(state, "max_evaluation_attempts", 3):
                 # If we have missing errors or extra errors and haven't reached max attempts, regenerate
                 state.current_step = "regenerate"
                 if missing_count > 0:
@@ -348,8 +348,8 @@ class WorkflowNodes:
             else:
                 # Otherwise, we've either reached max attempts or have no more missing errors
                 state.current_step = "review"
-                if get_state_attribute(state, "evaluation_attempts") >= get_state_attribute(state, "max_evaluation_attempts"):  # CHANGE
-                    logger.warning(f"Reached maximum evaluation attempts ({get_state_attribute(state, 'max_evaluation_attempts')}). Proceeding to review.")  # CHANGE
+                if state.evaluation_attempts >= getattr(state, "max_evaluation_attempts", 3):                
+                    logger.warning(f"Reached maximum evaluation attempts ({getattr(state, 'max_evaluation_attempts', 3)}). Proceeding to review.")
                 else:
                     logger.info("No missing errors to fix, proceeding to review")
             
@@ -391,11 +391,11 @@ class WorkflowNodes:
                     
             code_snippet = state.code_snippet.code
             
-            # Use get_state_attribute for state properties
-            known_problems = []
-            original_error_count = get_state_attribute(state, "original_error_count")
             
-            if get_state_attribute(state, "evaluation_result") and t('found_errors') in get_state_attribute(state, "evaluation_result"):
+            known_problems = []
+            original_error_count =  getattr(state, "original_error_count", 0)
+            
+            if hasattr(state, "evaluation_result") and state.evaluation_result and 'found_errors' in state.evaluation_result:
                 known_problems = state.evaluation_result.get("found_errors", [])
             
             # Get the student response evaluator
@@ -436,6 +436,7 @@ class WorkflowNodes:
                 # Mark review as sufficient if all errors are found
                 if identified_count == original_error_count:
                     analysis["review_sufficient"] = True
+                    analysis[t("review_sufficient")] = True
                     logger.info("All errors found! Marking review as sufficient.")
 
           
@@ -484,13 +485,13 @@ class WorkflowNodes:
         requested_errors = []
         
         # First check if code_snippet exists
-        if not hasattr(state, 'code_snippet') or get_state_attribute(state, 'code_snippet') is None:  # CHANGE
+        if not hasattr(state, 'code_snippet') or state.code_snippet is None:  #
             logger.warning("No code snippet in state for extracting requested errors")
             return requested_errors
         
         # Check if raw_errors exists and is a dictionary
-        if hasattr(get_state_attribute(state, 'code_snippet'), "raw_errors"):  # CHANGE
-            raw_errors = get_state_attribute(state, 'code_snippet').raw_errors  # CHANGE
+        if hasattr(state, 'code_snippet') and hasattr(state.code_snippet, "raw_errors"):
+            raw_errors = state.code_snippet.raw_errors
             
             # Type check for raw_errors
             if not isinstance(raw_errors, dict):
@@ -525,18 +526,18 @@ class WorkflowNodes:
                         requested_errors.append(error)
         
         # Alternative method: Check selected_specific_errors
-        elif hasattr(state, 'selected_specific_errors') and get_state_attribute(state, 'selected_specific_errors'):  # CHANGE
+        elif hasattr(state, 'selected_specific_errors') and state.selected_specific_errors:
             # Check if it's a list
-            if isinstance(get_state_attribute(state, 'selected_specific_errors'), list):  # CHANGE
+            if isinstance(state.selected_specific_errors, list):
                 # Filter out non-dict entries
-                for error in get_state_attribute(state, 'selected_specific_errors'):  # CHANGE
+                for error in state.selected_specific_errors:
                     if isinstance(error, dict) and "name" in error and "type" in error:
                         requested_errors.append(error)
         
         # If we still don't have any errors, check selected_error_categories
         if not requested_errors and hasattr(state, 'selected_error_categories'):
             # Check if it's a dict
-            if isinstance(get_state_attribute(state, 'selected_error_categories'), dict):  # CHANGE
+            if hasattr(state, 'selected_error_categories') and isinstance(state.selected_error_categories, dict):
                 # This doesn't give us specific errors, but we can log that we found categories
                 logger.info("Found selected_error_categories but no specific errors")
         

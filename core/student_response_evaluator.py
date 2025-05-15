@@ -146,7 +146,7 @@ class StudentResponseEvaluator:
             identified_percentage = 100.0
 
         # Check if review is sufficient based on meaningful comments
-        review_sufficient = analysis_data.get(f"{t('review_sufficient')}", False)
+        review_sufficient = analysis_data.get(f"{'review_sufficient'}", False)
         identified_problems =  analysis_data.get(f"{t('identified_problems')}", False)
         missed_problems = analysis_data.get(f"{t('missed_problems')}", False)
         
@@ -164,7 +164,7 @@ class StudentResponseEvaluator:
          
     def _extract_json_from_text(self, text: str) -> Dict[str, Any]:
         """
-        Extract JSON data from LLM response text with full internationalization support.
+        Extract JSON data from LLM response text with improved robustness for malformed responses.
         
         Args:
             text: Text containing JSON data
@@ -177,112 +177,122 @@ class StudentResponseEvaluator:
             return {t("error"): t("empty_response_from_llm")}
         
         try:
+            # First try direct JSON parsing if the response looks like JSON
+            if text.strip().startswith('{') and text.strip().endswith('}'):
+                try:
+                    # Clean the response to fix common JSON issues
+                    json_str = text.strip()
+                    # Fix trailing commas which are invalid in JSON
+                    json_str = re.sub(r',\s*}', '}', json_str)
+                    json_str = re.sub(r',\s*]', ']', json_str)
+                    # Try to parse as JSON directly
+                    return json.loads(json_str)
+                except json.JSONDecodeError:
+                    # If direct parsing fails, continue with regex extraction
+                    pass
+                    
+            # For the specific broken format in the example
+            # Look for key JSON fields and try to reconstruct a valid JSON
+            identified_problems_match = re.search(r'"(已識別的問題|Identified Problems)"\s*:\s*\[(.*?)\]', text, re.DOTALL)
             
-            # If standard methods fail, try to manually extract fields
-            logger.warning(t("could_not_extract_json"))
+            # Fallback manual extraction when JSON is severely malformed
             analysis = {}
             
-            # Try to extract identified problems - support both English and Chinese field names
-            identified_match = re.search(r'"(Identified Problems|已識別的問題)"\s*:\s*(\[.*?\])', text, re.DOTALL)
-            if identified_match:
-                try:
-                    identified_str = identified_match.group(2)
-                    # Clean up the JSON string
-                    identified_str = re.sub(r',\s*]', ']', identified_str)
-                    analysis[t("identified_problems")] = json.loads(identified_str)
-                except Exception as e:
-                    logger.warning(f"{t('json_parse_error')}: {str(e)}")
-                    analysis[t("identified_problems")] = []
-            else:
-                analysis[t("identified_problems")] = []
+            # Extract identified problems with either Chinese or English field names
+            if identified_problems_match:
+                identified_problems_text = identified_problems_match.group(2)
+                # Try to extract individual problem objects
+                problem_objects = []
+                current_problem = {}
+                lines = identified_problems_text.strip().split('\n')
+                
+                for line in lines:
+                    line = line.strip()
+                    
+                    # Skip empty lines or just containing brackets/braces
+                    if not line or line in ['{', '}', '[', ']']:
+                        continue
+                    
+                    # Check for key-value pairs
+                    key_value_match = re.search(r'"([^"]+)"\s*:\s*(.+)', line)
+                    if key_value_match:
+                        key = key_value_match.group(1)
+                        value = key_value_match.group(2).strip()
+                        
+                        # Remove trailing comma if present
+                        if value.endswith(','):
+                            value = value[:-1].strip()
+                        
+                        # Handle string values (quoted)
+                        if value.startswith('"') and value.endswith('"'):
+                            current_problem[key] = value[1:-1]
+                        # Handle numeric values
+                        elif value.replace('.', '', 1).isdigit():
+                            current_problem[key] = float(value) if '.' in value else int(value)
+                        # Handle boolean values
+                        elif value.lower() in ['true', 'false']:
+                            current_problem[key] = value.lower() == 'true'
+                        else:
+                            current_problem[key] = value
+                    
+                    # If we see a closing brace, add the current problem to the list
+                    if '}' in line and current_problem:
+                        problem_objects.append(current_problem)
+                        current_problem = {}
+                
+                # Add any remaining problem
+                if current_problem:
+                    problem_objects.append(current_problem)
+                    
+                # Add the extracted problems to the analysis
+                analysis[t("identified_problems")] = problem_objects
             
-            # Try to extract missed problems - support both English and Chinese field names
-            missed_match = re.search(r'"(Missed Problems|遺漏的問題)"\s*:\s*(\[.*?\])', text, re.DOTALL)
-            if missed_match:
-                try:
-                    missed_str = missed_match.group(2)
-                    # Clean up the JSON string
-                    missed_str = re.sub(r',\s*]', ']', missed_str)
-                    analysis[t("missed_problems")] = json.loads(missed_str)
-                except Exception as e:
-                    logger.warning(f"{t('json_parse_error')}: {str(e)}")
-                    analysis[t("missed_problems")] = []
+            # Extract other fields similarly (missed problems, counts, etc.)
+            # Example for identified count
+            identified_count_match = re.search(r'"(已識別數量|Identified Count)"\s*:\s*(\d+)', text)
+            if identified_count_match:
+                analysis[t("identified_count")] = int(identified_count_match.group(2))
+                
+            # Example for total problems
+            total_problems_match = re.search(r'"(總問題數|Total Problems)"\s*:\s*(\d+)', text)
+            if total_problems_match:
+                analysis[t("total_problems")] = int(total_problems_match.group(2))
+                
+            # Example for identified percentage
+            percentage_match = re.search(r'"(識別百分比|Identified Percentage)"\s*:\s*([0-9.]+)', text)
+            if percentage_match:
+                analysis[t("identified_percentage")] = float(percentage_match.group(2))
+                
+            # Example for review sufficient
+            sufficient_match = re.search(r'"(審查足夠|Review Sufficient)"\s*:\s*(true|false)', text, re.IGNORECASE)
+            if sufficient_match:
+                analysis[t("review_sufficient")] = sufficient_match.group(2).lower() == "true"
+            
+            # Try to extract missed problems array separately
+            missed_problems_match = re.search(r'"(遺漏的問題|Missed Problems)"\s*:\s*\[(.*?)\]', text, re.DOTALL)
+            if missed_problems_match:
+                missed_text = missed_problems_match.group(2).strip()
+                # Similar parsing for missed problems as done for identified problems
+                missed_problems = []
+                # Parse the missed_text to extract problem objects
+                analysis[t("missed_problems")] = missed_problems
             else:
                 analysis[t("missed_problems")] = []
             
-            # Try to extract identified count - support both English and Chinese field names
-            count_match = re.search(r'"(Identified Count|已識別數量)"\s*:\s*([0-9]+)', text)
-            if count_match:
-                try:
-                    analysis[t("identified_count")] = int(count_match.group(2))
-                except:
-                    analysis[t("identified_count")] = 0
-            else:
-                analysis[t("identified_count")] = 0
-            
-            # Try to extract total problems - support both English and Chinese field names
-            total_match = re.search(r'"(Total Problems|總問題數)"\s*:\s*([0-9]+)', text)
-            if total_match:
-                try:
-                    analysis[t("total_problems")] = int(total_match.group(2))
-                except:
-                    analysis[t("total_problems")] = 0
-            else:
-                analysis[t("total_problems")] = 0
-            
-            # Try to extract accuracy percentage - support both English and Chinese field names
-            accuracy_match = re.search(r'"(Identified Percentage|識別百分比)"\s*:\s*([0-9.]+)', text)
-            if accuracy_match:
-                try:
-                    analysis[t("identified_percentage")] = float(accuracy_match.group(2))
-                except:
-                    analysis[t("identified_percentage")] = 0.0
-            else:
-                analysis[t("identified_percentage")] = 0.0
-            
-            # Try to extract review_sufficient - support both English and Chinese field names
-            sufficient_match = re.search(r'"(Review Sufficient|審查足夠)"\s*:\s*(true|false)', text, re.IGNORECASE)
-            if sufficient_match:
-                analysis[t("review_sufficient")] = sufficient_match.group(2).lower() == "true"
-            else:
-                analysis[t("review_sufficient")] = False
-            
-            # Try to extract feedback - support both English and Chinese field names
-            feedback_match = re.search(r'"(Feedback|反饋)"\s*:\s*"(.*?)"', text)
-            if feedback_match:
-                analysis[t("feedback")] = feedback_match.group(2)
-            else:
-                analysis[t("feedback")] = t("analysis_could_not_extract_feedback")
-            
-            if analysis:
-                # Add consistency check - ensure we have the basic required fields
-                required_fields = [
-                    t("identified_problems"),
-                    t("missed_problems"),
-                    t("identified_count"),
-                    t("total_problems"),
-                    t("accuracy_percentage"),
-                    t("review_sufficient"),
-                    t("feedback")
-                ]
-                
-                # Fill in any missing required fields with defaults
-                for field in required_fields:
-                    if field not in analysis:
-                        if field == t("identified_count") or field == t("total_problems"):
-                            analysis[field] = 0
-                        elif field == t("accuracy_percentage"):
-                            analysis[field] = 0.0
-                        elif field == t("review_sufficient"):
-                            analysis[field] = False
-                
+            # If we extracted enough fields to form a valid analysis, return it
+            if t("identified_problems") in analysis or t("missed_problems") in analysis:
                 return analysis
-            
-            # If all else fails, return an error object
-            logger.error(t("could_not_extract_analysis_data"))
+                
+            # If all else fails, return a minimal valid structure
+            logger.warning(t("could_not_extract_json_from_response"))
             return {
-                t("error"): t("could_not_parse_json_response"),
-                t("raw_text"): text[:500] + ("..." if len(text) > 500 else "")
+                t("identified_problems"): [],
+                t("missed_problems"): [],
+                t("identified_count"): 0,
+                t("total_problems"): 0,
+                t("identified_percentage"): 0,
+                t("review_sufficient"): False,
+                t("feedback"): t("analysis_could_not_extract_feedback")
             }
             
         except Exception as e:

@@ -11,7 +11,7 @@ import time
 import datetime
 from typing import List, Dict, Any, Optional, Tuple, Callable
 from utils.code_utils import add_line_numbers
-from utils.language_utils import t, get_state_attribute
+from utils.language_utils import t
 
 
 # Configure logging
@@ -362,14 +362,15 @@ def render_review_tab(workflow, code_display_ui):
     known_problems = []
     
     # Extract known problems from evaluation result
-    evaluation_result = get_state_attribute(st.session_state.workflow_state, 'evaluation_result')
+    evaluation_result = getattr(st.session_state.workflow_state, 'evaluation_result', None)
+    
     if evaluation_result and t('found_errors') in evaluation_result:
         known_problems = evaluation_result[t('found_errors')]
        
     
     # If we couldn't get known problems from evaluation, try to get from selected errors
     if not known_problems:
-        selected_specific_errors = get_state_attribute(st.session_state.workflow_state, 'selected_specific_errors')
+        selected_specific_errors = getattr(st.session_state.workflow_state, 'selected_specific_errors', None)
         if selected_specific_errors:
             # Format selected errors to match expected format
             known_problems = [
@@ -378,20 +379,20 @@ def render_review_tab(workflow, code_display_ui):
             ]
    
     code_display_ui.render_code_display(
-        get_state_attribute(st.session_state.workflow_state, 'code_snippet'), 
+        getattr(st.session_state.workflow_state, 'code_snippet', None),
         known_problems=known_problems
     )
     
     # Get current review state
-    current_iteration = get_state_attribute(st.session_state.workflow_state, 'current_iteration',1)
-    max_iterations = get_state_attribute(st.session_state.workflow_state, 'max_iterations',3)
+    current_iteration = getattr(st.session_state.workflow_state, 'current_iteration', 1)
+    max_iterations = getattr(st.session_state.workflow_state, 'max_iterations', 3)
     
     # Get the latest review if available
     latest_review = None
     targeted_guidance = None
     review_analysis = None
     
-    review_history = get_state_attribute(st.session_state.workflow_state, 'review_history')
+    review_history = getattr(st.session_state.workflow_state, 'review_history', None)
     
     
     if review_history and len(review_history) > 0:
@@ -408,12 +409,12 @@ def render_review_tab(workflow, code_display_ui):
             all_errors_found = True
     
     # Only allow submission if we're under the max iterations
-    review_sufficient = get_state_attribute(st.session_state.workflow_state, t('review_sufficient'), False)
+    review_sufficient = getattr(st.session_state.workflow_state, 'review_sufficient', False)
     if current_iteration <= max_iterations and not review_sufficient and not all_errors_found:
         # Get the current student review (empty for first iteration)
         student_review = ""
         if latest_review is not None:
-            student_review = get_state_attribute(latest_review, t('student_review'), "")
+           student_review = getattr(latest_review, 'student_review', "")
         
         # Define submission callback
         def on_submit_review(review_text):

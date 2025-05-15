@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import time
 import traceback
 from typing import List, Dict, Any, Optional, Tuple, Callable
-from utils.language_utils import t, get_state_attribute
+from utils.language_utils import t
 
 # Configure logging
 logging.basicConfig(
@@ -61,7 +61,7 @@ class FeedbackSystem:
         latest_review, review_history = self._extract_review_data(state)
         
         # Generate comparison report if needed
-        if latest_review and latest_review.analysis and not get_state_attribute(state, 'comparison_report'):
+        if latest_review and latest_review.analysis and (not hasattr(state, 'comparison_report') or not state.comparison_report):
             self._generate_comparison_report(state, latest_review)
         
         # Get the latest review analysis
@@ -73,7 +73,7 @@ class FeedbackSystem:
         # Display the feedback results       
        
         self.render_results(
-            comparison_report=get_state_attribute(state, 'comparison_report'),           
+            comparison_report=state.comparison_report,           
             review_analysis=latest_analysis,
             review_history=review_history        
         )
@@ -141,6 +141,7 @@ class FeedbackSystem:
         
         # Display analysis details in an expander
         if review_analysis:
+            print("review_analysis: ", review_analysis)
             with st.expander(t("detailed_analysis"), expanded=True):
                 tabs = st.tabs([t("identified_issues"), t("missed_issues")])
                 
@@ -401,10 +402,10 @@ class FeedbackSystem:
         
         # Check if max iterations reached or review is sufficient
         if hasattr(state, 'current_iteration') and hasattr(state, 'max_iterations'):
-            if get_state_attribute(state, 'current_iteration') > get_state_attribute(state, 'max_iterations'):
+            if getattr(state, 'current_iteration', 0) > getattr(state, 'max_iterations', 3):
                 review_completed = True
                 logger.info(t("review_completed_max_iterations"))
-            elif get_state_attribute(state, 'review_sufficient'):
+            elif getattr(state, 'review_sufficient', False):
                 review_completed = True
                 logger.info(t("review_completed_sufficient"))
         
@@ -424,7 +425,7 @@ class FeedbackSystem:
     def _display_completion_required_message(self, state):
         """Display message requiring completion of review before viewing feedback."""
         st.warning(f"{t('complete_review_first')}")
-        st.info(f"{t('current_process_review1')} {get_state_attribute(state, 'current_iteration')-1}/{get_state_attribute(state, 'max_iterations')} {t('current_process_review2')}")
+        st.info(f"{t('current_process_review1')} {getattr(state, 'current_iteration', 1)-1}/{getattr(state, 'max_iterations', 3)} {t('current_process_review2')}")
     
     def _extract_review_data(self, state):
         """
@@ -440,17 +441,17 @@ class FeedbackSystem:
         review_history = []
         
         # Make sure we have review history
-        if get_state_attribute(state, 'review_history'):
-            review_history_list = get_state_attribute(state, 'review_history')            
+        if hasattr(state, 'review_history') and state.review_history:
+            review_history_list = state.review_history           
             if review_history_list and len(review_history_list) > 0:
                 latest_review = review_history_list[-1]
                 
                 # Convert review history to the format expected by FeedbackDisplayUI
                 for review in review_history_list:                   
                     review_history.append({
-                        "iteration_number": get_state_attribute(review, "iteration_number", 0),
-                        "student_review": get_state_attribute(review, "student_review", ""),
-                        "review_analysis": get_state_attribute(review, "analysis", {})
+                        "iteration_number":  getattr(review, "iteration_number", 0),
+                        "student_review": getattr(review, "student_review", ""),
+                        "review_analysis": getattr(review, "analysis", {})
                     })
                 
         return latest_review, review_history
@@ -465,8 +466,8 @@ class FeedbackSystem:
         """
         try:
             # Get the known problems from the evaluation result instead of code_snippet.known_problems
-            if get_state_attribute(state, 'evaluation_result') and 'found_errors' in get_state_attribute(state, 'evaluation_result'):
-                stamp = get_state_attribute(state, 'evaluation_result')
+            if hasattr(state, 'evaluation_result') and state.evaluation_result and 'found_errors' in state.evaluation_result:
+                stamp = state.evaluation_result
                 found_errors = stamp[t("found_errors")]
                 
                 # Get the evaluator from the workflow
@@ -489,7 +490,7 @@ class FeedbackSystem:
         except Exception as e:
             logger.error(f"{t('error')} {t('generating_comparison_report')}: {str(e)}")
             logger.error(traceback.format_exc())  # Log full stacktrace
-            if not get_state_attribute(state, 'comparison_report'):
+            if not hasattr(state, 'comparison_report') or not state.comparison_report:
                 state.comparison_report = (
                     f"# {t('review_feedback')}\n\n"
                     f"{t('error_generating_report')} "
@@ -505,7 +506,7 @@ class FeedbackSystem:
             latest_analysis: The analysis of the latest review
         """
         # Check if we already updated stats for this iteration
-        current_iteration = get_state_attribute(state, 'current_iteration', 1)
+        current_iteration = getattr(state, 'current_iteration', 1)
         identified_count = latest_analysis[t("identified_count")]
         stats_key = f"stats_updated_{current_iteration}_{identified_count}"
     
