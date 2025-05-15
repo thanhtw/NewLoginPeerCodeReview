@@ -172,7 +172,7 @@ class AuthUI:
                 "user_id": None,
                 "user_info": {}
             }
-
+            
         if not st.session_state.auth.get("is_authenticated", False):
             return
             

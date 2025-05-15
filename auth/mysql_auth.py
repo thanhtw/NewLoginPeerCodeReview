@@ -177,11 +177,10 @@ class MySQLAuthManager:
         Returns:
             Dict containing success status and updated statistics
         """
-        #logger.info(f"MySQLAuthManager: Updating stats for user {user_id}: accuracy={accuracy:.1f}%, score={score}")
         
         # Validate connection
         if not self.db:
-            #logger.error("Database connection not initialized")
+            logger.error("Database connection not initialized")
             return {"success": False, "error": "Database connection not initialized"}
         
         # Get current stats
@@ -195,7 +194,7 @@ class MySQLAuthManager:
         result = self.db.execute_query(query, (user_id,), fetch_one=True)
         
         if not result:
-            #logger.error(f"User {user_id} not found in database")
+            logger.error(f"User {user_id} not found in database")
             return {"success": False, "error": "User not found"}
         
        
@@ -244,7 +243,6 @@ class MySQLAuthManager:
                 (new_reviews, new_score, user_id)
             )
         
-        #logger.info(f"Database update affected rows: {affected_rows}")
         
         if affected_rows is not None and affected_rows >= 0:
             result = {
@@ -261,7 +259,7 @@ class MySQLAuthManager:
             
             return result
         else:
-            #logger.error("Database update failed or returned None")
+            logger.error("Database update failed or returned None")
             return {"success": False, "error": "Error updating review stats"}
     
     def get_all_users(self) -> List[Dict[str, Any]]:

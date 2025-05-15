@@ -157,10 +157,8 @@ def main():
 
     # Check if we're performing a full reset
     if st.session_state.get("full_reset", False):
-        
         # Remove the reset flag
         del st.session_state["full_reset"]
-        
         # Store authentication state and key items we want to preserve
         preserved_keys = ["auth", "provider_selection", "user_level", "language"]
         
