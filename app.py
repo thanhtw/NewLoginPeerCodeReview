@@ -85,6 +85,18 @@ def main():
     """Enhanced main application function with provider selection."""
     # Initialize language selection
     init_language()
+
+    if st.session_state.get("changing_provider", False):
+        # Restore preserved states
+        if "preserved_auth" in st.session_state:
+            st.session_state.auth = st.session_state.pop("preserved_auth")
+        if "preserved_user_level" in st.session_state:
+            st.session_state.user_level = st.session_state.pop("preserved_user_level")
+        if "preserved_language" in st.session_state:
+            st.session_state.language = st.session_state.pop("preserved_language")
+        
+        # Remove the changing provider flag
+        st.session_state.pop("changing_provider", None)
     
     # Initialize the authentication UI
     auth_ui = AuthUI()
@@ -101,26 +113,89 @@ def main():
     user_level = auth_ui.get_user_level()    
     st.session_state.user_level = user_level
 
-    # Check if we're performing a full reset
-    if st.session_state.get("full_reset", False):
-        # Remove the reset flag
-        del st.session_state["full_reset"]
-        # Create a completely new session state
+    # Check if we're performing a language change reset
+    if st.session_state.get("language_change_reset", False):
+        # Remove the language change reset flag
+        del st.session_state["language_change_reset"]
+        
+        # Retrieve preserved values
+        preserved_auth = st.session_state.pop("language_auth_preserve", None)
+        preserved_user_level = st.session_state.pop("language_user_level_preserve", None)
+        preserved_provider = st.session_state.pop("language_provider_preserve", None)
+        current_language = st.session_state.get("language", "en")
+        
+        # Get keys to preserve
+        keys_to_preserve = ["language"]
+        
+        # Create a backup of values we want to preserve
+        preserved_values = {
+            "language": current_language
+        }
+        
+        # Clear all state except language
         for key in list(st.session_state.keys()):
-            # Only keep essential UI preferences 
-            if key not in ["error_selection_mode", "selected_error_categories", "selected_specific_errors", "language"]:
+            if key not in keys_to_preserve:
                 del st.session_state[key]
+        
+        # Restore preserved values
+        for key, value in preserved_values.items():
+            st.session_state[key] = value
+        
+        # Restore auth and provider information
+        if preserved_auth is not None:
+            st.session_state["auth"] = preserved_auth
+        if preserved_user_level is not None:
+            st.session_state["user_level"] = preserved_user_level
+        if preserved_provider is not None:
+            st.session_state["provider_selection"] = preserved_provider
+        
         # Initialize a fresh workflow state
         st.session_state.workflow_state = WorkflowState()
+        
         # Set active tab to generation tab
         st.session_state.active_tab = 0
-    
+
+    # Check if we're performing a full reset
+    if st.session_state.get("full_reset", False):
+        
+        # Remove the reset flag
+        del st.session_state["full_reset"]
+        
+        # Store authentication state and key items we want to preserve
+        preserved_keys = ["auth", "provider_selection", "user_level", "language"]
+        
+        # Create a backup of values we want to preserve
+        preserved_values = {}
+        for key in preserved_keys:
+            if key in st.session_state:
+                preserved_values[key] = st.session_state[key]
+        
+        # Clear all state except the keys we want to preserve
+        keys_to_remove = [key for key in list(st.session_state.keys()) 
+                        if key not in preserved_keys]
+        
+        for key in keys_to_remove:
+            del st.session_state[key]
+        
+        # Restore the preserved values (just to be safe, though they should still be there)
+        for key, value in preserved_values.items():
+            st.session_state[key] = value
+        
+        # Initialize a fresh workflow state
+        st.session_state.workflow_state = WorkflowState()
+        
+        # Set active tab to generation tab
+        st.session_state.active_tab = 0
+        st.session_state.force_tab_zero = True
+        st.rerun()
+
+
     # Initialize session state
     init_session_state()
     
     # Initialize LLM manager
     llm_manager = LLMManager()
-    
+
     # Add language selector to sidebar
     render_language_selector()
     

@@ -166,6 +166,13 @@ class AuthUI:
     def render_user_profile(self):
         """Render the user profile section in the sidebar."""
         # Check if user is authenticated
+        if "auth" not in st.session_state:
+            st.session_state.auth = {
+                "is_authenticated": False,
+                "user_id": None,
+                "user_info": {}
+            }
+
         if not st.session_state.auth.get("is_authenticated", False):
             return
             

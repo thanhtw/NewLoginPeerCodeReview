@@ -140,8 +140,7 @@ class FeedbackSystem:
                                     f"({review_analysis[t('identified_percentage')]:.1f}% {t('accuracy')})")
         
         # Display analysis details in an expander
-        if review_analysis:
-            print("review_analysis: ", review_analysis)
+        if review_analysis:            
             with st.expander(t("detailed_analysis"), expanded=True):
                 tabs = st.tabs([t("identified_issues"), t("missed_issues")])
                 
@@ -562,18 +561,10 @@ class FeedbackSystem:
                 # Clear all update keys in session state
                 keys_to_remove = [k for k in st.session_state.keys() if k.startswith("stats_updated_")]
                 for key in keys_to_remove:
-                    del st.session_state[key]
-                    
-                # Clear tracking dict
-                self.stats_updates = {}
-                    
+                    del st.session_state[key]                   
+                self.stats_updates = {}                    
                 # Set the full reset flag
                 st.session_state.full_reset = True
-                
-                # Return to the generate tab
-                st.session_state.active_tab = 0
-                
-                # Force UI refresh
                 st.rerun()
 
 def render_feedback_tab(workflow, auth_ui=None):

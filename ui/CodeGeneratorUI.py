@@ -10,7 +10,8 @@ import logging
 import random
 import time
 from typing import List, Dict, Any, Optional, Tuple, Callable
-from utils.language_utils import t, get_current_language
+from utils.language_utils import t
+from state_schema import WorkflowState
 
 # Configure logging
 logging.basicConfig(
@@ -757,13 +758,47 @@ def render_generate_tab(workflow, error_selector_ui, code_display_ui, user_level
             known_problems=known_problems
         )
         
+       
         # Add button to regenerate code
         if st.button(t("generate_new"), type="primary"):
-            # Reset the state for new generation
-            st.session_state.workflow_state.code_snippet = None
-            st.session_state.workflow_state.current_step = "generate"
-            st.session_state.workflow_state.evaluation_attempts = 0
+            # Store items we want to preserve
+            preserved_keys = ["auth", "provider_selection", "user_level", "language"]
+            
+            # Back up preserved values
+            preserved_values = {}
+            for key in preserved_keys:
+                if key in st.session_state:
+                    preserved_values[key] = st.session_state[key]
+            
+            # Perform a mini-reset: Remove workflow state and process details
+            workflow_related_keys = ["workflow_state", "workflow_steps", "code_snippet", 
+                           "error", "feedback_tab_switch_attempted", 
+                           "evaluation_result", "comparison_report",
+                           "error_selection_mode", "selected_error_categories", 
+                           "selected_specific_errors"]
+            
+            # Clear specific workflow-related keys but keep others
+            for key in workflow_related_keys:
+                if key in st.session_state:
+                    del st.session_state[key]
+            
+            # Restore preserved values
+            for key, value in preserved_values.items():
+                st.session_state[key] = value
+
+            # Initialize a fresh workflow state
+            st.session_state.workflow_state = WorkflowState()
+
+            # Initialize empty workflow steps
             st.session_state.workflow_steps = []
+
+            # Reset error selection to default (advanced mode)
+            st.session_state.error_selection_mode = "advanced"
+            st.session_state.selected_error_categories = {"java_errors": []}
+            st.session_state.selected_specific_errors = []
+
+            # Keep us on the generate tab
+            st.session_state.active_tab = 0
             # Rerun to update UI
             st.rerun()
     else:

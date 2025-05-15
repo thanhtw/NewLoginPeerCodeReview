@@ -122,7 +122,6 @@ translations = {
     "reevaluating_code": "Re-evaluating code...",
     "regenerating_code": "Regenerating code",
     "remove": "Remove",
-    "requested_errors": "requested errors",
     "select": "Select",
     "select_error_categories": "Select Error Categories",
     "select_specific_errors": "Select Specific Errors",

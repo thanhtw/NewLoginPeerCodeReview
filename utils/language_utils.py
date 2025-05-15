@@ -84,11 +84,39 @@ def render_language_selector():
         with cols[0]:
             if st.button("English", use_container_width=True, 
                          disabled=get_current_language() == "en"):
+                # Save authentication state
+                current_auth = st.session_state.get("auth", None)
+                current_user_level = st.session_state.get("user_level", None)
+                current_provider = st.session_state.get("provider_selection", None)
+                
+                # Set a dedicated language change reset flag (not full_reset)
+                st.session_state["language_change_reset"] = True
+                
+                # Save auth for restoration
+                st.session_state["language_auth_preserve"] = current_auth
+                st.session_state["language_user_level_preserve"] = current_user_level
+                st.session_state["language_provider_preserve"] = current_provider
+                
+                # Change language
                 set_language("en")
                 st.rerun()
                 
         with cols[1]:
             if st.button("繁體中文", use_container_width=True, 
                          disabled=get_current_language() == "zh-tw"):
+                # Save authentication state
+                current_auth = st.session_state.get("auth", None)
+                current_user_level = st.session_state.get("user_level", None)
+                current_provider = st.session_state.get("provider_selection", None)
+                
+                # Set a dedicated language change reset flag (not full_reset)
+                st.session_state["language_change_reset"] = True
+                
+                # Save auth for restoration
+                st.session_state["language_auth_preserve"] = current_auth
+                st.session_state["language_user_level_preserve"] = current_user_level
+                st.session_state["language_provider_preserve"] = current_provider
+                
+                # Change language
                 set_language("zh-tw")
                 st.rerun()

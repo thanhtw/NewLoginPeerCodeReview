@@ -433,12 +433,6 @@ def render_review_tab(workflow, code_display_ui):
         # Display appropriate message based on why review is blocked
         if review_sufficient or all_errors_found:
             st.success(f"{t('all_errors_found')}")
-            
-            # Add the View Feedback button
-            if st.button(f"{t('view_feedback')}", key="automatic_feedback_button"):
-                st.session_state.active_tab = 2  # 2 is the index of the feedback tab
-                st.rerun()
-                
             # Add a flag to prevent infinite reruns
             if not st.session_state.get("feedback_tab_switch_attempted", False):
                 # Set the flag to indicate we've attempted to switch
@@ -449,6 +443,3 @@ def render_review_tab(workflow, code_display_ui):
             # For normal completion (not all errors found), just show the warning
             st.warning(t("iterations_completed").format(max_iterations=max_iterations))
             
-            if st.button(f"{t('view_feedback')}", key="manual_feedback_button"):
-                st.session_state.active_tab = 2
-                st.rerun()

@@ -301,13 +301,16 @@ def create_enhanced_tabs(labels: List[str]):
     # Create tabs with enhanced styling
     tabs = st.tabs(labels)
     
+    if st.session_state.get("force_tab_zero", False):
+        st.session_state.active_tab = 0
+        del st.session_state["force_tab_zero"]
+
     # Handle tab switching based on session state
     current_tab = st.session_state.active_tab
     
     # Check if we need to block access to feedback tab
     if hasattr(st.session_state, 'workflow_state'):
-        state = st.session_state.workflow_state
-        # Determine if review is completed
+        state = st.session_state.workflow_state       
         review_completed = False
         
         # Check if max iterations reached or review is sufficient
@@ -319,14 +322,18 @@ def create_enhanced_tabs(labels: List[str]):
         
         # Block access to feedback tab (index 2) if review not completed
         if current_tab == 2 and not review_completed:
-            st.warning("Please complete all review attempts before accessing feedback.")
-            # Reset to review tab
-            st.session_state.active_tab = 1
-            current_tab = 1
+            if hasattr(state, 'current_iteration') and hasattr(state, 'max_iterations'):
+                if state.current_iteration >= state.max_iterations:                    
+                    review_completed = True
+                    state.review_sufficient = True
+            
+            if not review_completed:
+                st.warning("Please complete all review attempts before accessing feedback.")               
+                st.session_state.active_tab = 1
+                current_tab = 1
     
-    # Force-select the active tab
-    if current_tab != 0:
-        # This doesn't actually change the UI, but it helps with logic elsewhere
+   
+    if current_tab != 0:        
         st.session_state.active_tab = current_tab
     
     return tabs

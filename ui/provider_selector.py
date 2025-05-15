@@ -183,6 +183,17 @@ class ProviderSelectorUI:
                 st.session_state.provider_selection["setup_complete"] = False
                 st.session_state.provider_selection["show_setup_modal"] = True
                 
+                # Store authentication state before rerun
+                auth_state = st.session_state.get("auth", None)
+                user_level = st.session_state.get("user_level", None)
+                language = st.session_state.get("language", None)
+                
+                # Create a flag to indicate we're changing providers
+                st.session_state["changing_provider"] = True
+                st.session_state["preserved_auth"] = auth_state
+                st.session_state["preserved_user_level"] = user_level
+                st.session_state["preserved_language"] = language
+                
                 # Force page reload
                 st.rerun()
 
