@@ -61,7 +61,8 @@ class FeedbackSystem:
         latest_review, review_history = self._extract_review_data(state)
         
         # Generate comparison report if needed
-        if latest_review and latest_review.analysis and not get_state_attribute(state, t('comparison_report')):
+        #if latest_review and latest_review.analysis and not get_state_attribute(state, 'comparison_report'):
+        if latest_review and latest_review.analysis:
             self._generate_comparison_report(state, latest_review)
         
         # Get the latest review analysis
@@ -70,11 +71,9 @@ class FeedbackSystem:
         # Update user statistics if AuthUI is provided and we have analysis
         if self.auth_ui and latest_analysis:
             self._update_user_statistics(state, latest_analysis)
-        
-        # Display the feedback results
+        # Display the feedback results        
         self.render_results(
-            comparison_report=get_state_attribute(state, t('comparison_report')),
-            review_summary=get_state_attribute(state, t('review_summary')),
+            comparison_report=get_state_attribute(state, 'comparison_report'),           
             review_analysis=latest_analysis,
             review_history=review_history        
         )
@@ -83,21 +82,19 @@ class FeedbackSystem:
         self._render_new_session_button()
 
     def render_results(self, 
-                      comparison_report: str = None,
-                      review_summary: str = None,
+                      comparison_report: str = None,                     
                       review_analysis: Dict[str, Any] = None,
                       review_history: List[Dict[str, Any]] = None) -> None:
         """
         Render the analysis results and feedback with improved review visibility.
         
         Args:
-            comparison_report: Comparison report text
-            review_summary: Review summary text
+            comparison_report: Comparison report text           
             review_analysis: Analysis of student review
             review_history: History of review iterations
         """
       
-        if not comparison_report and not review_summary and not review_analysis:
+        if not comparison_report and not review_analysis:
             st.info(t("no_analysis_results"))
             return
         
@@ -107,7 +104,7 @@ class FeedbackSystem:
         
         # Display the comparison report
         if comparison_report:
-            st.subheader(t("educational_feedback"))
+            st.subheader(t("educational_feedback"))            
             st.markdown(
                 f'<div class="comparison-report">{comparison_report}</div>',
                 unsafe_allow_html=True
@@ -143,7 +140,7 @@ class FeedbackSystem:
                                     f"({review_analysis[t('identified_percentage')]:.1f}% {t('accuracy')})")
         
         # Display analysis details in an expander
-        if review_summary or review_analysis:
+        if review_analysis:
             with st.expander(t("detailed_analysis"), expanded=True):
                 tabs = st.tabs([t("identified_issues"), t("missed_issues")])
                 
@@ -363,8 +360,7 @@ class FeedbackSystem:
         
         # Display issues by category with collapsible sections
         for category, issues in categorized_issues.items():
-            if category and issues:
-                print("iisue: ", issue)
+            if category and issues:             
                 for i, issue in enumerate(issues, 1):
                     if isinstance(issue, dict):
                         problem = issue[t('problem')]

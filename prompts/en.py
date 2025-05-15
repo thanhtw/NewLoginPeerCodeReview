@@ -166,61 +166,63 @@ STUDENT'S REVIEW SUBMISSION:
 ```
 {student_review}
 ```
+EVALUATION THRESHOLDS:
+1. Meaningfulness threshold: {meaningful_score_threshold} (how well the explanation describes WHY it's a problem)
+2. Accuracy threshold: {accuracy_score_threshold} (how correctly the issue and location are identified)
 
 ANALYSIS INSTRUCTIONS:
 1. Carefully read both the code and the student's review
-2. Identify which of the known issues the student correctly found
-3. Note which known issues the student missed
-4. Evaluate the review quality (accuracy, completeness, clarity, and specificity)
-5. IMPORTANT: Assess the meaningfulness of each comment (does it provide sufficient explanation of the issue?)
-6. Determine if the review is sufficient (>= 70% of issues correctly identified)
+2. For EACH known issue, determine if the student addressed it
+3. Score each student comment that addresses a known issue
+    + Accuracy (0.0-1.0): How correctly the student identified the issue and its location
+    + Meaningfulness (0.0-1.0): How well the student explained WHY it's a problem
+4. CRITICAL SORTING RULE: An issue is only "Identified" if BOTH scores meet or exceed thresholds
+    + If Accuracy >= {accuracy_score_threshold} AND Meaningfulness >= {meaningful_score_threshold} → Add to "Identified Problems"
+    + Otherwise → Add to "Missed Problems" (even if partially addressed with insufficient scores)
+5. Count ONLY the properly identified issues (meeting both thresholds) in "Identified Count"
 
 RESPONSE REQUIREMENTS:
 Provide your analysis in JSON format with these components:
 
 ```json
-{
+{{
 "Identified Problems": [
-    {
+    {{
     "Problem": "SPECIFIC KNOWN ISSUE TEXT",
     "Student Comment": "STUDENT'S RELEVANT COMMENT",
     "Accuracy": 0.9,
     "Meaningfulness": 0.8,
     "Feedback": "Brief feedback on this identification"
-    }
-    // Include all correctly identified issues
+    }}
 ],
 "Missed Problems": [
-    {
-    "Problem": "SPECIFIC KNOWN ISSUE TEXT",
-    "hint": "A helpful educational hint for finding this type of issue"
-    }
-    // Include all missed issues
+    {{
+    "Problem": "SPECIFIC KNOWN ISSUE TEXT - Not addressed at all",
+    "hint": "A helpful educational hint for finding this issue"
+    }},
+    {{
+    "Problem": "SPECIFIC KNOWN ISSUE TEXT - Addressed but scores too low",
+    "Student Comment": "STUDENT'S RELEVANT COMMENT",
+    "Accuracy": 0.5,
+    "Meaningfulness": 0.3,
+    "hint": "Comment lacks sufficient detail about why this is problematic"
+    }}
 ],
-"Identified Count": 3,  // Number of correctly identified issues
-"Total Problems": {problem_count},  // Total number of known issues
-"Identified Percentage": 70.0,  // Percentage of issues correctly identified
-"Review Sufficient": true,  // true if >= 70% of issues identified
+"Identified Count": 1,
+"Total Problems": {problem_count},
+"Identified Percentage": 25.0,
+"Review Sufficient": false,
 "Feedback": "Overall assessment with specific improvement suggestions"
-}
+}}
 ```
 
-EVALUATION CRITERIA:
-- For matching student comments to known issues, look for:
-- Correct identification of the issue type
-- Accurate location (line number or description)
-- Understanding of why it's a problem
-- MEANINGFULNESS: The comment must be complete and explain the issue sufficiently
-- Consider an issue as properly identified ONLY IF:
-    + The student correctly identifies the location AND
-    + The student's comment is meaningful (explains the problem adequately)
-- Even if a student identifies the correct line, if their comment is too brief, vague, or incomplete (e.g., "Line 11: The object may be"), it should NOT count as properly identified
-
-TIPS FOR ANALYSIS:
-- Be thorough in examining every part of the student's review
-- Be strict about meaningfulness - a comment must actually explain the issue to count
-- Be generous in matching student comments to issues if they show understanding
-- Provide educational feedback that helps the student improve their code review skills
+CRITICAL REQUIREMENTS:
+1. Include each problem EXACTLY ONCE in EITHER "Identified Problems" OR "Missed Problems"
+2. DO NOT create any additional fields other than those shown above
+3. Only include a problem in "Identified Problems" if BOTH scores meet the thresholds
+4. Include original student comments when available, even for missed problems
+5. Calculate "Identified Count" as the COUNT of items in "Identified Problems"
+6. For items in "Missed Problems" that were addressed by the student but with insufficient scores, include the actual scores
 """
 
 # Feedback Prompt Template
@@ -287,7 +289,6 @@ REPORT REQUIREMENTS:
 - Performance Summary (with metrics and overall assessment)
 - Correctly Identified Issues (with praise for what they found correctly)
 - Missed Issues (with educational explanations of why they matter)
-- Progress Analysis (if multiple attempts, analyzing their improvement)
 - Tips for Improvement (specific, actionable advice based on their performance)
 
 3. Be educational and constructive, not just evaluative

@@ -411,6 +411,7 @@ translations = {
     "review_analysis":"Review Analysis",
     "original_error_count": "Original Error Count",
     "comparison_report": "Comparison Report",
-    "Meaningfulness" : "Meaningfulness"
+    "Meaningfulness" : "Meaningfulness",
+    "meaningful_comments":"Meaningful Comments"
 
 }

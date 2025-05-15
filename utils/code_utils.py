@@ -291,6 +291,10 @@ def create_review_analysis_prompt(code: str, known_problems: list, student_revie
     # Format known problems clearly
     problems_text = "\n".join(f"- {problem}" for problem in known_problems)
 
+    # Get threshold values from environment variables
+    meaningful_score_threshold = float(os.getenv("MEANINGFUL_SCORE", "0.6"))
+    accuracy_score_threshold = float(os.getenv("ACCURACY_SCORE", "0.7"))
+
     # Get language-specific instructions
     language_instructions = get_llm_instructions()
 
@@ -303,7 +307,9 @@ def create_review_analysis_prompt(code: str, known_problems: list, student_revie
         code=code,
         problem_count=problem_count,
         problems_text=problems_text,
-        student_review=student_review
+        student_review=student_review,
+        meaningful_score_threshold=meaningful_score_threshold,
+        accuracy_score_threshold=accuracy_score_threshold
     )
     
     return prompt

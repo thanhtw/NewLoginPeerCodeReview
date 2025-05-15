@@ -423,5 +423,7 @@ translations = {
     "review_analysis":"審查分析",
     "original_error_count": "原始錯誤數量",
     "comparison_report": "比較報告",
-    "Meaningfulness":"有意義性"
+    "Meaningfulness":"有意義性",
+    "meaningful_comments":"有意義的評論"
+
 }

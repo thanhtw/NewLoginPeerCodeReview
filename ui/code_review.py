@@ -104,8 +104,7 @@ class CodeDisplayUI:
                         unsafe_allow_html=True
                     )
                     
-                    # Show previous attempt results if available
-                    print("review_analysis: ", review_analysis)
+                    # Show previous attempt results if available                 
                     if review_analysis:
                         st.markdown(
                             f'<div class="analysis-box">'
