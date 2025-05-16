@@ -72,7 +72,7 @@ translations = {
     "advanced_mode_help": "Advanced Mode: Select specific error categories to include in the generated code. The system will randomly choose errors from your selected categories.",
     "all_errors_implemented": "All requested errors successfully implemented!",
     "attempts": "attempts",
-    "category": "category",
+    "category": "Category",
     "code_exists_but_empty": "Code snippet exists but contains no code. Please try regenerating the code.",
     "code_generation_complete": "Code generation complete! Proceeding to review tab...",
     "code_generation_completed": "Code generation process completed successfully",
@@ -410,6 +410,7 @@ translations = {
     "original_error_count": "Original Error Count",
     "comparison_report": "Comparison Report",
     "Meaningfulness" : "Meaningfulness",
-    "meaningful_comments":"Meaningful Comments"
+    "meaningful_comments":"Meaningful Comments",
+    "example": "Example"
 
 }

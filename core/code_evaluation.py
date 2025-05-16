@@ -51,19 +51,6 @@ class CodeEvaluationAgent:
         Returns:
             Evaluation results with found and missing errors
         """
-        # Default result if no evaluation can be performed
-        default_result = {
-            t("found_errors"): [],
-            t("missing_errors"): [f"{error.get('type', '').upper()} - {error.get(t('name'), '')}" 
-                            for error in requested_errors],
-            t("valid"): False,
-            t("feedback"): f"{t('could_not_evaluate_code')}. {t('please_ensure_code_contains_all')} {len(requested_errors)} {t('requested_errors')}."
-        }
-        
-        # Check if LLM is available for evaluation
-        if not self.llm:
-            logger.warning(t("no_llm_available_for_code_evaluation"))
-            return default_result
         
         # Create evaluation prompt
         prompt = create_evaluation_prompt(code, requested_errors)
@@ -86,11 +73,6 @@ class CodeEvaluationAgent:
             # Extract JSON from the response
             evaluation_result = self._extract_json_from_response(processed_response)
             
-            # IMPORTANT: Check if extraction failed and return default result if it did
-            if not evaluation_result or not isinstance(evaluation_result, dict):
-                logger.warning(t("failed_to_extract_json_from_evaluation"))
-                return default_result
-            
             # Process the evaluation result
             processed_result = self._process_evaluation_result(evaluation_result, requested_errors)
             
@@ -98,7 +80,7 @@ class CodeEvaluationAgent:
             
         except Exception as e:
             logger.error(f"{t('error_evaluating_code')}: {str(e)}")
-            return default_result
+            return ""
     
     def generate_improved_prompt(self, code: str, requested_errors: List[Dict[str, Any]], 
                           evaluation: Dict[str, Any]) -> str:

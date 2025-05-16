@@ -73,14 +73,14 @@ def create_code_generation_prompt(code_length: str, difficulty_level: str, selec
     # Format errors concisely with only essential information
     error_list = []
     for i, error in enumerate(selected_errors, 1):
-        error_type = error.get("type", "unknown").upper()
-        name = error.get("name", "unknown")
-        description = error.get("description", "")
-        implementation_guide = error.get("implementation_guide", "")
+        error_type = error.get(t("category"), "unknown").upper()
+        name = error.get(t("error_name_variable"), "unknown")
+        description = error.get(t("description"), "")
+        implementation_guide = error.get(t("implementation_guide"), "")
         
         error_entry = f"{i}. {error_type} - {name}: {description}"
         if implementation_guide:
-            error_entry += f"\nImplementation: {implementation_guide}"
+            error_entry += f"\n{t('implementation_guide')}: {implementation_guide}"
         
         error_list.append(error_entry)
     
@@ -88,9 +88,9 @@ def create_code_generation_prompt(code_length: str, difficulty_level: str, selec
     error_instructions = "\n\n".join(error_list)
     
     # Get language-specific difficulty instructions template
-    if difficulty_level.lower() == "easy":
+    if difficulty_level.lower() == t("easy"):
         difficulty_instructions = get_prompt_template("beginner_instructions")
-    elif difficulty_level.lower() == "medium":
+    elif difficulty_level.lower() == t("medium"):
         difficulty_instructions = get_prompt_template("intermediate_instructions")
     else:  # hard
         difficulty_instructions = get_prompt_template("advanced_instructions")
@@ -108,7 +108,7 @@ def create_code_generation_prompt(code_length: str, difficulty_level: str, selec
         template,
         code_length=code_length,
         domain_str=domain_str,
-        error_count=len(selected_errors),
+        error_count=error_count,
         complexity=complexity,
         difficulty_instructions=difficulty_instructions,
         error_instructions=error_instructions,
@@ -194,24 +194,24 @@ def create_evaluation_prompt(code: str, requested_errors: list) -> str:
     error_list = []
     for i, error in enumerate(requested_errors, 1):
         # Get error type and name with fallbacks for different field names
-        error_type = error.get("type", "").upper()
-        
+        error_type = error.get(t("category"), "").upper()
+
         # Handle language variations for field names
         name = None
-        if t("name") in error:
-            name = error.get("name", "")
-        elif t("error_name") in error:
-            name = error.get("error_name", "")
-        
+        if t("error_name_variable") in error:
+            name = error.get(t("error_name_variable"), "")
             
         # Get description with language variations
         description = ""
         if t("description") in error:
-            description = error.get("description", "")
+            description = error.get(t("description"), "")
+
+        implementation_guide = ""
+        if t("implementation_guide") in error:
+            implementation_guide = error.get(t("implementation_guide"), "")
         
-            
-        error_list.append(f"{i}. {error_type} - {name}: {description}")
-    
+        error_list.append(f"{i}. {error_type} - {name}: {description} ({t('example')}: {implementation_guide})")
+
     error_instructions = "\n".join(error_list)
 
     # Get language-specific instructions

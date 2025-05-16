@@ -406,7 +406,7 @@ translations = {
     "valid": "有效",
     "code_segment": "程式碼片段",
     "name":"name",
-    "error_name":"錯誤名稱",
+    "error_name_variable":"錯誤名稱",
     "description":"描述",
     "implementation_guide":"實作範例",
     "requested_errors":"請求的錯誤",
@@ -423,6 +423,7 @@ translations = {
     "original_error_count": "原始錯誤數量",
     "comparison_report": "比較報告",
     "Meaningfulness":"有意義性",
-    "meaningful_comments":"有意義的評論"
+    "meaningful_comments":"有意義的評論",
+    "example": "例如"
 
 }

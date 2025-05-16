@@ -49,6 +49,7 @@ class JsonErrorRepository:
         
         # Load error data from JSON files
         self.load_error_data()
+       
     
     def load_error_data(self) -> bool:
         """
@@ -58,7 +59,6 @@ class JsonErrorRepository:
             True if files are loaded successfully, False otherwise
         """
         java_loaded = self._load_java_errors()
-        
         # If loading fails, try loading the English version as a fallback
         if not java_loaded and self.current_language != "en":
             logger.warning(f"Failed to load {self.current_language} Java errors, trying English version")
@@ -267,7 +267,7 @@ class JsonErrorRepository:
             
         Returns:
             Tuple of (list of error objects, list of problem descriptions)
-        """
+        """       
         # Adjust count based on difficulty
         error_counts = {
             t("easy"): max(2, count - 2),
@@ -276,26 +276,25 @@ class JsonErrorRepository:
         }
 
         adjusted_count = error_counts.get(difficulty.lower(), count)
-        
+       
         # If specific errors are provided, use those
         if specific_errors and len(specific_errors) > 0:
             problem_descriptions = []
             selected_errors = []
             # Process each selected error to ensure it has all required fields
             for error in specific_errors:
-                processed_error = error.copy()
-                error_type = processed_error.get(t("type"), "Unknown")
-                name = processed_error.get(t("name"), "Unknown")
+                processed_error = error.copy()               
+                name = processed_error.get(t("error_name_variable"), "Unknown")
                 description = processed_error.get(t("description"), "")
                 category = processed_error.get(t("category"), "")
                 
                 # Add implementation guide if available
-                implementation_guide = self._get_implementation_guide(error_type, name, category)
+                implementation_guide = self._get_implementation_guide(name, category)
                 if implementation_guide:
                     processed_error[t("implementation_guide")] = implementation_guide
                 
                 # Create problem description
-                problem_descriptions.append(f"Java Error - {name}: {description} (Category: {category})")
+                problem_descriptions.append(f"{category}: {name} - {description}")
                 selected_errors.append(processed_error)
             
             # If we don't have exactly the adjusted count, log a notice but proceed
@@ -317,9 +316,9 @@ class JsonErrorRepository:
                 }
 
             error_selection_ranges = {
-                "easy": (1, 2),    # Easy: 1-2 errors per category
-                "medium": (1, 3),  # Medium: 1-3 errors per category
-                "hard": (1, 4)     # Hard: 1-4 errors per category
+                t("easy"): (1, 2),    # Easy: 1-2 errors per category
+                t("medium"): (1, 3),  # Medium: 1-3 errors per category
+                t("hard"): (1, 4)     # Hard: 1-4 errors per category
             }
 
             min_errors, max_errors = error_selection_ranges.get(
@@ -329,7 +328,7 @@ class JsonErrorRepository:
             
             # Collect errors from each selected category
             all_errors = []
-            
+          
             for category in selected_categories.get("java_errors", []):
                 if category in self.java_errors:
                     # Use get_category_errors to get language-mapped errors
@@ -340,16 +339,14 @@ class JsonErrorRepository:
 
                     if num_to_select > 0:
                         selected_from_category = random.sample(category_errors, num_to_select)
-                        print(f"Selected {num_to_select} errors from Java error category '{category}'")
+                        print(f"Selected {num_to_select} errors from Java error category '{category}'")                        
                         for error in selected_from_category:
-                            all_errors.append({
-                                "type": "java_error",
-                                "category": category,
-                                "name": error.get(t("error_name")),
-                                "description": error.get(t("description")),
-                                "implementation_guide": error.get(t("implementation_guide"), "")
-                            })
-            
+                            all_errors.append({                                
+                                t("category"): category,
+                                t("error_name_variable"): error.get(t("error_name_variable")),
+                                t("description"): error.get(t("description")),
+                                t("implementation_guide"): error.get(t("implementation_guide"), "")
+                            })                       
             # If we have more errors than needed, randomly select the required number
             if len(all_errors) > adjusted_count:
                 print(f"Too many errors ({len(all_errors)}), selecting {adjusted_count} randomly")
@@ -361,20 +358,20 @@ class JsonErrorRepository:
             # Format problem descriptions
             problem_descriptions = []
             for error in selected_errors:
-                error_type = error.get("type", "Unknown")
-                name = error.get("name", "Unknown")
-                description = error.get("description", "")
-                category = error.get("category", "")
+                category = error.get(t("category"), "")                
+                name = error.get(t("error_name_variable"), "Unknown")
+                description = error.get(t("description"), "")
 
-                problem_descriptions.append(f"Java Error - {name}: {description} (Category: {category})")
+                problem_descriptions.append(f"{category} - {name}: {description}")
 
+            
             return selected_errors, problem_descriptions
         
         # If no selection method was provided, return empty lists
         print("WARNING: No selection method provided, returning empty error list")
         return [], []
     
-    def _get_implementation_guide(self, error_type: str, error_name: str, category: str) -> Optional[str]:
+    def _get_implementation_guide(self, error_name: str, category: str) -> Optional[str]:
         """
         Get implementation guide for a specific error.
         
@@ -386,11 +383,11 @@ class JsonErrorRepository:
         Returns:
             Implementation guide string or None if not found
         """
-        if error_type == "java_error":
-            if category in self.java_errors:
-                for error in self.java_errors[category]:
-                    if error.get(t("error_name")) == error_name:
-                        return error.get(t("implementation_guide"))
+      
+        if category in self.java_errors:
+            for error in self.java_errors[category]:
+                if error.get(t("error_name")) == error_name:
+                    return error.get(t("implementation_guide"))
         return None
 
     def get_error_by_name(self, error_type: str, error_name: str) -> Optional[Dict[str, Any]]:
@@ -407,11 +404,10 @@ class JsonErrorRepository:
         if error_type == "java_error":
             for category, errors in self.java_errors.items():
                 for error in errors:
-                    if error.get("error_name") == error_name:
-                        return {
-                            "type": "java_error",
-                            "category": category,
-                            "name": error.get(t("error_name")),
-                            "description": error.get(t("description"))
+                    if error.get(t("error_name_variable")) == error_name:
+                        return {                            
+                            t("category"): category,
+                            t("error_name_variable"): error.get(t("error_name_variable")),
+                            t("description"): error.get(t("description"))
                         }
         return None

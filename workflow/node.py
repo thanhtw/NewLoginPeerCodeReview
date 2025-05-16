@@ -84,11 +84,12 @@ class WorkflowNodes:
             
             # Get appropriate errors based on selection mode
             if using_specific_errors:
+                print("using_specific_errors: ", selected_specific_errors)  
                 # Using specific errors mode
                 if not selected_specific_errors:
                     state.error = t("no_specific_errors_selected")
                     return state
-                        
+                       
                 logger.debug(f"Using specific errors mode with {len(selected_specific_errors)} errors")
                 selected_errors = selected_specific_errors
                 original_error_count = len(selected_errors)
@@ -119,9 +120,8 @@ class WorkflowNodes:
                     original_error_count = required_error_count
                 else:
                     original_error_count = required_error_count
-            print("selected_errors: ", selected_errors)
-            # Log detailed information about selected errors for debugging
-            self._log_selected_errors(selected_errors)
+           
+            # Log detailed information about selected errors for debugging           
             logger.debug(f"Final error count for generation: {len(selected_errors)}")
             
             # Generate code with selected errors
@@ -134,7 +134,6 @@ class WorkflowNodes:
 
             # Extract both annotated and clean versions
             annotated_code, clean_code = extract_both_code_versions(response)
-
             # Create code snippet object
             code_snippet = CodeSnippet(
                 code=annotated_code,
@@ -144,7 +143,7 @@ class WorkflowNodes:
                 },
                 expected_error_count=original_error_count
             )
-                                    
+                                  
             # Update state with the original error count for consistency
             state.original_error_count = original_error_count
             
@@ -239,10 +238,9 @@ class WorkflowNodes:
             
             # Get requested errors from state
             requested_errors = self._extract_requested_errors(state)
-            requested_count = len(requested_errors)
-            
+            requested_count = len(requested_errors)           
             # Ensure we're using the original error count for consistency
-            original_error_count = getattr(state, "original_error_count", 0)
+            original_error_count = getattr(state, "original_error_count", 0)            
             if original_error_count == 0 and hasattr(state, "code_snippet") and hasattr(state.code_snippet, 'expected_error_count'):
                 # If not set in state, try to get it from code snippet
                 original_error_count = state.code_snippet.expected_error_count
@@ -491,8 +489,7 @@ class WorkflowNodes:
         
         # Check if raw_errors exists and is a dictionary
         if hasattr(state, 'code_snippet') and hasattr(state.code_snippet, "raw_errors"):
-            raw_errors = state.code_snippet.raw_errors
-            
+            raw_errors = state.code_snippet.raw_errors           
             # Type check for raw_errors
             if not isinstance(raw_errors, dict):
                 logger.warning(f"Expected dict for raw_errors, got {type(raw_errors)}")
@@ -504,26 +501,23 @@ class WorkflowNodes:
                 if not isinstance(errors, list):
                     logger.warning(f"Expected list for java_errors, got {type(errors)}")
                     return requested_errors
-                    
-                # Process each error
                 for error in errors:
                     if not isinstance(error, dict):
                         logger.warning(f"Expected dict for error, got {type(error)}")
                         continue
-                    
                     # Make sure the error has required fields
-                    if "type" not in error:
-                        error["type"] = "java_error"  # Use a default type if not specified
+                    if t("category") not in error:
+                        error[t("category")] = error.get( t("category"), "")
                     
-                    if "name" not in error and "error_name" in error:
-                        error["name"] = error.get("error_name", "")
+                    if t("error_name_variable") not in error:
+                        error[t("error_name_variable")] = error.get( t("error_name_variable"), "")
+
+                    if t("description") not in error:
+                        error[t("description")] = error.get( t("description"), "")
                     
-                    if "name" not in error and "check_name" in error:
-                        error["name"] = error.get("check_name", "")
-                    
-                    # Only add the error if it has a name
-                    if "name" in error:
-                        requested_errors.append(error)
+                    if t("implementation_guide") not in error:
+                        error[t("implementation_guide")] = error.get( t("implementation_guide"), "")
+                    requested_errors.append(error)
         
         # Alternative method: Check selected_specific_errors
         elif hasattr(state, 'selected_specific_errors') and state.selected_specific_errors:
@@ -540,25 +534,8 @@ class WorkflowNodes:
             if hasattr(state, 'selected_error_categories') and isinstance(state.selected_error_categories, dict):
                 # This doesn't give us specific errors, but we can log that we found categories
                 logger.debug("Found selected_error_categories but no specific errors")
-        
+    
         logger.debug(f"Extracted {len(requested_errors)} requested errors")
+        
         return requested_errors
         
-    def _log_selected_errors(self, selected_errors: List[Dict[str, Any]]) -> None:
-        """
-        Log detailed information about selected errors for debugging.
-        
-        Args:
-            selected_errors: List of selected errors
-        """
-        if selected_errors:
-            logger.debug("\n--- DETAILED ERROR LISTING ---")
-            for i, error in enumerate(selected_errors, 1):
-                logger.debug(f"  {i}. Type: {error.get('type', 'Unknown')}")
-                logger.debug(f"     Name: {error.get('name', 'Unknown')}")
-                logger.debug(f"     Category: {error.get('category', 'Unknown')}")
-                logger.debug(f"     Description: {error.get('description', 'Unknown')}")
-                if 'implementation_guide' in error:
-                    guide = error.get('implementation_guide', '')
-                    logger.debug(f"     Implementation Guide: {guide[:100]}..." 
-                        if len(guide) > 100 else guide)

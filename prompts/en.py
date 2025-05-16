@@ -53,6 +53,51 @@ OUTPUT FORMAT:
 IMPORTANT: Verify you have implemented EXACTLY {error_count} errors before completing.
 """
 
+
+# Regeneration Prompt Template
+regeneration_template = """ You are an educational Java error creator who deliberately introduces specific errors in code for teaching purposes.
+Task: Modify this Java code to contain exactly {total_requested} errors - no more, no less.
+The code must only contain the specific errors requested below.
+Original code domain: {domain}
+Missing errors - deliberately add these errors (do not fix or resolve them):
+{missing_text}
+Existing errors to preserve - do not modify these errors:
+{found_text}
+Very important instructions:
+
+Focus on implementing exactly the requested errors
+Never add comments like "// added to fix", "// fixed", or "// corrected" - these errors are meant to stay as errors!
+Do not change the domain or structure of the code
+Errors must be actual Java errors, not just comments about errors
+Use exactly the same {domain} domain and maintain the original code structure
+For each error you add, include a comment in this format: // ERROR: [type] - [name] - [brief description]
+Do not try to improve or fix the code - it should contain deliberate errors for educational purposes
+The entire purpose is to create flawed code for students to learn to identify problems
+
+Verification steps before submission:
+
+Count the total number of errors in the code, confirm it is exactly {total_requested}
+Verify each missing error from the list has now been implemented
+Confirm all existing errors that should be preserved still exist and are unchanged
+Ensure any extra errors have been removed
+
+Provide two versions of the code:
+
+1. First, provide the ANNOTATED VERSION with error comments:
+```java-annotated
+// Your code with error annotations
+```
+
+2. Then, provide the CLEAN VERSION without any error comments:
+```java-clean
+// The same code with the same errors but no error annotations
+```
+Original code:
+```java
+{code}
+```
+"""
+
 # Difficulty level templates
 beginner_instructions = """
 BEGINNER-FRIENDLY CODE REQUIREMENTS:
@@ -118,19 +163,19 @@ Your evaluation must be returned in this JSON format:
 {{
 "Identified Problems": [
     {{
-    "Error Type": "BUILD",  
-    "Error Name": "NullPointerException",
+    "Error Type": "Logical",
+    "Error Name": "Misunderstanding of short-circuit evaluation",
     "Line Number": 42,
-    "Code Segment": "String str = null; int length = str.length();",
-    "Expanation": "This code will cause a NullPointerException because it calls length() on a null String"
+    "Code Segment": "if (obj != null & obj.getValue() > 0) { ... }",
+    "Expanation": "This code uses the non-short-circuit '&' operator instead of '&&', which means obj.getValue() will be evaluated even if obj is null, potentially causing a NullPointerException."
     }}
     // List all implemented errors that match the requested list
 ],
 "Missed Problems": [
     {{
-    "Error Type": "CHECKSTYLE",
-    "Error Name": "MemberName",
-    "Expanation": "The code doesn't contain any variable names that violate member naming conventions"
+    "Error Type":"Code Quality", 
+    "Error Name": "Code duplication",
+    "Expanation": "The code does not contain instances of duplicated logic or repeated code blocks that could be refactored into shared methods. Code duplication is when similar functionality is implemented multiple times instead of being extracted into reusable methods, which reduces maintainability and increases the risk of inconsistent bug fixes."
     }}
     // List all requested errors that aren't implemented
 ],

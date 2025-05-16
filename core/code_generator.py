@@ -94,7 +94,7 @@ class CodeGenerator:
         prompt = create_code_generation_prompt(
             code_length=code_length,
             difficulty_level=difficulty_level,
-            selected_errors=selected_errors or [],  # No errors for clean code
+            selected_errors=selected_errors,  # No errors for clean code
             domain=domain,
             include_error_annotations=False if selected_errors is None else True
         )
