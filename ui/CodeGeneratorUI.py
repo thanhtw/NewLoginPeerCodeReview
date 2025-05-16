@@ -247,12 +247,12 @@ class ErrorSelectorUI:
                 # Display each error with a select button
                 for j, error in enumerate(errors):
                     # Handle potential missing field names
-                    error_name = error.get("error_name", "Unknown")
-                    description = error.get("description", "")
+                    error_name = error.get(t("error_name_variable"), "Unknown")
+                    description = error.get(t("description"), "")
                     
                     # Check if already selected
                     is_selected = any(
-                        e["name"] == error_name and e["category"] == category
+                        e[t("error_name_variable")] == error_name and e[t("category")] == category
                         for e in st.session_state.selected_specific_errors
                     )
                     
@@ -266,12 +266,11 @@ class ErrorSelectorUI:
                             # Add indices to ensure key uniqueness
                             unique_key = f"select_{i}_{j}_{category}"
                             if st.button(t("select"), key=unique_key):
-                                st.session_state.selected_specific_errors.append({
-                                    "type": "java_error",
-                                    "category": category,
-                                    "name": error_name,
-                                    "description": description,
-                                    "implementation_guide": error.get("implementation_guide", "")
+                                st.session_state.selected_specific_errors.append({                                   
+                                    t("category"): category,
+                                    t("error_name_variable"): error_name,
+                                    t("description"): description,
+                                    t("implementation_guide"): error.get(t("implementation_guide"), "")
                                 })
                                 st.rerun()
                         else:
@@ -289,8 +288,8 @@ class ErrorSelectorUI:
             for idx, error in enumerate(st.session_state.selected_specific_errors):
                 col1, col2 = st.columns([5, 1])
                 with col1:
-                    st.markdown(f"**{error['category']} - {error['name']}**")
-                    st.markdown(f"*{error['description']}*")
+                    st.markdown(f"**{error[t('category')]} - {error[t('error_name_variable')]}**")
+                    st.markdown(f"*{error[t('description')]}*")
                 with col2:
                     # Use numerical index only to avoid potential issues with Chinese characters in keys
                     remove_key = f"remove_{idx}"
@@ -748,7 +747,7 @@ def render_generate_tab(workflow, error_selector_ui, code_display_ui, user_level
                     for error in errors:
                         if isinstance(error, dict):
                             error_type_str = error.get('type', error_type).upper()
-                            error_name = error.get('name', error.get('error_name', error.get('check_name', 'Unknown')))
+                            error_name = error.get(t('error_name_variable'), error.get(t('error_name_variable'), error.get('check_name', 'Unknown')))
                             known_problems.append(f"{error_type_str} - {error_name}")
         
         # Always pass known_problems, the render_code_display function will handle showing
