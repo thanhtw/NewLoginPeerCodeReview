@@ -166,41 +166,7 @@ class JsonErrorRepository:
             List of error dictionaries for the category
         """
         if category_name in self.java_errors:
-            errors = self.java_errors[category_name]
-            
-            # Check if we need field name mapping (for non-English languages)
-            needs_mapping = False
-            if errors and isinstance(errors, list) and len(errors) > 0:
-                # Check the first error to see if it uses localized field names
-                first_error = errors[0]
-                if t('error_name_variable') in first_error:
-                    needs_mapping = True
-            
-            # Return the original list if no mapping needed
-            if not needs_mapping:
-                return errors
-            
-            # Map field names for each error
-            mapped_errors = []
-            for error in errors:
-                mapped_error = {}
-                
-                # Map Chinese field names to English field names
-                if t('error_name_variable') in error:
-                    mapped_error['error_name'] = error['錯誤名稱']
-                if '描述' in error:
-                    mapped_error['description'] = error['描述']
-                if '實作範例' in error:
-                    mapped_error['implementation_guide'] = error['實作範例']
-                    
-                # Add any other fields directly
-                for key, value in error.items():
-                    if key not in ['錯誤名稱', '描述', '實作範例']:
-                        mapped_error[key] = value
-                        
-                mapped_errors.append(mapped_error)
-                
-            return mapped_errors
+             return self.java_errors[category_name]
                 
         return []
     
@@ -241,7 +207,7 @@ class JsonErrorRepository:
         if error_type == "java_error":
             for category in self.java_errors:
                 for error in self.java_errors[category]:
-                    if error.get("error_name") == error_name:
+                    if error.get(t("error_name")) == error_name:
                         return error
         return None
     
@@ -268,9 +234,9 @@ class JsonErrorRepository:
                     all_errors.append({
                         "type": "java_error",
                         "category": category,
-                        "name": error["error_name"],
-                        "description": error["description"],
-                        "implementation_guide": error.get("implementation_guide", "")
+                        "name": error.get(t("error_name")),
+                        "description": error.get(t("description")),
+                        "implementation_guide": error.get(t("implementation_guide"), "")
                     })
         
         # Select random errors
@@ -318,7 +284,7 @@ class JsonErrorRepository:
             # Process each selected error to ensure it has all required fields
             for error in specific_errors:
                 processed_error = error.copy()
-                error_type = processed_error.gett(t("type"), "Unknown")
+                error_type = processed_error.get(t("type"), "Unknown")
                 name = processed_error.get(t("name"), "Unknown")
                 description = processed_error.get(t("description"), "")
                 category = processed_error.get(t("category"), "")
@@ -326,7 +292,7 @@ class JsonErrorRepository:
                 # Add implementation guide if available
                 implementation_guide = self._get_implementation_guide(error_type, name, category)
                 if implementation_guide:
-                    processed_error["implementation_guide"] = implementation_guide
+                    processed_error[t("implementation_guide")] = implementation_guide
                 
                 # Create problem description
                 problem_descriptions.append(f"Java Error - {name}: {description} (Category: {category})")
@@ -379,9 +345,9 @@ class JsonErrorRepository:
                             all_errors.append({
                                 "type": "java_error",
                                 "category": category,
-                                "name": error["error_name"],
-                                "description": error["description"],
-                                "implementation_guide": error.get("implementation_guide", "")
+                                "name": error.get(t("error_name")),
+                                "description": error.get(t("description")),
+                                "implementation_guide": error.get(t("implementation_guide"), "")
                             })
             
             # If we have more errors than needed, randomly select the required number
@@ -427,35 +393,6 @@ class JsonErrorRepository:
                         return error.get(t("implementation_guide"))
         return None
 
-    def search_errors(self, search_term: str) -> List[Dict[str, Any]]:
-        """
-        Search for errors containing the search term.
-        
-        Args:
-            search_term: Term to search for in error names and descriptions
-            
-        Returns:
-            List of matching errors with type and category information
-        """
-        results = []
-        search_term = search_term.lower()
-        
-        # Search java errors
-        for category in self.java_errors:
-            for error in self.java_errors[category]:
-                name = error.get("error_name", "").lower()
-                description = error.get("description", "").lower()
-                
-                if search_term in name or search_term in description:
-                    results.append({
-                        "type": "java_error",
-                        "category": category,
-                        "name": error["error_name"],
-                        "description": error["description"]
-                    })
-        
-        return results
-    
     def get_error_by_name(self, error_type: str, error_name: str) -> Optional[Dict[str, Any]]:
         """
         Get a specific error by name.
@@ -474,7 +411,7 @@ class JsonErrorRepository:
                         return {
                             "type": "java_error",
                             "category": category,
-                            "name": error["error_name"],
-                            "description": error["description"]
+                            "name": error.get(t("error_name")),
+                            "description": error.get(t("description"))
                         }
         return None
