@@ -70,7 +70,7 @@ class CodeEvaluationAgent:
         
         try:
             # Generate the evaluation using the LLM
-            logger.info(t("sending_code_to_llm_for_evaluation"))
+            logger.debug(t("sending_code_to_llm_for_evaluation"))
             response = self.llm.invoke(prompt)
             # Process response to ensure it's properly formatted
             processed_response = process_llm_response(response)
@@ -306,7 +306,7 @@ class CodeEvaluationAgent:
         
         # If we extracted at least some structured data, return a constructed result
         if found_errors or missing_errors:
-            logger.info(f"{t('using_manually_extracted_errors')}: {len(found_errors)} {t('found')}, {len(missing_errors)} {t('missing')}")
+            logger.debug(f"{t('using_manually_extracted_errors')}: {len(found_errors)} {t('found')}, {len(missing_errors)} {t('missing')}")
             return {
                 t("found_errors"): found_errors,
                 t("missing_errors"): missing_errors,

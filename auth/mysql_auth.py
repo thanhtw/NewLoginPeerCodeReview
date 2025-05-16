@@ -71,7 +71,7 @@ class MySQLAuthManager:
         )
         
         if affected_rows:
-            logger.info(f"Registered new user: {email} (ID: {user_id})")
+            logger.debug(f"Registered new user: {email} (ID: {user_id})")
             return {
                 "success": True,
                 "user_id": user_id,
@@ -97,7 +97,7 @@ class MySQLAuthManager:
         user = self.db.execute_query(query, (email, hashed_password), fetch_one=True)
         
         if user:
-            logger.info(f"User authenticated: {email}")
+            logger.debug(f"User authenticated: {email}")
             return {
                 "success": True,
                 "user_id": user["uid"],
@@ -190,7 +190,7 @@ class MySQLAuthManager:
             WHERE uid = %s
         """
         
-        #logger.info(f"Executing query to get current stats for user {user_id}")
+        logger.debug(f"Executing query to get current stats for user {user_id}")
         result = self.db.execute_query(query, (user_id,), fetch_one=True)
         
         if not result:

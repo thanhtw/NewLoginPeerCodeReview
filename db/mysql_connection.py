@@ -55,7 +55,7 @@ class MySQLConnection:
         try:
             if self.connection is None or not self.connection.is_connected():
                 # Log connection attempt
-                #logger.info(f"Connecting to MySQL: {self.db_user}@{self.db_host}:{self.db_port}/{self.db_name}")
+                logger.debug(f"Connecting to MySQL: {self.db_user}@{self.db_host}:{self.db_port}/{self.db_name}")
                 
                 # Add authentication_plugin parameter for compatibility
                 self.connection = mysql.connector.connect(
@@ -67,7 +67,7 @@ class MySQLConnection:
                     auth_plugin='mysql_native_password',  # Try alternative auth method
                     use_pure=True  # Use pure Python implementation for better compatibility
                 )
-                logger.info("Connected to MySQL successfully")
+                logger.debug("Connected to MySQL successfully")
             return self.connection
         except mysql.connector.Error as e:
             logger.error(f"Error connecting to MySQL: {str(e)}")
@@ -78,7 +78,7 @@ class MySQLConnection:
         """Create the database and tables if they don't exist."""
         try:
             # First, connect without specifying a database to create it if needed
-            logger.info(f"Initializing database: {self.db_name}")
+            logger.debug(f"Initializing database: {self.db_name}")
             init_conn = mysql.connector.connect(
                 host=self.db_host,
                 user=self.db_user,
@@ -89,12 +89,12 @@ class MySQLConnection:
             cursor = init_conn.cursor()
             
             # Create database if it doesn't exist
-            logger.info(f"Creating database if not exists: {self.db_name}")
+            logger.debug(f"Creating database if not exists: {self.db_name}")
             cursor.execute(f"CREATE DATABASE IF NOT EXISTS {self.db_name}")
             cursor.execute(f"USE {self.db_name}")
             
             # Create users table if it doesn't exist - REMOVED average_accuracy column
-            logger.info("Creating users table if not exists")
+            logger.debug("Creating users table if not exists")
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS users (
                     uid VARCHAR(36) PRIMARY KEY,
@@ -113,7 +113,7 @@ class MySQLConnection:
             cursor.close()
             init_conn.close()
             
-            logger.info("Database and tables initialized successfully")
+            logger.debug("Database and tables initialized successfully")
             
         except mysql.connector.Error as e:
             logger.error(f"Error initializing database: {str(e)}")
@@ -140,9 +140,9 @@ class MySQLConnection:
                 # Log query with parameters
                 if params:
                     param_str = str(params)
-                    #logger.info(f"Executing query: {query} with params: {param_str}")
+                    logger.debug(f"Executing query: {query} with params: {param_str}")
                 else:
-                    logger.info(f"Executing query: {query}")
+                    logger.debug(f"Executing query: {query}")
                 
                 cursor.execute(query, params or ())
                 
@@ -157,18 +157,18 @@ class MySQLConnection:
                     connection.commit()
                     affected_rows = cursor.rowcount
                     cursor.close()
-                    #logger.info(f"Query executed successfully. Affected rows: {affected_rows}")
+                    logger.debug(f"Query executed successfully. Affected rows: {affected_rows}")
                     return affected_rows
             except mysql.connector.Error as e:
-                #logger.error(f"Error executing query: {str(e)}")
-                #logger.error(f"Query: {query}")
-                #logger.error(f"Params: {params}")
+                logger.error(f"Error executing query: {str(e)}")
+                logger.error(f"Query: {query}")
+                logger.error(f"Params: {params}")
                 logger.error(traceback.format_exc())
                 
                 # Check for connection-related errors to retry
                 should_retry = False
                 if "2006" in str(e) or "2013" in str(e):  # Common MySQL connection lost error codes
-                    logger.info("Connection lost, attempting to reconnect...")
+                    logger.debug("Connection lost, attempting to reconnect...")
                     self.connection = None  # Force reconnection
                     should_retry = True
                 

@@ -45,12 +45,12 @@ class WorkflowConditions:
         
         # Check if current step is explicitly set to regenerate
         if current_step == "regenerate":
-            logger.info("Path decision: regenerate_code (explicit current_step)")
+            logger.debug("Path decision: regenerate_code (explicit current_step)")
             return "regenerate_code"
         
         # IMPORTANT: Explicitly check validity flag first
         if evaluation_result and evaluation_result.get("valid", False):
-            logger.info("Path decision: review_code (evaluation passed)")
+            logger.debug("Path decision: review_code (evaluation passed)")
             return "review_code"
 
         # Check if we have missing or extra errors and haven't reached max attempts
@@ -60,11 +60,11 @@ class WorkflowConditions:
         # If we need regeneration and haven't reached max attempts, regenerate
         if needs_regeneration and evaluation_attempts < max_evaluation_attempts:
             reason = "missing errors" if has_missing_errors else "extra errors"
-            logger.info(f"Path decision: regenerate_code (found {reason})")
+            logger.debug(f"Path decision: regenerate_code (found {reason})")
             return "regenerate_code"
         
         # If we've reached max attempts or don't need regeneration, move to review
-        logger.info(f"Path decision: review_code (attempts: {evaluation_attempts}/{max_evaluation_attempts})")
+        logger.debug(f"Path decision: review_code (attempts: {evaluation_attempts}/{max_evaluation_attempts})")
         return "review_code"
     
     @staticmethod
@@ -103,13 +103,13 @@ class WorkflowConditions:
             if (identified_count == total_problems and total_problems > 0) or current_iteration > max_iterations:              
                 state.review_sufficient = True
                 if identified_count == total_problems:
-                    logger.info(f"Review path decision: generate_summary (all {total_problems} issues identified)")
+                    logger.debug(f"Review path decision: generate_summary (all {total_problems} issues identified)")
                 else:
-                    logger.info(f"Review path decision: generate_summary (max iterations {max_iterations} reached)")
+                    logger.debug(f"Review path decision: generate_summary (max iterations {max_iterations} reached)")
                 return "generate_summary"
         if review_sufficient:
-            logger.info("Review path decision: generate_summary (review marked sufficient)")
+            logger.debug("Review path decision: generate_summary (review marked sufficient)")
             return "generate_summary"
         
-        logger.info(f"Review path decision: continue_review (iteration {current_iteration}/{max_iterations})")
+        logger.debug(f"Review path decision: continue_review (iteration {current_iteration}/{max_iterations})")
         return "continue_review"

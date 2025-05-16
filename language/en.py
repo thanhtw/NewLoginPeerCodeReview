@@ -393,7 +393,7 @@ translations = {
     "valid": "Valid",
     "code_segment": "Code Segment",
     "name":"name",
-    "error_name":"error_name",
+    "error_name_variable":"error_name",
     "description":"description",
     "implementation_guide":"implementation_guide",
     "requested_errors":"requested_errors",

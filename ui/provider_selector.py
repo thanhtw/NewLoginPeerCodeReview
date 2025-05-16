@@ -206,7 +206,7 @@ class ProviderSelectorUI:
         os.environ["LLM_PROVIDER"] = self.llm_manager.provider
         
         # Log the reinitialization
-        logger.info(f"Forced reinitialization with provider: {self.llm_manager.provider}")
+        logger.debug(f"Forced reinitialization with provider: {self.llm_manager.provider}")
         
         # Force UI refresh
         st.rerun()

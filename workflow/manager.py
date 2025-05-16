@@ -59,7 +59,7 @@ class WorkflowManager:
     
     def _initialize_domain_objects(self) -> None:
         """Initialize domain objects with appropriate LLMs."""
-        logger.info("Initializing domain objects for workflow")
+        logger.debug("Initializing domain objects for workflow")
         
         # Determine provider and check connection
         provider = self.llm_manager.provider.lower()
@@ -90,7 +90,7 @@ class WorkflowManager:
             # Store feedback models for generating final feedback
             self.summary_model = summary_model
             
-            logger.info("Domain objects initialized with LLM models")
+            logger.debug("Domain objects initialized with LLM models")
         else:
             # Initialize without LLMs if connection fails
             logger.warning(f"LLM connection failed. Initializing without LLMs.")
@@ -131,7 +131,7 @@ class WorkflowManager:
         Returns:
             WorkflowNodes instance
         """
-        logger.info("Creating workflow nodes")
+        logger.debug("Creating workflow nodes")
         nodes = WorkflowNodes(
             self.code_generator,
             self.code_evaluation,
@@ -152,7 +152,7 @@ class WorkflowManager:
         Returns:
             StateGraph: The constructed workflow graph
         """
-        logger.info("Building workflow graph")
+        logger.debug("Building workflow graph")
         self.graph_builder = GraphBuilder(self.workflow_nodes)
         return self.graph_builder.build_graph()
     
@@ -176,7 +176,7 @@ class WorkflowManager:
         Returns:
             Updated workflow state with analysis
         """
-        logger.info(f"Submitting review for iteration {state.current_iteration}")
+        logger.debug(f"Submitting review for iteration {state.current_iteration}")
         
         # Create a new review attempt
         review_attempt = ReviewAttempt(
@@ -217,7 +217,7 @@ class WorkflowManager:
         # Generate comparison report if not already generated
         if not state.comparison_report and state.evaluation_result:
             try:
-                logger.info(t("generating_comparison_report"))
+                logger.debug(t("generating_comparison_report"))
                 # Extract error information from evaluation results
                 found_errors = state.evaluation_result.get(t('found_errors'), [])                
                 # Get original error count for consistent metrics
@@ -247,7 +247,7 @@ class WorkflowManager:
                         latest_review.analysis,
                         converted_history
                     )
-                    logger.info(t("generated_comparison_report"))
+                    logger.debug(t("generated_comparison_report"))
                 
                     
             except Exception as e:

@@ -403,10 +403,10 @@ class FeedbackSystem:
         if hasattr(state, 'current_iteration') and hasattr(state, 'max_iterations'):
             if getattr(state, 'current_iteration', 0) > getattr(state, 'max_iterations', 3):
                 review_completed = True
-                logger.info(t("review_completed_max_iterations"))
+                logger.debug(t("review_completed_max_iterations"))
             elif getattr(state, 'review_sufficient', False):
                 review_completed = True
-                logger.info(t("review_completed_sufficient"))
+                logger.debug(t("review_completed_sufficient"))
         
         # Check for all errors identified - HIGHEST PRIORITY CHECK
         if hasattr(state, 'review_history') and state.review_history and len(state.review_history) > 0:
@@ -417,7 +417,7 @@ class FeedbackSystem:
             
             if identified_count == total_problems and total_problems > 0:
                 review_completed = True
-                logger.info(f"{t('review_completed_all_identified')} {total_problems} {t('issues')}")
+                logger.debug(f"{t('review_completed_all_identified')} {total_problems} {t('issues')}")
                 
         return review_completed
     
@@ -478,7 +478,7 @@ class FeedbackSystem:
                         found_errors,
                         latest_review.analysis
                     )
-                    logger.info(t("generated_comparison_report"))
+                    logger.debug(t("generated_comparison_report"))
                 else:
                     logger.error("Evaluator not available for generating comparison report")
                     state.comparison_report = (
@@ -515,7 +515,7 @@ class FeedbackSystem:
                 accuracy = latest_analysis[t("accuracy_percentage")]
                     
                 # Log details before update
-                logger.info(f"{t('preparing_update_stats')}: {t('accuracy')}={accuracy:.1f}%, " + 
+                logger.debug(f"{t('preparing_update_stats')}: {t('accuracy')}={accuracy:.1f}%, " + 
                         f"{t('score')}={identified_count} ({t('identified_count')}), key={stats_key}")
                 
                 # Update user stats with identified_count as score
@@ -527,7 +527,7 @@ class FeedbackSystem:
                 
                 # Log the update result
                 if result and result[t("success")] == True:
-                        logger.info(f"{t('successfully_updated_statistics')}: {result}")
+                        logger.debug(f"{t('successfully_updated_statistics')}: {result}")
                         
                         # Add explicit UI message about the update
                         st.success(f"{t('statistics_updated')}! {t('added')} {identified_count} {t('to_your_score')}.")

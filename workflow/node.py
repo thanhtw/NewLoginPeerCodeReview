@@ -77,7 +77,7 @@ class WorkflowNodes:
                     ]
                     state.domain = random.choice(domains)
                 
-                logger.info(f"Selected domain for code generation: {state.domain}")
+                logger.debug(f"Selected domain for code generation: {state.domain}")
             
             # Determine whether we're using specific errors or categories
             using_specific_errors = len(selected_specific_errors) > 0
@@ -89,7 +89,7 @@ class WorkflowNodes:
                     state.error = t("no_specific_errors_selected")
                     return state
                         
-                logger.info(f"Using specific errors mode with {len(selected_specific_errors)} errors")
+                logger.debug(f"Using specific errors mode with {len(selected_specific_errors)} errors")
                 selected_errors = selected_specific_errors
                 original_error_count = len(selected_errors)
             else:
@@ -98,11 +98,11 @@ class WorkflowNodes:
                     state.error = t("no_categories")
                     return state
                             
-                logger.info(f"Using category-based mode with categories: {selected_error_categories}")
+                logger.debug(f"Using category-based mode with categories: {selected_error_categories}")
                 
                 # Get exact number based on difficulty
                 required_error_count = get_error_count_from_state(difficulty_level)
-                
+    
                 selected_errors, _ = self.error_repository.get_errors_for_llm(
                     selected_categories=selected_error_categories,
                     count=required_error_count,
@@ -119,10 +119,10 @@ class WorkflowNodes:
                     original_error_count = required_error_count
                 else:
                     original_error_count = required_error_count
-            
+            print("selected_errors: ", selected_errors)
             # Log detailed information about selected errors for debugging
             self._log_selected_errors(selected_errors)
-            logger.info(f"Final error count for generation: {len(selected_errors)}")
+            logger.debug(f"Final error count for generation: {len(selected_errors)}")
             
             # Generate code with selected errors
             response = self.code_generator._generate_with_llm(
@@ -169,7 +169,7 @@ class WorkflowNodes:
             Updated workflow state with regenerated code
         """
         try:
-            logger.info(f"Starting enhanced code regeneration (Attempt {getattr(state, 'evaluation_attempts', 0)})")
+            logger.debug(f"Starting enhanced code regeneration (Attempt {getattr(state, 'evaluation_attempts', 0)})")
             
             # Use the code generation feedback to generate improved code
             feedback_prompt = getattr(state, "code_generation_feedback", None)
@@ -212,7 +212,7 @@ class WorkflowNodes:
                 
                 # Move to evaluation step again
                 state.current_step = "evaluate"
-                logger.info(f"Code regenerated successfully on attempt {getattr(state, 'evaluation_attempts', 0)}")
+                logger.debug(f"Code regenerated successfully on attempt {getattr(state, 'evaluation_attempts', 0)}")
                 
                 return state
             else:
@@ -227,7 +227,7 @@ class WorkflowNodes:
         
     def evaluate_code_node(self, state: WorkflowState) -> WorkflowState:
         try:
-            logger.info("Starting code evaluation node")
+            logger.debug("Starting code evaluation node")
             
             # Validate code snippet
             if not hasattr(state, 'code_snippet') or state.code_snippet is None:
@@ -254,7 +254,7 @@ class WorkflowNodes:
                 original_error_count = requested_count
                 state.original_error_count = original_error_count
                 
-            logger.info(f"Evaluating code for {original_error_count} expected errors")
+            logger.debug(f"Evaluating code for {original_error_count} expected errors")
             
             # Evaluate the code
             raw_evaluation_result = self.code_evaluation.evaluate_code(
@@ -286,7 +286,7 @@ class WorkflowNodes:
                 evaluation_result['valid'] = not (has_missing)
                 
                 # Log explicit validation status
-                logger.info(f"Code validation: valid={evaluation_result.get(t('valid'), False)}, " +  # CHANGE
+                logger.debug(f"Code validation: valid={evaluation_result.get(t('valid'), False)}, " +  # CHANGE
                         f"missing={len(missing_errors)}")
                 
             # Update state with evaluation results
@@ -296,7 +296,7 @@ class WorkflowNodes:
             # Log evaluation results
             found_count = len(evaluation_result.get(t('found_errors'), []))  # CHANGE
             missing_count = len(evaluation_result.get(t('missing_errors'), []))  # CHANGE
-            logger.info(f"Code evaluation complete: {found_count}/{original_error_count} errors implemented, {missing_count} missing")
+            logger.debug(f"Code evaluation complete: {found_count}/{original_error_count} errors implemented, {missing_count} missing")
             
             feedback = None
             
@@ -323,7 +323,7 @@ class WorkflowNodes:
                     )
             else:
                 # No missing or extra errors - we're good!
-                logger.info(f"All {original_error_count} requested errors implemented correctly")
+                logger.debug(f"All {original_error_count} requested errors implemented correctly")
                             
                 feedback = create_regeneration_prompt(
                     code=code,
@@ -339,19 +339,19 @@ class WorkflowNodes:
             # If evaluation passed (all errors implemented with exact count)
             if evaluation_result.get(t("valid"), False):
                 state.current_step = "review"
-                logger.info("All errors successfully implemented, proceeding to review")
+                logger.debug("All errors successfully implemented, proceeding to review")
             elif needs_regeneration and state.evaluation_attempts < getattr(state, "max_evaluation_attempts", 3):
                 # If we have missing errors or extra errors and haven't reached max attempts, regenerate
                 state.current_step = "regenerate"
                 if missing_count > 0:
-                    logger.info(f"Found {missing_count} missing errors, proceeding to regeneration")
+                    logger.debug(f"Found {missing_count} missing errors, proceeding to regeneration")
             else:
                 # Otherwise, we've either reached max attempts or have no more missing errors
                 state.current_step = "review"
                 if state.evaluation_attempts >= getattr(state, "max_evaluation_attempts", 3):                
                     logger.warning(f"Reached maximum evaluation attempts ({getattr(state, 'max_evaluation_attempts', 3)}). Proceeding to review.")
                 else:
-                    logger.info("No missing errors to fix, proceeding to review")
+                    logger.debug("No missing errors to fix, proceeding to review")
             
             return state
             
@@ -430,14 +430,14 @@ class WorkflowNodes:
                 analysis[t("identified_percentage")] = percentage
                 analysis[t("accuracy_percentage")] = percentage
                 
-                logger.info(f"Updated review analysis: {identified_count}/{original_error_count} " +
+                logger.debug(f"Updated review analysis: {identified_count}/{original_error_count} " +
                     f"({percentage:.1f}%) [Found problems: {found_problems_count}]")
                 
                 # Mark review as sufficient if all errors are found
                 if identified_count == original_error_count:
                     analysis["review_sufficient"] = True
                     analysis[t("review_sufficient")] = True
-                    logger.info("All errors found! Marking review as sufficient.")
+                    logger.debug("All errors found! Marking review as sufficient.")
 
           
             # Update the review with analysis
@@ -539,9 +539,9 @@ class WorkflowNodes:
             # Check if it's a dict
             if hasattr(state, 'selected_error_categories') and isinstance(state.selected_error_categories, dict):
                 # This doesn't give us specific errors, but we can log that we found categories
-                logger.info("Found selected_error_categories but no specific errors")
+                logger.debug("Found selected_error_categories but no specific errors")
         
-        logger.info(f"Extracted {len(requested_errors)} requested errors")
+        logger.debug(f"Extracted {len(requested_errors)} requested errors")
         return requested_errors
         
     def _log_selected_errors(self, selected_errors: List[Dict[str, Any]]) -> None:

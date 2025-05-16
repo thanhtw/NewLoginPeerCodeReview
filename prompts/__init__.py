@@ -80,7 +80,7 @@ def get_prompt_template(template_name: str, lang_code: str = None) -> str:
     if lang_code != DEFAULT_LANGUAGE:
         default_module = get_prompt_module(DEFAULT_LANGUAGE)
         if hasattr(default_module, template_name):
-            logger.info(f"Using {DEFAULT_LANGUAGE} fallback for template '{template_name}'")
+            logger.debug(f"Using {DEFAULT_LANGUAGE} fallback for template '{template_name}'")
             return getattr(default_module, template_name)
     
     # Return empty string if template not found in any language

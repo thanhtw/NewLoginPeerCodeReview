@@ -38,8 +38,8 @@ class StudentResponseEvaluator:
         try:
             self.meaningful_score_threshold = float(os.getenv("MEANINGFUL_SCORE", "0.6"))
             self.accuracy_score_threshold = float(os.getenv("ACCURACY_SCORE", "0.7"))
-            logger.info(f"Using meaningful score threshold: {self.meaningful_score_threshold}")
-            logger.info(f"Using accuracy score threshold: {self.accuracy_score_threshold}")
+            logger.debug(f"Using meaningful score threshold: {self.meaningful_score_threshold}")
+            logger.debug(f"Using accuracy score threshold: {self.accuracy_score_threshold}")
         except (ValueError, TypeError):
             logger.warning("Invalid MEANINGFUL_SCORE in environment, defaulting to 0.6")
             logger.warning("Invalid ACCURACY_SCORE in environment, defaulting to 0.7")
@@ -60,7 +60,7 @@ class StudentResponseEvaluator:
             Dictionary with detailed analysis results
         """
         try:
-            logger.info("Evaluating student review with code_utils prompt")
+            logger.debug("Evaluating student review with code_utils prompt")
             
             if not self.llm:
                 logger.warning(t("no_llm_provided_for_evaluation"))
@@ -81,7 +81,7 @@ class StudentResponseEvaluator:
                     t("student_review_length"): len(student_review.splitlines())
                 }
                 # Get the evaluation from the LLM
-                logger.info("Sending student review to LLM for evaluation")
+                logger.debug("Sending student review to LLM for evaluation")
                 response = self.llm.invoke(prompt)
                 processed_response = process_llm_response(response)
 
@@ -350,7 +350,7 @@ class StudentResponseEvaluator:
                 t("accuracy_percentage"): review_analysis[t('accuracy_percentage')]
             }
 
-            logger.info(t("generating_concise_targeted_guidance").format(iteration_count=iteration_count))
+            logger.debug(t("generating_concise_targeted_guidance").format(iteration_count=iteration_count))
             response = self.llm.invoke(prompt)
             guidance = process_llm_response(response)
             
@@ -360,7 +360,7 @@ class StudentResponseEvaluator:
                 # Split into sentences and take the first 3-4
                 sentences = re.split(r'(?<=[.!?])\s+', guidance)
                 guidance = ' '.join(sentences[:4])
-                logger.info(t("trimmed_guidance_words").format(
+                logger.debug(t("trimmed_guidance_words").format(
                     before=len(guidance.split()), 
                     after=len(guidance.split())
                 ))

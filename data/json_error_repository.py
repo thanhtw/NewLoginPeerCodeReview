@@ -10,7 +10,7 @@ import json
 import logging
 import random
 from typing import Dict, List, Any, Optional, Set, Union, Tuple
-from utils.language_utils import get_current_language
+from utils.language_utils import get_current_language, t
 
 # Configure logging
 logging.basicConfig(
@@ -100,7 +100,7 @@ class JsonErrorRepository:
                         with open(file_path, 'r', encoding='utf-8') as file:
                             self.java_errors = json.load(file)
                             self.java_error_categories = list(self.java_errors.keys())
-                            logger.info(f"Loaded Java errors from {file_path} with {len(self.java_error_categories)} categories")
+                            logger.debug(f"Loaded Java errors from {file_path} with {len(self.java_error_categories)} categories")
                             return True
                     except Exception as file_error:
                         logger.error(f"Error reading or parsing file {file_path}: {str(file_error)}")
@@ -173,7 +173,7 @@ class JsonErrorRepository:
             if errors and isinstance(errors, list) and len(errors) > 0:
                 # Check the first error to see if it uses localized field names
                 first_error = errors[0]
-                if '錯誤名稱' in first_error and 'error_name' not in first_error:
+                if t('error_name_variable') in first_error:
                     needs_mapping = True
             
             # Return the original list if no mapping needed
@@ -186,7 +186,7 @@ class JsonErrorRepository:
                 mapped_error = {}
                 
                 # Map Chinese field names to English field names
-                if '錯誤名稱' in error:
+                if t('error_name_variable') in error:
                     mapped_error['error_name'] = error['錯誤名稱']
                 if '描述' in error:
                     mapped_error['description'] = error['描述']
@@ -304,26 +304,24 @@ class JsonErrorRepository:
         """
         # Adjust count based on difficulty
         error_counts = {
-            "easy": max(2, count - 2),
-            "medium": count,
-            "hard": count + 2
+            t("easy"): max(2, count - 2),
+            t("medium"): count,
+            t("hard"): count + 2
         }
+
         adjusted_count = error_counts.get(difficulty.lower(), count)
         
         # If specific errors are provided, use those
         if specific_errors and len(specific_errors) > 0:
-            
-            # Format problem descriptions
             problem_descriptions = []
             selected_errors = []
-            
             # Process each selected error to ensure it has all required fields
             for error in specific_errors:
                 processed_error = error.copy()
-                error_type = processed_error.get("type", "Unknown")
-                name = processed_error.get("name", "Unknown")
-                description = processed_error.get("description", "")
-                category = processed_error.get("category", "")
+                error_type = processed_error.gett(t("type"), "Unknown")
+                name = processed_error.get(t("name"), "Unknown")
+                description = processed_error.get(t("description"), "")
+                category = processed_error.get(t("category"), "")
                 
                 # Add implementation guide if available
                 implementation_guide = self._get_implementation_guide(error_type, name, category)
@@ -332,30 +330,36 @@ class JsonErrorRepository:
                 
                 # Create problem description
                 problem_descriptions.append(f"Java Error - {name}: {description} (Category: {category})")
-                
                 selected_errors.append(processed_error)
             
             # If we don't have exactly the adjusted count, log a notice but proceed
             if len(selected_errors) != adjusted_count:
                 print(f"Note: Using {len(selected_errors)} specific errors instead of adjusted count {adjusted_count}")
-            
             return selected_errors, problem_descriptions
         
         # Otherwise use category-based selection
         elif selected_categories:          
             print(f"Selected Categories: {selected_categories}")
-            
             # Check if any categories are actually selected
             java_error_categories = selected_categories.get("java_errors", [])
-            
             print(f"Java Error Categories: {java_error_categories}")
-            
+        
             if not java_error_categories:
-                # Use default categories if none specified
                 print("WARNING: No categories specified, using defaults")
                 selected_categories = {
                     "java_errors": ["LogicalErrors", "SyntaxErrors", "CodeQualityErrors"]
                 }
+
+            error_selection_ranges = {
+                "easy": (1, 2),    # Easy: 1-2 errors per category
+                "medium": (1, 3),  # Medium: 1-3 errors per category
+                "hard": (1, 4)     # Hard: 1-4 errors per category
+            }
+
+            min_errors, max_errors = error_selection_ranges.get(
+                difficulty.lower(), 
+                (1, 2)  # Default to 1-2 if difficulty not recognized
+            )
             
             # Collect errors from each selected category
             all_errors = []
@@ -364,8 +368,10 @@ class JsonErrorRepository:
                 if category in self.java_errors:
                     # Use get_category_errors to get language-mapped errors
                     category_errors = self.get_category_errors(category)
+
                     # For each selected category, randomly select 1-2 errors
-                    num_to_select = min(len(category_errors), random.randint(1, 2))
+                    num_to_select = min(len(category_errors), random.randint(min_errors, max_errors))
+
                     if num_to_select > 0:
                         selected_from_category = random.sample(category_errors, num_to_select)
                         print(f"Selected {num_to_select} errors from Java error category '{category}'")
@@ -373,7 +379,7 @@ class JsonErrorRepository:
                             all_errors.append({
                                 "type": "java_error",
                                 "category": category,
-                                "name": error["error_name"],  # Now this will work with any language
+                                "name": error["error_name"],
                                 "description": error["description"],
                                 "implementation_guide": error.get("implementation_guide", "")
                             })
@@ -393,8 +399,9 @@ class JsonErrorRepository:
                 name = error.get("name", "Unknown")
                 description = error.get("description", "")
                 category = error.get("category", "")
-                
+
                 problem_descriptions.append(f"Java Error - {name}: {description} (Category: {category})")
+
             return selected_errors, problem_descriptions
         
         # If no selection method was provided, return empty lists
@@ -416,8 +423,8 @@ class JsonErrorRepository:
         if error_type == "java_error":
             if category in self.java_errors:
                 for error in self.java_errors[category]:
-                    if error.get("error_name") == error_name:
-                        return error.get("implementation_guide")
+                    if error.get(t("error_name")) == error_name:
+                        return error.get(t("implementation_guide"))
         return None
 
     def search_errors(self, search_term: str) -> List[Dict[str, Any]]:

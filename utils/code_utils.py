@@ -625,15 +625,14 @@ def get_error_count_from_state(state: Any, difficulty_level: str = "medium") -> 
     selected_categories = getattr(state, 'selected_error_categories', None)
     if selected_categories:
         java_errors = selected_categories.get("java_errors", [])
-        # Use at least one error per selected category
         category_count = len(java_errors)
         if category_count > 0:
-            return max(category_count, 2)  # Ensure at least 2 errors
+            return max(category_count, 2)
     
     # Finally fall back to difficulty-based default if all else fails
     difficulty_map = {
-        "easy": 2,
-        "medium": 4,
-        "hard": 6
+        t("easy"): 2,
+        t("medium"): 4,
+        t("hard"): 6
     }
     return difficulty_map.get(str(difficulty_level).lower(), 4)

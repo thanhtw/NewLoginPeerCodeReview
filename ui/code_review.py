@@ -289,7 +289,7 @@ def process_student_review(workflow, student_review: str):
             status.update(label=t("analyzing_review"), state="running")
             
             # Log submission attempt
-            logger.info(f"Submitting review (iteration {current_iteration}): {student_review[:100]}...")
+            logger.debug(f"Submitting review (iteration {current_iteration}): {student_review[:100]}...")
             
             # Create a placeholder for history display before submission processing
             # This ensures the UI shows the review even during processing
@@ -320,7 +320,7 @@ def process_student_review(workflow, student_review: str):
             st.session_state.workflow_state = updated_state
             
             # Log successful analysis
-            logger.info(f"Review analysis complete for iteration {current_iteration}")
+            logger.debug(f"Review analysis complete for iteration {current_iteration}")
             
             # Update status
             status.update(label=t("analysis_complete"), state="complete")
@@ -418,7 +418,7 @@ def render_review_tab(workflow, code_display_ui):
         
         # Define submission callback
         def on_submit_review(review_text):
-            logger.info(f"Submitting review (iteration {current_iteration})")
+            logger.debug(f"Submitting review (iteration {current_iteration})")
             process_student_review(workflow, review_text)        
         # Render review input with current state
         code_display_ui.render_review_input(

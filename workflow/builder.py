@@ -40,7 +40,7 @@ class GraphBuilder:
         Returns:
             StateGraph: The constructed workflow graph
         """
-        logger.info("Building Java Code Review workflow graph")
+        logger.debug("Building Java Code Review workflow graph")
         
         # Create a new graph with our state schema
         workflow = StateGraph(WorkflowState)
@@ -57,7 +57,7 @@ class GraphBuilder:
         # Set the entry point
         workflow.set_entry_point("generate_code")
         
-        logger.info("Workflow graph construction completed")
+        logger.debug("Workflow graph construction completed")
         return workflow
     
     def _add_nodes(self, workflow: StateGraph) -> None:
@@ -130,7 +130,7 @@ class GraphBuilder:
         Returns:
             Path to the generated image file
         """
-        logger.info(f"Exporting workflow graph visualization to {filename}")
+        logger.debug(f"Exporting workflow graph visualization to {filename}")
         
         # Build the graph if we need a fresh instance
         workflow = self.build_graph()
@@ -154,7 +154,7 @@ class GraphBuilder:
             # Save the image with higher resolution
             graph_plot.write_image(filename, scale=2)
             
-            logger.info(f"Successfully exported graph visualization to {filename}")
+            logger.debug(f"Successfully exported graph visualization to {filename}")
             return filename
         except Exception as e:
             logger.error(f"Error exporting graph visualization: {str(e)}")
@@ -174,7 +174,7 @@ class GraphBuilder:
                 with open(filename, 'wb') as f:
                     f.write(mermaid_png)
                 
-                logger.info(f"Successfully exported Mermaid visualization to {filename}")
+                logger.debug(f"Successfully exported Mermaid visualization to {filename}")
                 return filename
             except Exception as mermaid_error:
                 logger.error(f"Error creating Mermaid visualization: {str(mermaid_error)}")

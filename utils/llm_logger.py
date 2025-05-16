@@ -51,7 +51,7 @@ class LLMInteractionLogger:
         log_path = Path(self.log_dir)
         if not log_path.exists():
             log_path.mkdir(parents=True, exist_ok=True)
-            logger.info(f"Created log directory: {self.log_dir}")
+            logger.debug(f"Created log directory: {self.log_dir}")
             
         # Create subdirectories for different log types
         log_types = [
@@ -350,5 +350,5 @@ class LLMInteractionLogger:
                     arcname = os.path.relpath(file_path, os.path.dirname(self.log_dir))
                     zipf.write(file_path, arcname)
         
-        logger.info(f"Logs exported to {export_filename}")
+        logger.debug(f"Logs exported to {export_filename}")
         return export_filename
