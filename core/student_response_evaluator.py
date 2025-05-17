@@ -95,7 +95,7 @@ class StudentResponseEvaluator:
                 
                 # Extract JSON data from the response
                 analysis_data = self._extract_json_from_text(processed_response)
-                              
+                print("analysis_data: ", analysis_data)              
                 # Process the analysis data
                 enhanced_analysis = self._process_enhanced_analysis(analysis_data, known_problems)               
                 return enhanced_analysis

@@ -71,7 +71,6 @@ class FeedbackSystem:
         if self.auth_ui and latest_analysis:
             self._update_user_statistics(state, latest_analysis)
         # Display the feedback results       
-       
         self.render_results(
             comparison_report=state.comparison_report,           
             review_analysis=latest_analysis,
@@ -271,11 +270,10 @@ class FeedbackSystem:
         
         # Group issues by category if possible
         categorized_issues = {}
-        
         for issue in identified_problems:
             # Try to extract category information
             category = None
-            if isinstance(issue, dict) and "category" in issue:
+            if isinstance(issue, dict) and t("category") in issue:
                 category = issue[t('category')]
             elif isinstance(issue, str):
                 # Try to extract category from string format like "CATEGORY - Issue name"
@@ -299,7 +297,6 @@ class FeedbackSystem:
                 #st.markdown(f"### {category} ({len(issues)})")
                 for i, issue in enumerate(issues, 1):
                     if isinstance(issue, dict):
-                        
                         problem = issue[t('problem')]
                         student_comment = issue[t('student_comment')]
                         feedback = issue[t('feedback')]                        
@@ -328,7 +325,7 @@ class FeedbackSystem:
     
     def _render_missed_issues(self, review_analysis: Dict[str, Any]):
         """Render missed issues section with enhanced styling and proper language support"""
-        
+
         missed_problems = review_analysis[t("missed_problems")]
         
         if not missed_problems:
@@ -343,7 +340,7 @@ class FeedbackSystem:
         for issue in missed_problems:
             # Extract category similar to identified issues method
             category = None
-            if isinstance(issue, dict) and "category" in issue:
+            if isinstance(issue, dict) and t("category") in issue:
                 category = issue[t("category")]
             elif isinstance(issue, str):
                 parts = issue.split(" - ", 1)

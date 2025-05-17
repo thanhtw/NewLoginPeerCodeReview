@@ -84,7 +84,6 @@ class WorkflowNodes:
             
             # Get appropriate errors based on selection mode
             if using_specific_errors:
-                print("using_specific_errors: ", selected_specific_errors)  
                 # Using specific errors mode
                 if not selected_specific_errors:
                     state.error = t("no_specific_errors_selected")
@@ -388,17 +387,22 @@ class WorkflowNodes:
                 return state
                     
             code_snippet = state.code_snippet.code
-            
+            raw_errors = state.code_snippet.raw_errors
             
             known_problems = []
             original_error_count =  getattr(state, "original_error_count", 0)
-            
-            if hasattr(state, "evaluation_result") and state.evaluation_result and 'found_errors' in state.evaluation_result:
-                known_problems = state.evaluation_result.get("found_errors", [])
+
+            if isinstance(raw_errors, dict):
+                for error_type, errors in raw_errors.items():
+                    for error in errors:
+                        if isinstance(error, dict):
+                            error_name = error.get(t('error_name_variable'))
+                            category = error.get(t('category'))
+                            description = error.get(t('description'))
+                            known_problems.append(f"{category} - {error_name}: {description}")
             
             # Get the student response evaluator
             evaluator = getattr(self, "evaluator", None)
-            
             if not evaluator:
                 state.error = t("student_evaluator_not_initialized")
                 return state
@@ -411,7 +415,6 @@ class WorkflowNodes:
             )
 
           
-            
             # IMPROVED: Update analysis using t() function for key translation
             if original_error_count > 0:
                 found_problems_count = len(known_problems)
@@ -440,9 +443,6 @@ class WorkflowNodes:
           
             # Update the review with analysis
             latest_review.analysis = analysis
-
-        
-            
             review_sufficient = analysis.get("review_sufficient", False)
             state.review_sufficient = review_sufficient
             
