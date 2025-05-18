@@ -94,8 +94,7 @@ class StudentResponseEvaluator:
                     return ""
                 
                 # Extract JSON data from the response
-                analysis_data = self._extract_json_from_text(processed_response)
-                print("analysis_data: ", analysis_data)              
+                analysis_data = self._extract_json_from_text(processed_response)   
                 # Process the analysis data
                 enhanced_analysis = self._process_enhanced_analysis(analysis_data, known_problems)               
                 return enhanced_analysis
@@ -271,10 +270,52 @@ class StudentResponseEvaluator:
             # Try to extract missed problems array separately
             missed_problems_match = re.search(r'"(遺漏的問題|Missed Problems)"\s*:\s*\[(.*?)\]', text, re.DOTALL)
             if missed_problems_match:
-                missed_text = missed_problems_match.group(2).strip()
-                # Similar parsing for missed problems as done for identified problems
-                missed_problems = []
+               
                 # Parse the missed_text to extract problem objects
+                #analysis[t("missed_problems")] = missed_problems
+                missed_text = missed_problems_match.group(2).strip()
+                missed_problems = []
+                current_problem = {}
+                lines = missed_text.strip().split('\n')
+
+                for line in lines:
+                    line = line.strip()
+                    # Skip empty lines or just containing brackets/braces
+                    if not line or line in ['{', '}', '[', ']']:
+                        continue
+                    
+                    # Check for key-value pairs
+                    key_value_match = re.search(r'"([^"]+)"\s*:\s*(.+)', line)
+                    if key_value_match:
+                        key = key_value_match.group(1)
+                        value = key_value_match.group(2).strip()
+                        
+                        # Remove trailing comma if present
+                        if value.endswith(','):
+                            value = value[:-1].strip()
+                        
+                        # Handle string values (quoted)
+                        if value.startswith('"') and value.endswith('"'):
+                            current_problem[key] = value[1:-1]
+                        # Handle numeric values
+                        elif value.replace('.', '', 1).isdigit():
+                            current_problem[key] = float(value) if '.' in value else int(value)
+                        # Handle boolean values
+                        elif value.lower() in ['true', 'false']:
+                            current_problem[key] = value.lower() == 'true'
+                        else:
+                            current_problem[key] = value
+                    
+                    # If we see a closing brace, add the current problem to the list
+                    if '}' in line and current_problem:
+                        missed_problems.append(current_problem)
+                        current_problem = {}
+
+                # Add any remaining problem
+                if current_problem:
+                    missed_problems.append(current_problem)
+                
+                # Add the parsed missed problems to the analysis
                 analysis[t("missed_problems")] = missed_problems
             else:
                 analysis[t("missed_problems")] = []
