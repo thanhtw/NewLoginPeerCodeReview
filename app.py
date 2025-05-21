@@ -199,12 +199,24 @@ def main():
         st.session_state.force_tab_zero = True
         st.rerun()
 
-
     # Initialize session state
     init_session_state()
     
     # Initialize LLM manager
     llm_manager = LLMManager()
+    
+    # MODIFIED: Set Groq as the default provider
+    # Check if provider_selection is already set to avoid changing it if already selected
+    if "provider_selection" not in st.session_state:
+        st.session_state.provider_selection = "groq"
+        
+    # Set the provider to Groq
+    api_key = os.getenv("GROQ_API_KEY", "")
+    if api_key:
+        llm_manager.set_provider("groq", api_key)
+    else:
+        st.warning("No Groq API key found in environment variables. Please set GROQ_API_KEY in your .env file.")
+        st.stop()
 
     # Add language selector to sidebar
     render_language_selector()
@@ -215,10 +227,8 @@ def main():
     # Initialize provider selector UI
     provider_selector = ProviderSelectorUI(llm_manager)
     
-    # Show provider setup modal if needed
-    if not provider_selector.render_provider_setup_modal():
-        # If provider setup is still needed, don't proceed with the rest of the app
-        return
+    # MODIFIED: Skip provider setup modal and use Groq by default
+    # We won't call provider_selector.render_provider_setup_modal()
     
     # Initialize workflow after provider is setup
     workflow = JavaCodeReviewGraph(llm_manager)
@@ -226,12 +236,6 @@ def main():
     # Initialize UI components
     code_display_ui = CodeDisplayUI()
     code_generator_ui = CodeGeneratorUI(workflow, code_display_ui)
-    
-    
-    # Render sidebar with provider status
-    #render_sidebar(llm_manager)
-    
-    #provider_selector.render_provider_status()
     
     # Header with improved styling
     st.markdown(f"""

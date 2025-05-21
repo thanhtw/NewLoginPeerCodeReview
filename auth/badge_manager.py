@@ -7,7 +7,7 @@ import datetime
 import uuid
 from typing import Dict, Any, List, Optional, Tuple
 from db.mysql_connection import MySQLConnection
-from utils.language_utils import t
+from utils.language_utils import get_current_language, t
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -32,7 +32,20 @@ class BadgeManager:
             
         self.db = MySQLConnection()
         self._initialized = True
+        self.current_language = get_current_language()
     
+    def _column_exists(self, table: str, column: str) -> bool:
+        """Check if a column exists in a table."""
+        query = """
+            SELECT COUNT(*) as column_exists
+            FROM information_schema.columns
+            WHERE table_schema = DATABASE()
+            AND table_name = %s
+            AND column_name = %s
+        """
+        result = self.db.execute_query(query, (table, column), fetch_one=True)
+        return result and result.get('column_exists', 0) > 0
+
     def award_points(self, user_id: str, points: int, activity_type: str, details: str = None) -> Dict[str, Any]:
         """
         Award points to a user and log the activity.
@@ -59,14 +72,27 @@ class BadgeManager:
             
             self.db.execute_query(update_query, (points, user_id))
             
-            # Then log the activity
-            log_query = """
-                INSERT INTO activity_log 
-                (user_id, activity_type, points, details) 
-                VALUES (%s, %s, %s, %s)
-            """
+            # Then log the activity - with multilingual support
+            # Store details in both language fields, to be translated later if needed
+            details_field_en = "details_en" if self._column_exists("activity_log", "details_en") else "details"
+            details_field_zh = "details_zh" if self._column_exists("activity_log", "details_zh") else "details"
             
-            self.db.execute_query(log_query, (user_id, activity_type, points, details))
+            if self._column_exists("activity_log", "details_en") and self._column_exists("activity_log", "details_zh"):
+                # Both language fields exist - use multilingual insert
+                log_query = f"""
+                    INSERT INTO activity_log 
+                    (user_id, activity_type, points, {details_field_en}, {details_field_zh}) 
+                    VALUES (%s, %s, %s, %s, %s)
+                """
+                self.db.execute_query(log_query, (user_id, activity_type, points, details, details))
+            else:
+                # Only one details field exists - use original format
+                log_query = """
+                    INSERT INTO activity_log 
+                    (user_id, activity_type, points, details) 
+                    VALUES (%s, %s, %s, %s)
+                """
+                self.db.execute_query(log_query, (user_id, activity_type, points, details))
             
             # Get the updated total points
             points_query = "SELECT total_points FROM users WHERE uid = %s"
@@ -102,7 +128,18 @@ class BadgeManager:
         
         try:
             # Check if the badge exists
-            badge_query = "SELECT * FROM badges WHERE badge_id = %s"
+            # Use language-specific field based on current language
+            current_lang = self.current_language
+            name_field = "name_en" if current_lang == "en" else "name_zh"
+            desc_field = "description_en" if current_lang == "en" else "description_zh"
+            
+            # Check if the table has multilingual fields
+            if not self._column_exists("badges", name_field):
+                # Fall back to original schema
+                name_field = "name"
+                desc_field = "description"
+            
+            badge_query = f"SELECT badge_id, {name_field} as name, {desc_field} as description, points FROM badges WHERE badge_id = %s"
             badge = self.db.execute_query(badge_query, (badge_id,), fetch_one=True)
             
             if not badge:
@@ -161,8 +198,20 @@ class BadgeManager:
             return []
         
         try:
-            query = """
-                SELECT b.*, ub.awarded_at
+            # Use language-specific field based on current language
+            current_lang = self.current_language
+            name_field = "name_en" if current_lang == "en" else "name_zh"
+            desc_field = "description_en" if current_lang == "en" else "description_zh"
+            
+            # Check if the table has multilingual fields
+            if not self._column_exists("badges", name_field):
+                # Fall back to original schema
+                name_field = "name"
+                desc_field = "description"
+            
+            query = f"""
+                SELECT b.badge_id, b.{name_field} as name, b.{desc_field} as description, 
+                       b.icon, b.category, b.difficulty, b.points, ub.awarded_at
                 FROM badges b
                 JOIN user_badges ub ON b.badge_id = ub.badge_id
                 WHERE ub.user_id = %s

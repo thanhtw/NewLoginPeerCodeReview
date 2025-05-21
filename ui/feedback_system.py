@@ -12,10 +12,14 @@ import matplotlib.pyplot as plt
 import time
 import traceback
 from typing import List, Dict, Any, Optional, Tuple, Callable
-from utils.language_utils import t
+from auth.badge_manager import BadgeManager
+from auth.mysql_auth import MySQLAuthManager
+from utils.language_utils import t, get_current_language, get_db_field_name, get_multilingual_field
+
 import plotly.express as px
 import plotly.graph_objects as go
 from auth.badge_manager import BadgeManager
+import datetime
 
 # Configure logging
 logging.basicConfig(
@@ -41,6 +45,8 @@ class FeedbackSystem:
             workflow: The JavaCodeReviewGraph workflow instance
             auth_ui: Optional AuthUI instance for updating user statistics
         """
+        self.badge_manager = BadgeManager()
+        self.auth_manager = MySQLAuthManager()
         self.workflow = workflow
         self.auth_ui = auth_ui
         self.stats_updates = {}  # Track stats updates to avoid duplicates
@@ -328,18 +334,19 @@ class FeedbackSystem:
         for category, issues in categorized_issues.items():
             if category and issues:
                 #st.markdown(f"### {category} ({len(issues)})")
+                print("issueissue: ", issue)
                 for i, issue in enumerate(issues, 1):
                     if isinstance(issue, dict):
                         problem = issue[t('problem')]
                         student_comment = issue[t('student_comment')]
-                        feedback = issue[t('feedback')]                        
+                        #feedback = issue[t('feedback')]                        
                         st.markdown(
                             f"""
                             <div style="border-left: 4px solid #4CAF50; padding: 10px; margin: 10px 0;
                                         border-radius: 4px; background-color: rgba(76, 175, 80, 0.1);">
                                 <div style="margin-bottom: 5px;"><strong>{t("problem")}:</strong> {problem}</div>
                                 <div style="margin-bottom: 5px;"><strong>{t("student_comment")}:</strong> {student_comment}</div>
-                                <div><strong>{t("feedback")}:</strong> {feedback}</div>
+                               
                             </div>
                             """,
                             unsafe_allow_html=True
@@ -561,7 +568,7 @@ class FeedbackSystem:
                     logger.debug(f"Successfully updated user statistics: {result}")
                     
                     # Add explicit UI message about the update
-                    st.success(f"Statistics updated! Added {identified_count} to your score.")
+                    #st.success(f"Statistics updated! Added {identified_count} to your score.")
                     
                     # Show level promotion message and animation if level changed
                     if result.get("level_changed", False):
@@ -643,7 +650,12 @@ class FeedbackSystem:
                     for j, badge in enumerate(category_badges):
                         col_idx = j % col_count
                         with cols[col_idx]:
-                            awarded_at = badge.get("awarded_at", "").split(" ")[0]
+                            awarded_at_value = badge.get("awarded_at", "")
+                            if isinstance(awarded_at_value, datetime.datetime):
+                                awarded_at = awarded_at_value.strftime("%Y-%m-%d")  # Format as YYYY-MM-DD
+                            else:
+                                # Fallback to original string split if it's not a datetime
+                                awarded_at = str(awarded_at_value).split(' ')[0] if awarded_at_value else ""
                             st.markdown(f"""
                             <div style="text-align: center; padding: 15px; background-color: rgba(100, 100, 255, 0.1); 
                                         border-radius: 10px; margin-bottom: 15px;">

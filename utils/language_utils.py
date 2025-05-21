@@ -2,6 +2,7 @@
 Language utilities for Java Peer Review Training System.
 
 This module provides utilities for handling language selection and translation.
+Updated to work with multilingual database fields.
 """
 
 import streamlit as st
@@ -64,6 +65,56 @@ def t(key: str) -> str:
     
     # Return the translation if found, otherwise return the key itself
     return translations.get(key, key)
+
+def get_db_field_name(field_base: str) -> str:
+    """
+    Get the language-specific database field name based on current language.
+    
+    Args:
+        field_base: Base field name (e.g., 'name', 'description')
+        
+    Returns:
+        Language-specific field name (e.g., 'name_en', 'description_zh')
+    """
+    current_lang = get_current_language()
+    if current_lang == "en":
+        return f"{field_base}_en"
+    elif current_lang == "zh-tw":
+        return f"{field_base}_zh"
+    else:
+        # Default to English for unsupported languages
+        return f"{field_base}_en"
+
+def get_multilingual_field(data: Dict[str, Any], field_base: str) -> str:
+    """
+    Extract the appropriate language field from a database record.
+    
+    Args:
+        data: Database record as dictionary
+        field_base: Base field name (e.g., 'name', 'description')
+        
+    Returns:
+        Value from the appropriate language field
+    """
+    current_lang = get_current_language()
+    # Try language-specific field first
+    if current_lang == "en":
+        field_name = f"{field_base}_en"
+    elif current_lang == "zh-tw":
+        field_name = f"{field_base}_zh"
+    else:
+        field_name = f"{field_base}_en"  # Default to English
+    
+    # If the language-specific field exists, use it
+    if field_name in data:
+        return data[field_name]
+    
+    # Otherwise, try the base field
+    if field_base in data:
+        return data[field_base]
+    
+    # If neither exists, return empty string
+    return ""
 
 def get_llm_instructions() -> str:
     """
