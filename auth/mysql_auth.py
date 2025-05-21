@@ -89,7 +89,7 @@ class MySQLAuthManager:
             
             # Get Chinese level name
             if not level_name_zh:
-                set_language("zh-tw")
+                set_language("zh")
                 level_name_zh = t(default_level)
             
             # Restore original language
@@ -145,10 +145,10 @@ class MySQLAuthManager:
         
         if user:
             # Choose display name based on current language
-            display_name = user[f"display_name_{current_lang}"] if current_lang in ["en", "zh-tw"] and user.get(f"display_name_{current_lang}") else user.get("display_name_en", "")
+            display_name = user[f"display_name_{current_lang}"] if current_lang in ["en", "zh"] and user.get(f"display_name_{current_lang}") else user.get("display_name_en", "")
             
             # Choose level name based on current language
-            level_name = user[f"level_name_{current_lang}"] if current_lang in ["en", "zh-tw"] and user.get(f"level_name_{current_lang}") else user.get("level_name_en", "basic")
+            level_name = user[f"level_name_{current_lang}"] if current_lang in ["en", "zh"] and user.get(f"level_name_{current_lang}") else user.get("level_name_en", "basic")
             
             logger.debug(f"User authenticated: {email}")
             return {
@@ -182,10 +182,10 @@ class MySQLAuthManager:
         
         if user:
             # Choose display name based on current language
-            display_name = user[f"display_name_{current_lang}"] if current_lang in ["en", "zh-tw"] and user.get(f"display_name_{current_lang}") else user.get("display_name_en", "")
+            display_name = user[f"display_name_{current_lang}"] if current_lang in ["en", "zh"] and user.get(f"display_name_{current_lang}") else user.get("display_name_en", "")
             
             # Choose level name based on current language
-            level_name = user[f"level_name_{current_lang}"] if current_lang in ["en", "zh-tw"] and user.get(f"level_name_{current_lang}") else user.get("level_name_en", "basic")
+            level_name = user[f"level_name_{current_lang}"] if current_lang in ["en", "zh"] and user.get(f"level_name_{current_lang}") else user.get("level_name_en", "basic")
             
             return {
                 "success": True,
@@ -378,11 +378,11 @@ class MySQLAuthManager:
         # Process each user to select language-appropriate fields
         for user in users:
             # Choose display name based on current language
-            display_name = user.get(f"display_name_{current_lang}") if current_lang in ["en", "zh-tw"] else user.get("display_name_en", "")
+            display_name = user.get(f"display_name_{current_lang}") if current_lang in ["en", "zh"] else user.get("display_name_en", "")
             user["display_name"] = display_name
             
             # Choose level based on current language
-            level_name = user.get(f"level_name_{current_lang}") if current_lang in ["en", "zh-tw"] else user.get("level_name_en", "Basic")
+            level_name = user.get(f"level_name_{current_lang}") if current_lang in ["en", "zh"] else user.get("level_name_en", "Basic")
             user["level"] = level_name
             
             # Rename uid to user_id for consistency with the rest of the app

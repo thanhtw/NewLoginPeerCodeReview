@@ -797,7 +797,7 @@ class FeedbackSystem:
 
     def render_leaderboard(self, user_id: str) -> None:
         """
-        Render the point-based leaderboard.
+        Render the point-based leaderboard with proper column alignment.
         
         Args:
             user_id: The current user's ID
@@ -814,8 +814,8 @@ class FeedbackSystem:
         
         # Get current language for field selection
         current_lang = get_current_language()
-        display_name_field = f"display_name_{current_lang}" if current_lang in ["en", "zh-tw"] else "display_name"
-        level_field = f"level_name_{current_lang}" if current_lang in ["en", "zh-tw"] else "level"
+        display_name_field = f"display_name_{current_lang}" if current_lang in ["en", "zh"] else "display_name"
+        level_field = f"level_name_{current_lang}" if current_lang in ["en", "zh"] else "level"
         
         # Create leaderboard table with translated headers
         st.markdown(f"""
@@ -829,8 +829,8 @@ class FeedbackSystem:
                     <th>{t("badges")}</th>
                 </tr>
             </thead>
+            <tbody>
         """, unsafe_allow_html=True)
-
         
         for leader in leaders:
             rank = leader.get("rank", 0)
@@ -854,14 +854,14 @@ class FeedbackSystem:
             </tr>
             """, unsafe_allow_html=True)
         
-        st.markdown("</table>", unsafe_allow_html=True)
+        st.markdown("</tbody></table>", unsafe_allow_html=True)
         
         # Show user's rank if not in top 10
         if user_id and not any(leader.get("uid") == user_id for leader in leaders):
             rank = user_rank.get("rank", 0)
             total_users = user_rank.get("total_users", 0)
             
-            st.info(f"{t('your_rank')}")
+            st.info(t("your_rank").format(rank=rank, total=total_users))
 
 def render_feedback_tab(workflow, auth_ui=None):
     """

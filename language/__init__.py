@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 # Map of supported languages to their module names
 SUPPORTED_LANGUAGES = {
     "en": "language.en",
-    "zh-tw": "language.zh_tw"
+    "zh": "language.zh"
 }
 
 # Default language to use as fallback
@@ -25,7 +25,7 @@ def get_language_module(lang_code: str):
     Dynamically import and return the language module for the given language code.
     
     Args:
-        lang_code: Language code (e.g., 'en', 'zh-tw')
+        lang_code: Language code (e.g., 'en', 'zh')
         
     Returns:
         Language module or default language module if not found
@@ -49,7 +49,7 @@ def get_translations(lang_code: str) -> Dict[str, str]:
     Get the translations dictionary for the specified language.
     
     Args:
-        lang_code: Language code (e.g., 'en', 'zh-tw')
+        lang_code: Language code (e.g., 'en', 'zh')
         
     Returns:
         Dictionary of translations
@@ -62,7 +62,7 @@ def get_llm_prompt_instructions(lang_code: str) -> str:
     Get the LLM prompt instructions for the specified language.
     
     Args:
-        lang_code: Language code (e.g., 'en', 'zh-tw')
+        lang_code: Language code (e.g., 'en', 'zh')
         
     Returns:
         Instructions string for LLM

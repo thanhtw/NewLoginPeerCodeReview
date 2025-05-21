@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 # Map of supported languages to their module names
 PROMPT_MODULES = {
     "en": "prompts.en",
-    "zh-tw": "prompts.zh_tw"
+    "zh": "prompts.zh"
 }
 
 # Default language to use as fallback
@@ -26,7 +26,7 @@ def get_prompt_module(lang_code: str = None):
     Dynamically import and return the prompt module for the given language code.
     
     Args:
-        lang_code: Language code (e.g., 'en', 'zh-tw')
+        lang_code: Language code (e.g., 'en', 'zh')
         
     Returns:
         Prompt module or default prompt module if not found
@@ -56,7 +56,7 @@ def get_prompt_template(template_name: str, lang_code: str = None) -> str:
     
     Args:
         template_name: Name of the prompt template
-        lang_code: Language code (e.g., 'en', 'zh-tw')
+        lang_code: Language code (e.g., 'en', 'zh')
         
     Returns:
         Prompt template string

@@ -1,5 +1,5 @@
 """
-Traditional Chinese (zh-tw) translations for Java Peer Review Training System.
+Traditional Chinese (zh) translations for Java Peer Review Training System.
 
 This module provides Traditional Chinese translations for the UI and system messages.
 """
@@ -10,7 +10,7 @@ llm_instructions = """
 以易於理解的方式格式化程式碼範例、錯誤解釋和反饋，以便程式設計學生能夠理解。
 """
 
-# Traditional Chinese (zh-tw) translations
+# Traditional Chinese (zh) translations
 translations = {
     # General
     "about": "關於",

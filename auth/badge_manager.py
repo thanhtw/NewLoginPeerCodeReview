@@ -61,7 +61,7 @@ class BadgeManager:
             Dict containing success status and updated point total
         """
         if not user_id:
-            return {"success": False, "error": "Invalid user ID"}
+            return {"success": False, "error": t("invalid_user_id")}
         
         # Update current language whenever a method is called
         self.current_language = get_current_language()
@@ -110,10 +110,10 @@ class BadgeManager:
                 
                 return {"success": True, "total_points": total_points}
             else:
-                return {"success": False, "error": "User not found"}
+                return {"success": False, "error": t("user_not_found")}
                 
         except Exception as e:
-            logger.error(f"Error awarding points: {str(e)}")
+            logger.error(f"{t('error_awarding_points')}: {str(e)}")
             return {"success": False, "error": str(e)}
     
     def award_badge(self, user_id: str, badge_id: str) -> Dict[str, Any]:
@@ -128,7 +128,7 @@ class BadgeManager:
             Dict containing success status and badge information
         """
         if not user_id or not badge_id:
-            return {"success": False, "error": "Invalid user ID or badge ID"}
+            return {"success": False, "error": t("invalid_user_id_or_badge_id")}
         
         # Update current language
         self.current_language = get_current_language()
@@ -136,8 +136,8 @@ class BadgeManager:
         try:
             # Check if the badge exists
             # Use language-specific field based on current language
-            name_field = f"name_{self.current_language}" if self.current_language == "en" or self.current_language == "zh-tw" else "name_en"
-            desc_field = f"description_{self.current_language}" if self.current_language == "en" or self.current_language == "zh-tw" else "description_en"
+            name_field = f"name_{self.current_language}" if self.current_language == "en" or self.current_language == "zh" else "name_en"
+            desc_field = f"description_{self.current_language}" if self.current_language == "en" or self.current_language == "zh" else "description_en"
             
             # Check if the table has multilingual fields
             if not self._column_exists("badges", name_field):
@@ -149,7 +149,7 @@ class BadgeManager:
             badge = self.db.execute_query(badge_query, (badge_id,), fetch_one=True)
             
             if not badge:
-                return {"success": False, "error": "Badge not found"}
+                return {"success": False, "error": t("badge_not_found")}
             
             # Check if the user already has this badge
             has_badge_query = """
@@ -160,7 +160,7 @@ class BadgeManager:
             existing = self.db.execute_query(has_badge_query, (user_id, badge_id), fetch_one=True)
             
             if existing:
-                return {"success": True, "badge": badge, "message": "Badge already awarded"}
+                return {"success": True, "badge": badge, "message": t("badge_already_awarded")}
             
             # Award the badge
             award_query = """
@@ -177,17 +177,17 @@ class BadgeManager:
                 user_id, 
                 badge_points,
                 "badge_earned",
-                f"Earned badge: {badge.get('name')}"
+                f"{t('earned_badge')}: {badge.get('name')}"
             )
             
             return {
                 "success": True, 
                 "badge": badge,
-                "message": f"Badge '{badge.get('name')}' awarded successfully"
+                "message": t("badge_awarded_successfully").format(badge_name=badge.get('name'))
             }
                 
         except Exception as e:
-            logger.error(f"Error awarding badge: {str(e)}")
+            logger.error(f"{t('error_awarding_badge')}: {str(e)}")
             return {"success": False, "error": str(e)}
     
     def get_user_badges(self, user_id: str) -> List[Dict[str, Any]]:
@@ -208,8 +208,8 @@ class BadgeManager:
         
         try:
             # Use language-specific field based on current language
-            name_field = f"name_{self.current_language}" if self.current_language == "en" or self.current_language == "zh-tw" else "name_en"
-            desc_field = f"description_{self.current_language}" if self.current_language == "en" or self.current_language == "zh-tw" else "description_en"
+            name_field = f"name_{self.current_language}" if self.current_language == "en" or self.current_language == "zh" else "name_en"
+            desc_field = f"description_{self.current_language}" if self.current_language == "en" or self.current_language == "zh" else "description_en"
             
             # Check if the table has multilingual fields
             if not self._column_exists("badges", name_field):
@@ -230,7 +230,7 @@ class BadgeManager:
             return badges or []
                 
         except Exception as e:
-            logger.error(f"Error getting user badges: {str(e)}")
+            logger.error(f"{t('error_getting_user_badges')}: {str(e)}")
             return []
     
     def update_category_stats(self, user_id: str, category: str, 
@@ -248,7 +248,7 @@ class BadgeManager:
             Dict containing success status and updated statistics
         """
         if not user_id or not category:
-            return {"success": False, "error": "Invalid user ID or category"}
+            return {"success": False, "error": t("invalid_user_id_or_category")}
         
         try:
             # Check if the stats exist
@@ -301,7 +301,7 @@ class BadgeManager:
             return {"success": True, "stats": updated_stats}
                 
         except Exception as e:
-            logger.error(f"Error updating category stats: {str(e)}")
+            logger.error(f"{t('error_updating_category_stats')}: {str(e)}")
             return {"success": False, "error": str(e)}
     
     def get_category_stats(self, user_id: str) -> List[Dict[str, Any]]:
@@ -328,7 +328,7 @@ class BadgeManager:
             return stats or []
                 
         except Exception as e:
-            logger.error(f"Error getting category stats: {str(e)}")
+            logger.error(f"{t('error_getting_category_stats')}: {str(e)}")
             return []
     
     def update_consecutive_days(self, user_id: str) -> Dict[str, Any]:
@@ -342,7 +342,7 @@ class BadgeManager:
             Dict containing success status and updated statistics
         """
         if not user_id:
-            return {"success": False, "error": "Invalid user ID"}
+            return {"success": False, "error": t("invalid_user_id")}
         
         try:
             # Get current last_activity and consecutive_days
@@ -355,7 +355,7 @@ class BadgeManager:
             result = self.db.execute_query(query, (user_id,), fetch_one=True)
             
             if not result:
-                return {"success": False, "error": "User not found"}
+                return {"success": False, "error": t("user_not_found")}
             
             today = datetime.date.today()
             last_activity = result.get("last_activity")
@@ -397,7 +397,7 @@ class BadgeManager:
             }
                 
         except Exception as e:
-            logger.error(f"Error updating consecutive days: {str(e)}")
+            logger.error(f"{t('error_updating_consecutive_days')}: {str(e)}")
             return {"success": False, "error": str(e)}
     
     def get_leaderboard(self, limit: int = 10) -> List[Dict[str, Any]]:
@@ -415,8 +415,8 @@ class BadgeManager:
             self.current_language = get_current_language()
             
             # Set display name and level fields based on language
-            display_name_field = f"display_name_{self.current_language}" if self.current_language in ["en", "zh-tw"] else "display_name_en"
-            level_field = f"level_name_{self.current_language}" if self.current_language in ["en", "zh-tw"] else "level_name_en"
+            display_name_field = f"display_name_{self.current_language}" if self.current_language in ["en", "zh"] else "display_name_en"
+            level_field = f"level_name_{self.current_language}" if self.current_language in ["en", "zh"] else "level_name_en"
             
             # Check if these fields exist
             display_name_exists = self._column_exists("users", display_name_field)
@@ -444,7 +444,7 @@ class BadgeManager:
             return leaders or []
                 
         except Exception as e:
-            logger.error(f"Error getting leaderboard: {str(e)}")
+            logger.error(f"{t('error_getting_leaderboard')}: {str(e)}")
             return []
     
     def get_user_rank(self, user_id: str) -> Dict[str, Any]:
@@ -489,7 +489,7 @@ class BadgeManager:
             }
                 
         except Exception as e:
-            logger.error(f"Error getting user rank: {str(e)}")
+            logger.error(f"{t('error_getting_user_rank')}: {str(e)}")
             return {"rank": 0, "total_users": 0}
     
     def _check_point_badges(self, user_id: str, total_points: int) -> None:
@@ -531,15 +531,21 @@ class BadgeManager:
             self.current_language = get_current_language()
             
             # Map categories to badge IDs - support both English and Chinese categories
+            # Categories are not translated with t() because they need to match exactly what's in the database
             category_badges = {
+                t("logical"): "logic-guru",
                 "Logical": "logic-guru",
                 "邏輯錯誤": "logic-guru",  # Chinese equivalent
+                t("syntax"): "syntax-specialist",
                 "Syntax": "syntax-specialist",
                 "語法錯誤": "syntax-specialist",  # Chinese equivalent
+                t("code_quality"): "quality-inspector",
                 "Code Quality": "quality-inspector",
                 "程式碼品質": "quality-inspector",  # Chinese equivalent
+                t("standard_violation"): "standards-expert",
                 "Standard Violation": "standards-expert",
                 "標準違規": "standards-expert",  # Chinese equivalent
+                t("java_specific"): "java-maven",
                 "Java Specific": "java-maven",
                 "Java 特定錯誤": "java-maven"  # Chinese equivalent
             }
@@ -603,12 +609,12 @@ class BadgeManager:
             if details_en_exists and details_zh_exists:
                 self.db.execute_query(
                     "INSERT INTO activity_log (user_id, activity_type, points, details_en, details_zh) VALUES (%s, %s, %s, %s, %s)",
-                    (user_id, "perfect_review", 0, "Completed a review finding all errors", "完成一次找到所有錯誤的審查")
+                    (user_id, "perfect_review", 0, t("completed_perfect_review"), t("completed_perfect_review"))
                 )
             else:
                 self.db.execute_query(
                     "INSERT INTO activity_log (user_id, activity_type, points, details) VALUES (%s, %s, %s, %s)",
-                    (user_id, "perfect_review", 0, "Completed a review finding all errors")
+                    (user_id, "perfect_review", 0, t("completed_perfect_review"))
                 )
             
             # Perfectionist badge - 3 consecutive perfect reviews

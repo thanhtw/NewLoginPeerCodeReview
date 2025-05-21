@@ -33,7 +33,7 @@ def set_language(lang: str):
     Set the application language.
     
     Args:
-        lang: Language code (e.g., 'en', 'zh-tw')
+        lang: Language code (e.g., 'en', 'zh')
     """
     if lang in SUPPORTED_LANGUAGES:
         st.session_state.language = lang
@@ -79,7 +79,7 @@ def get_db_field_name(field_base: str) -> str:
     current_lang = get_current_language()
     if current_lang == "en":
         return f"{field_base}_en"
-    elif current_lang == "zh-tw":
+    elif current_lang == "zh":
         return f"{field_base}_zh"
     else:
         # Default to English for unsupported languages
@@ -100,7 +100,7 @@ def get_multilingual_field(data: Dict[str, Any], field_base: str) -> str:
     # Try language-specific field first
     if current_lang == "en":
         field_name = f"{field_base}_en"
-    elif current_lang == "zh-tw":
+    elif current_lang == "zh":
         field_name = f"{field_base}_zh"
     else:
         field_name = f"{field_base}_en"  # Default to English
@@ -154,7 +154,7 @@ def render_language_selector():
                 
         with cols[1]:
             if st.button("繁體中文", use_container_width=True, 
-                         disabled=get_current_language() == "zh-tw"):
+                         disabled=get_current_language() == "zh"):
                 # Save authentication state
                 current_auth = st.session_state.get("auth", None)
                 current_user_level = st.session_state.get("user_level", None)
@@ -169,5 +169,5 @@ def render_language_selector():
                 st.session_state["language_provider_preserve"] = current_provider
                 
                 # Change language
-                set_language("zh-tw")
+                set_language("zh")
                 st.rerun()

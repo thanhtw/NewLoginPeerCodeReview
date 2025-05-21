@@ -86,11 +86,9 @@ class AuthUI:
                         st.session_state.auth["is_authenticated"] = True
                         st.session_state.auth["user_id"] = result.get("user_id")
                         st.session_state.auth["user_info"] = {
-                            "display_name": result.get("display_name"),
                             "display_name_en": result.get("display_name_en"),
                             "display_name_zh": result.get("display_name_zh"),
                             "email": result.get("email"),
-                            "level": result.get("level", "basic"),
                             "level_name_en": result.get("level_name_en"),
                             "level_name_zh": result.get("level_name_zh")
                         }                     
@@ -146,7 +144,7 @@ class AuthUI:
             
             # Store level names for both languages
             level_name_en = t(level) if current_lang == "en" else ""
-            level_name_zh = t(level) if current_lang == "zh-tw" else ""
+            level_name_zh = t(level) if current_lang == "zh" else ""
             
             # If we didn't get level names for both languages, we need to switch language temporarily
             if not level_name_en or not level_name_zh:
@@ -160,7 +158,7 @@ class AuthUI:
                 
                 # Get Chinese level name
                 if not level_name_zh:
-                    set_language("zh-tw")
+                    set_language("zh")
                     level_name_zh = t(level)
                 
                 # Restore original language
@@ -222,8 +220,8 @@ class AuthUI:
         current_lang = get_current_language()
         
         # Use the appropriate language field
-        display_name_field = f"display_name_{current_lang}" if current_lang in ["en", "zh-tw"] else "display_name_en"
-        level_field = f"level_name_{current_lang}" if current_lang in ["en", "zh-tw"] else "level_name_en"
+        display_name_field = f"display_name_{current_lang}" if current_lang in ["en", "zh"] else "display_name_en"
+        level_field = f"level_name_{current_lang}" if current_lang in ["en", "zh"] else "level_name_en"
         
         # Fallback to standard fields if multilingual ones are not available
         display_name = user_info.get(display_name_field, user_info.get("display_name", "User"))
@@ -344,7 +342,7 @@ class AuthUI:
         level_name_en = t(level)
         
         # Get Chinese level name
-        set_language("zh-tw")
+        set_language("zh")
         level_name_zh = t(level)
         
         # Restore original language
