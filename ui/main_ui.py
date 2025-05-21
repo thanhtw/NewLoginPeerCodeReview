@@ -234,7 +234,7 @@ def render_llm_logs_tab():
             else:
                 st.error(t("llm_logger_not_initialized") or "LLM logger not initialized.")
 
-def render_sidebar(llm_manager, workflow):
+def render_sidebar(llm_manager):
     """
     Render the sidebar with application info and model status.
     
@@ -268,26 +268,6 @@ def render_sidebar(llm_manager, workflow):
             if not connection_status:
                 st.error(f"Error: {message}")                
         
-        # Add separator
-        # st.markdown("---")
-        
-        # # # Reset button
-        # # if st.button("Reset Application", use_container_width=True):
-        # #     # Reset the session state
-        # #     for key in list(st.session_state.keys()):
-        # #         # Keep provider selection and error categories
-        # #         if key not in ["provider", "selected_error_categories"]:
-        # #             del st.session_state[key]
-            
-        #     # Reinitialize session state
-        #     init_session_state()
-            
-        #     # Set active tab to generate
-        #     st.session_state.active_tab = 0
-            
-        #     # Rerun app
-        #     st.rerun()
-
 def create_enhanced_tabs(labels: List[str]):
     """
     Create enhanced UI tabs with tab switching capability.

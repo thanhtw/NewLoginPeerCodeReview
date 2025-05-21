@@ -86,6 +86,18 @@ def main():
     # Initialize language selection
     init_language()
 
+    try:
+        from db.schema_update import update_database_schema
+        schema_updated = update_database_schema()
+        if schema_updated:
+            logger.info("Database schema updated successfully")
+        else:
+            logger.warning("Database schema update skipped or failed")
+    except ImportError:
+        logger.warning("Schema update module not found")
+    except Exception as e:
+        logger.error(f"Error updating database schema: {str(e)}")
+
     if st.session_state.get("changing_provider", False):
         # Restore preserved states
         if "preserved_auth" in st.session_state:
@@ -217,9 +229,9 @@ def main():
     
     
     # Render sidebar with provider status
-    render_sidebar(llm_manager, workflow)
+    #render_sidebar(llm_manager)
     
-    provider_selector.render_provider_status()
+    #provider_selector.render_provider_status()
     
     # Header with improved styling
     st.markdown(f"""

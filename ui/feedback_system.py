@@ -13,6 +13,9 @@ import time
 import traceback
 from typing import List, Dict, Any, Optional, Tuple, Callable
 from utils.language_utils import t
+import plotly.express as px
+import plotly.graph_objects as go
+from auth.badge_manager import BadgeManager
 
 # Configure logging
 logging.basicConfig(
@@ -44,7 +47,7 @@ class FeedbackSystem:
 
     def render_feedback_tab(self):
         """
-        Render the feedback tab with review analysis and updating user statistics.
+        Render the feedback tab with review analysis, user badges, and progress visualization.
         Checks if review is completed before showing feedback.
         """
         state = st.session_state.workflow_state
@@ -70,14 +73,44 @@ class FeedbackSystem:
         # Update user statistics if AuthUI is provided and we have analysis
         if self.auth_ui and latest_analysis:
             self._update_user_statistics(state, latest_analysis)
-        # Display the feedback results       
-        self.render_results(
-            comparison_report=state.comparison_report,           
-            review_analysis=latest_analysis,
-            review_history=review_history        
-        )
+        
+        # Get user ID from session state
+        user_id = st.session_state.auth.get("user_id") if "auth" in st.session_state else None
+        
+        # Add tabs for different sections of feedback
+        feedback_tabs = st.tabs(["Review Feedback", "Badges", "Progress", "Leaderboard"])
+        
+        with feedback_tabs[0]:
+            # Display the feedback results      
+            self.render_results(
+                comparison_report=state.comparison_report,           
+                review_analysis=latest_analysis,
+                review_history=review_history        
+            )
+        
+        with feedback_tabs[1]:
+            # Show user badges
+            if user_id:
+                self.render_badge_showcase(user_id)
+            else:
+                st.info("Login to track your badges!")
+        
+        with feedback_tabs[2]:
+            # Show progress visualization
+            if user_id:
+                self.render_progress_dashboard(user_id)
+            else:
+                st.info("Login to track your progress!")
+        
+        with feedback_tabs[3]:
+            # Show leaderboard
+            if user_id:
+                self.render_leaderboard(user_id)
+            else:
+                st.info("Login to view the leaderboard!")
         
         # Add a button to start a new session
+        st.markdown("---")
         self._render_new_session_button()
 
     def render_results(self, 
@@ -496,6 +529,7 @@ class FeedbackSystem:
     def _update_user_statistics(self, state, latest_analysis):
         """
         Update user statistics based on review performance.
+        Now with level-up animation.
         
         Args:
             state: The workflow state
@@ -523,24 +557,33 @@ class FeedbackSystem:
                 self.stats_updates[stats_key] = True
                 
                 # Log the update result
-                if result and result[t("success")] == True:
-                        logger.debug(f"{t('successfully_updated_statistics')}: {result}")
+                if result and result.get("success", False):
+                    logger.debug(f"Successfully updated user statistics: {result}")
+                    
+                    # Add explicit UI message about the update
+                    st.success(f"Statistics updated! Added {identified_count} to your score.")
+                    
+                    # Show level promotion message and animation if level changed
+                    if result.get("level_changed", False):
+                        old_level = result.get("old_level", "").capitalize()
+                        new_level = result.get("new_level", "").capitalize()
                         
-                        # Add explicit UI message about the update
-                        st.success(f"{t('statistics_updated')}! {t('added')} {identified_count} {t('to_your_score')}.")
-                        
-                        # Show level promotion message if level changed
-                        if result.get(t('level_changed'), False):
-                            old_level = result.get(t('old_level'), '').capitalize()
-                            new_level = result.get(t('new_level'), '').capitalize()
+                        # Import the animation function
+                        try:
+                            from ui.animation import level_up_animation
+                            level_up_animation(old_level, new_level)
+                        except ImportError:
+                            # Fallback if animation module is not available
                             st.balloons()  # Add visual celebration effect
-                            st.success(f"🎉 {t('congratulations')}! {t('level_upgraded')} {old_level} {t('to')} {new_level}!")
+                            st.success(f"🎉 Congratulations! Your level has been upgraded from {old_level} to {new_level}!")
                         
                         # Give the database a moment to complete the update
                         time.sleep(0.5)
                 else:                 
                     logger.error(f"{t('failed_update_statistics')}:")
                     st.error(f"{t('failed_update_statistics')}:")
+
+                
             except Exception as e:
                 logger.error(f"{t('error')} {t('updating_user_statistics')}: {str(e)}")
                 logger.error(traceback.format_exc())
@@ -563,6 +606,274 @@ class FeedbackSystem:
                 # Set the full reset flag
                 st.session_state.full_reset = True
                 st.rerun()
+
+    def render_badge_showcase(self, user_id: str) -> None:
+        """
+        Render the user's earned badges in a visually appealing way.
+        
+        Args:
+            user_id: The user's ID
+        """
+        badge_manager = BadgeManager()
+        badges = badge_manager.get_user_badges(user_id)
+        
+        if not badges:
+            st.info("No badges earned yet. Complete reviews to earn badges!")
+            return
+        
+        st.subheader("🏆 Achievement Badges")
+        
+        # Group badges by category
+        badge_categories = {}
+        for badge in badges:
+            category = badge.get("category", "Other")
+            if category not in badge_categories:
+                badge_categories[category] = []
+            badge_categories[category].append(badge)
+        
+        # Create tabs for each category
+        if badge_categories:
+            tabs = st.tabs(list(badge_categories.keys()))
+            
+            for i, (category, category_badges) in enumerate(badge_categories.items()):
+                with tabs[i]:
+                    col_count = min(3, len(category_badges))
+                    cols = st.columns(col_count)
+                    
+                    for j, badge in enumerate(category_badges):
+                        col_idx = j % col_count
+                        with cols[col_idx]:
+                            awarded_at = badge.get("awarded_at", "").split(" ")[0]
+                            st.markdown(f"""
+                            <div style="text-align: center; padding: 15px; background-color: rgba(100, 100, 255, 0.1); 
+                                        border-radius: 10px; margin-bottom: 15px;">
+                                <div style="font-size: 3rem;">{badge.get("icon", "🏅")}</div>
+                                <div style="font-weight: bold; margin: 5px 0;">{badge.get("name", "Badge")}</div>
+                                <div style="font-size: 0.8rem; color: #666;">{badge.get("description", "")}</div>
+                                <div style="font-size: 0.7rem; margin-top: 10px;">Earned on {awarded_at}</div>
+                            </div>
+                            """, unsafe_allow_html=True)
+
+    def render_progress_dashboard(self, user_id: str) -> None:
+        """
+        Render a visual dashboard of the user's progress.
+        
+        Args:
+            user_id: The user's ID
+        """
+        badge_manager = BadgeManager()
+        
+        # Get category stats
+        category_stats = badge_manager.get_category_stats(user_id)
+        
+        st.subheader("📊 Progress Dashboard")
+        
+        if not category_stats:
+            st.info("Complete more reviews to see your progress across error categories!")
+            return
+        
+        # Create mastery heatmap
+        categories = []
+        mastery_levels = []
+        encountered_counts = []
+        identified_counts = []
+        
+        for stat in category_stats:
+            categories.append(stat.get("category", "Unknown"))
+            mastery_levels.append(stat.get("mastery_level", 0) * 100)  # Convert to percentage
+            encountered_counts.append(stat.get("encountered", 0))
+            identified_counts.append(stat.get("identified", 0))
+        
+        # Create three columns for different visualizations
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # Mastery level across categories
+            fig = px.bar(
+                x=categories,
+                y=mastery_levels,
+                title="Error Category Mastery",
+                labels={"x": "Category", "y": "Mastery Level (%)"},
+                color=mastery_levels,
+                color_continuous_scale="Viridis",
+            )
+            fig.update_layout(height=400)
+            st.plotly_chart(fig, use_container_width=True)
+        
+        with col2:
+            # Errors encountered vs identified
+            fig = go.Figure()
+            fig.add_trace(go.Bar(
+                x=categories,
+                y=encountered_counts,
+                name="Encountered",
+                marker_color="indianred"
+            ))
+            fig.add_trace(go.Bar(
+                x=categories,
+                y=identified_counts,
+                name="Identified",
+                marker_color="lightsalmon"
+            ))
+            fig.update_layout(
+                title="Errors Encountered vs Identified",
+                xaxis_title="Category",
+                yaxis_title="Count",
+                barmode="group",
+                height=400
+            )
+            st.plotly_chart(fig, use_container_width=True)
+        
+        # Create skill tree visualization
+        st.subheader("🌳 Skill Tree")
+        
+        # Calculate overall mastery percentage
+        total_encountered = sum(encountered_counts)
+        total_identified = sum(identified_counts)
+        overall_mastery = total_identified / total_encountered if total_encountered > 0 else 0
+        
+        # Create skill tree with plotly
+        fig = go.Figure()
+        
+        # Central node
+        fig.add_trace(go.Scatter(
+            x=[0], y=[0],
+            mode="markers+text",
+            marker=dict(size=30, color="rgba(100, 100, 255, 0.8)"),
+            text=["Java Review<br>Skills"],
+            textposition="middle center",
+            hoverinfo="text",
+            hovertext=[f"Overall Mastery: {overall_mastery * 100:.1f}%"]
+        ))
+        
+        # Category nodes
+        angles = [i * (2 * 3.14159 / len(categories)) for i in range(len(categories))]
+        x_coords = [3 * 3.5 * 3.4 * 3 * 3.7 * 3.8 * 3.5 * 3.3 * 3.3 * 3 * 3.7 * 3.8 * 3.5 * 3.3 * 3.3 * 2 * 3.2 * 3.3 * 3.2 * 3.3 * 3.3 * 2 * 3.2 * 3.3 * 3.2 * 3.3 * 3.3 * 2 * 3.2 * 3.3 * 3.2 * 3.3 * 3.3 * 2 * 3.2 * 3.3 * 3.2 * 3.3 * 3.3 * 2 * 3.2 * 3.3 * 3.2 * 3.3 * 3.3 * 2 * 3.2 * 3.3 * 3.2 * 3.3 * 3.3 * 2 * 3.2 * 3.3 * 3.2 * 3.3 * 3.3 * 2 * 3.2 * 3.3 * 3.2 * 3.3 * 3.3 * 2 * 3.2 * 3.3 * 3.2 * 3.3 * 3.3 * 2 * 3.2 * 3.3 * 3.2 * 3.3 * 3.3 * 2 * 3.2 * 3.3 * 3.2 * 3.3 * 3.3 * 2 * 3.2 * 3.3 * 3.2 * 3.3 * 3.3 * 2 * 3.2 * 3.3 * 3.2 * 3.3 * 3.3 * 2 * 3.2 * 3.3 * 2 * math.cos(angle) for angle in angles]
+        y_coords = [2 * math.sin(angle) for angle in angles]
+        
+        # Add category nodes
+        for i, category in enumerate(categories):
+            mastery = mastery_levels[i] / 100  # Convert back to 0-1
+            color = f"rgba({int(255 * (1 - mastery))}, {int(255 * mastery)}, 100, 0.8)"
+            
+            fig.add_trace(go.Scatter(
+                x=[x_coords[i]], y=[y_coords[i]],
+                mode="markers+text",
+                marker=dict(size=25, color=color),
+                text=[category],
+                textposition="middle center",
+                hoverinfo="text",
+                hovertext=[f"{category}<br>Mastery: {mastery_levels[i]:.1f}%<br>Encountered: {encountered_counts[i]}<br>Identified: {identified_counts[i]}"]
+            ))
+            
+            # Add edges
+            fig.add_trace(go.Scatter(
+                x=[0, x_coords[i]], y=[0, y_coords[i]],
+                mode="lines",
+                line=dict(width=2, color=color),
+                hoverinfo="none"
+            ))
+        
+        fig.update_layout(
+            showlegend=False,
+            xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+            yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+            height=500,
+            margin=dict(l=0, r=0, b=0, t=0),
+            plot_bgcolor="rgba(240, 240, 240, 0.8)"
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+
+    def render_leaderboard(self, user_id: str) -> None:
+        """
+        Render the point-based leaderboard.
+        
+        Args:
+            user_id: The current user's ID
+        """
+        badge_manager = BadgeManager()
+        leaders = badge_manager.get_leaderboard(10)
+        user_rank = badge_manager.get_user_rank(user_id)
+        
+        st.subheader("🏆 Leaderboard")
+        
+        if not leaders:
+            st.info("No users on the leaderboard yet!")
+            return
+        
+        # Create leaderboard table
+        st.markdown("""
+        <style>
+        .leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .leaderboard-table th, .leaderboard-table td {
+            padding: 8px 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .leaderboard-table tr:hover {
+            background-color: rgba(100, 100, 255, 0.05);
+        }
+        .leaderboard-table th {
+            background-color: rgba(100, 100, 255, 0.1);
+        }
+        .current-user {
+            background-color: rgba(100, 255, 100, 0.1) !important;
+            font-weight: bold;
+        }
+        .gold {
+            color: gold;
+            font-weight: bold;
+        }
+        .silver {
+            color: silver;
+            font-weight: bold;
+        }
+        .bronze {
+            color: #cd7f32;
+            font-weight: bold;
+        }
+        </style>
+        
+        <table class="leaderboard-table">
+            <tr>
+                <th>Rank</th>
+                <th>User</th>
+                <th>Level</th>
+                <th>Points</th>
+                <th>Badges</th>
+            </tr>
+        """, unsafe_allow_html=True)
+        
+        for leader in leaders:
+            rank = leader.get("rank", 0)
+            rank_class = "gold" if rank == 1 else "silver" if rank == 2 else "bronze" if rank == 3 else ""
+            user_class = "current-user" if leader.get("uid") == user_id else ""
+            
+            # Get trophy emoji based on rank
+            rank_emoji = "🥇" if rank == 1 else "🥈" if rank == 2 else "🥉" if rank == 3 else f"{rank}."
+            
+            st.markdown(f"""
+            <tr class="{user_class}">
+                <td class="{rank_class}">{rank_emoji}</td>
+                <td>{leader.get("display_name", "Unknown")}</td>
+                <td>{leader.get("level", "basic").capitalize()}</td>
+                <td>{leader.get("total_points", 0)}</td>
+                <td>{leader.get("badge_count", 0)}</td>
+            </tr>
+            """, unsafe_allow_html=True)
+        
+        st.markdown("</table>", unsafe_allow_html=True)
+        
+        # Show user's rank if not in top 10
+        if user_id and not any(leader.get("uid") == user_id for leader in leaders):
+            rank = user_rank.get("rank", 0)
+            total_users = user_rank.get("total_users", 0)
+            
+            st.info(f"Your rank: {rank} of {total_users} users")
 
 def render_feedback_tab(workflow, auth_ui=None):
     """

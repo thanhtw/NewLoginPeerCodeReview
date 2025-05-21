@@ -9,6 +9,7 @@ import hashlib
 import uuid
 from typing import Dict, Any, List, Optional
 from db.mysql_connection import MySQLConnection
+from auth.badge_manager import BadgeManager
 
 # Configure logging
 logging.basicConfig(
@@ -167,17 +168,16 @@ class MySQLAuthManager:
     
     def update_review_stats(self, user_id: str, accuracy: float, score: int = 0) -> Dict[str, Any]:
         """
-        Update a user's review statistics with score and automatically upgrade user level based on score.
-        
+        Update a user's review statistics with score and automatically upgrade user level based on score. Now also updates badges and point rewards.
+            
         Args:
             user_id: The user's ID
             accuracy: The accuracy of the review (0-100 percentage)
             score: Number of errors detected in the review
-            
+                
         Returns:
             Dict containing success status and updated statistics
         """
-        
         # Validate connection
         if not self.db:
             logger.error("Database connection not initialized")
@@ -256,6 +256,28 @@ class MySQLAuthManager:
                 result["level_changed"] = True
                 result["old_level"] = current_level
                 result["new_level"] = new_level
+            
+            # Initialize badge manager
+            badge_manager = BadgeManager()
+
+            # Award points for the review
+            base_points = 10  # Base points for completing a review
+            accuracy_bonus = int(accuracy / 10)  # 0-10 bonus points based on accuracy
+            total_points = base_points + accuracy_bonus + score  # Add points for each error found
+            
+            badge_manager.award_points(
+                user_id, 
+                total_points,
+                "review_completion",
+                f"Review completion with {accuracy:.1f}% accuracy, found {score} errors"
+            )
+            
+            # Update consecutive days
+            badge_manager.update_consecutive_days(user_id)
+            
+            # Check for review completion badges
+            all_errors_found = accuracy >= 100.0
+            badge_manager.check_review_completion_badges(user_id, new_reviews, all_errors_found)
             
             return result
         else:
