@@ -424,6 +424,57 @@ translations = {
     "comparison_report": "比較報告",
     "Meaningfulness":"有意義性",
     "meaningful_comments":"有意義的評論",
-    "example": "例如"
+    "example": "例如",
+
+    "rank": "排名",
+    "user": "用戶",
+    "level": "等級",
+    "points": "積分",
+    "badges": "徽章",
+    "leaderboard": "排行榜",
+    "no_users_leaderboard": "排行榜上還沒有用戶！",
+
+    # Feedback tab labels
+    "review_feedback": "審查反饋",
+    "badges": "徽章",
+    "progress": "進度",
+    "leaderboard": "排行榜",
+
+    # Leaderboard columns
+    "rank": "排名",
+    "user": "用戶",
+    "level": "等級", 
+    "points": "積分",
+    "badges": "徽章",
+    "no_users_leaderboard": "排行榜上還沒有用戶！",
+
+    # Achievement badges section
+    "achievement_badges": "成就徽章",
+    "no_badges_earned": "尚未獲得徽章。完成審查以獲得徽章！",
+
+    # Progress dashboard labels
+    "progress_dashboard": "進度儀表板",
+    "no_progress_data": "完成更多審查以查看各錯誤類別的進度！",
+    "error_category_mastery": "錯誤類別掌握度",
+    "category": "類別",
+    "mastery_level": "掌握程度 (%)",
+    "errors_encountered_vs_identified": "遇到與識別的錯誤",
+    "encountered": "遇到", 
+    "identified": "已識別",
+    "count": "數量",
+    "skill_tree": "技能樹",
+    "overall_mastery": "整體掌握度",
+    "java_review_skills": "Java 審查技能",
+    "your_rank": "您的排名: {rank}/{total} 用戶",
+    "unknown": "未知",
+    "basic": "基礎",
+    "medium": "中級",
+    "senior": "高級",
+    "specify_different_names_per_language": "為每種語言指定不同名稱",
+    "english_name": "英文名稱",
+    "chinese_name": "中文名稱",
+    "registration_success": "註冊成功！",
+    "login_success": "登入成功！"
+        
 
 }

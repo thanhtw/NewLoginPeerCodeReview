@@ -268,3 +268,23 @@ h3{
 .profile-value {
   font-weight: 500;
 }
+
+.leaderboard-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.leaderboard-table th, .leaderboard-table td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+.leaderboard-table tr:hover {
+  background-color: rgba(100, 100, 255, 0.05);
+}
+.leaderboard-table th {
+  background-color: rgba(100, 100, 255, 0.1);
+}
+.current-user {
+  background-color: rgba(100, 255, 100, 0.1) !important;
+  font-weight: bold;
+}

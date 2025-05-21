@@ -84,7 +84,7 @@ class FeedbackSystem:
         user_id = st.session_state.auth.get("user_id") if "auth" in st.session_state else None
         
         # Add tabs for different sections of feedback
-        feedback_tabs = st.tabs(["Review Feedback", "Badges", "Progress", "Leaderboard"])
+        feedback_tabs = st.tabs([t("review_feedback"), t("badges"), t("progress"), t("leaderboard")])
         
         with feedback_tabs[0]:
             # Display the feedback results      
@@ -332,9 +332,7 @@ class FeedbackSystem:
         
         # Display issues by category with collapsible sections
         for category, issues in categorized_issues.items():
-            if category and issues:
-                #st.markdown(f"### {category} ({len(issues)})")
-                print("issueissue: ", issue)
+            if category and issues:     
                 for i, issue in enumerate(issues, 1):
                     if isinstance(issue, dict):
                         problem = issue[t('problem')]
@@ -808,57 +806,63 @@ class FeedbackSystem:
         leaders = badge_manager.get_leaderboard(10)
         user_rank = badge_manager.get_user_rank(user_id)
         
-        st.subheader("🏆 Leaderboard")
+        st.subheader("🏆 " + t("leaderboard"))
         
         if not leaders:
-            st.info("No users on the leaderboard yet!")
+            st.info(t("no_users_leaderboard"))
             return
         
-        # Create leaderboard table
-        st.markdown("""
+        # Get current language for field selection
+        current_lang = get_current_language()
+        display_name_field = f"display_name_{current_lang}" if current_lang in ["en", "zh-tw"] else "display_name"
+        level_field = f"level_name_{current_lang}" if current_lang in ["en", "zh-tw"] else "level"
+        
+        # Create leaderboard table with translated headers
+        st.markdown(f"""
         <style>
-        .leaderboard-table {
+        .leaderboard-table {{
             width: 100%;
             border-collapse: collapse;
-        }
-        .leaderboard-table th, .leaderboard-table td {
+        }}
+        .leaderboard-table th, .leaderboard-table td {{
             padding: 8px 12px;
             text-align: left;
             border-bottom: 1px solid #ddd;
-        }
-        .leaderboard-table tr:hover {
+        }}
+        .leaderboard-table tr:hover {{
             background-color: rgba(100, 100, 255, 0.05);
-        }
-        .leaderboard-table th {
+        }}
+        .leaderboard-table th {{
             background-color: rgba(100, 100, 255, 0.1);
-        }
-        .current-user {
+        }}
+        .current-user {{
             background-color: rgba(100, 255, 100, 0.1) !important;
             font-weight: bold;
-        }
-        .gold {
+        }}
+        .gold {{
             color: gold;
             font-weight: bold;
-        }
-        .silver {
+        }}
+        .silver {{
             color: silver;
             font-weight: bold;
-        }
-        .bronze {
+        }}
+        .bronze {{
             color: #cd7f32;
             font-weight: bold;
-        }
+        }}
         </style>
         
         <table class="leaderboard-table">
             <tr>
-                <th>Rank</th>
-                <th>User</th>
-                <th>Level</th>
-                <th>Points</th>
-                <th>Badges</th>
+                <th>{t("rank")}</th>
+                <th>{t("user")}</th>
+                <th>{t("level")}</th>
+                <th>{t("points")}</th>
+                <th>{t("badges")}</th>
             </tr>
         """, unsafe_allow_html=True)
+
         
         for leader in leaders:
             rank = leader.get("rank", 0)
@@ -868,11 +872,15 @@ class FeedbackSystem:
             # Get trophy emoji based on rank
             rank_emoji = "🥇" if rank == 1 else "🥈" if rank == 2 else "🥉" if rank == 3 else f"{rank}."
             
+            # Get display name and level with language support
+            display_name = leader.get(display_name_field, leader.get("display_name", t("unknown")))
+            level_display = leader.get(level_field, leader.get("level", "basic")).capitalize()
+            
             st.markdown(f"""
             <tr class="{user_class}">
                 <td class="{rank_class}">{rank_emoji}</td>
-                <td>{leader.get("display_name", "Unknown")}</td>
-                <td>{leader.get("level", "basic").capitalize()}</td>
+                <td>{display_name}</td>
+                <td>{level_display}</td>
                 <td>{leader.get("total_points", 0)}</td>
                 <td>{leader.get("badge_count", 0)}</td>
             </tr>

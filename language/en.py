@@ -246,7 +246,6 @@ translations = {
     "review_completed_all_identified": "Review completed: all",
     "review_completed_max_iterations": "Review completed: max iterations reached",
     "review_completed_sufficient": "Review completed: sufficient review",
-    "review_feedback": "Review Feedback",
     "review_performance_summary": "Review Performance Summary",
     "review_sufficient": "Review Sufficient",
     "start_new_session": "Start New Session",
@@ -411,6 +410,47 @@ translations = {
     "comparison_report": "Comparison Report",
     "Meaningfulness" : "Meaningfulness",
     "meaningful_comments":"Meaningful Comments",
-    "example": "Example"
+    "example": "Example",
+
+    "rank": "Rank",
+    "user": "User",
+    "level": "Level",
+    "points": "Points",
+    "badges": "Badges",
+    "leaderboard": "Leaderboard",
+    "no_users_leaderboard": "No users on the leaderboard yet!",    
+    
+    "progress": "Progress",
+   
+
+
+    # Achievement badges section
+    "achievement_badges": "Achievement Badges",
+    "no_badges_earned": "No badges earned yet. Complete reviews to earn badges!",
+
+    # Progress dashboard labels
+    "progress_dashboard": "Progress Dashboard",
+    "no_progress_data": "Complete more reviews to see your progress across error categories!",
+    "error_category_mastery": "Error Category Mastery",
+    "category": "Category",
+    "mastery_level": "Mastery Level (%)",
+    "errors_encountered_vs_identified": "Errors Encountered vs Identified",
+    "encountered": "Encountered", 
+    "identified": "Identified",
+    "count": "Count",
+    "skill_tree": "Skill Tree",
+    "overall_mastery": "Overall Mastery",
+    "java_review_skills": "Java Review Skills",
+    "your_rank": "Your rank: {rank} of {total} users",
+    "unknown": "Unknown",
+    "basic": "Basic",
+    "medium": "Medium",
+    "senior": "Senior",
+    "specify_different_names_per_language": "Specify different names for each language",
+    "english_name": "English Name",
+    "chinese_name": "Chinese Name", 
+    "registration_success": "Registration successful!",
+    "login_success": "Login successful!"
+
 
 }

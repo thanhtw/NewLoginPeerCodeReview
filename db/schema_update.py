@@ -8,6 +8,60 @@ logger = logging.getLogger(__name__)
 def update_database_schema():
     """Apply schema updates to support multilingual fields and add badge and statistics support."""
     db = MySQLConnection()
+
+    # Create users table with multilingual support if it doesn't exist
+    users_table = """
+    CREATE TABLE IF NOT EXISTS users (
+        uid VARCHAR(36) PRIMARY KEY,
+        email VARCHAR(255) UNIQUE NOT NULL,       
+        display_name_en VARCHAR(255),
+        display_name_zh VARCHAR(255),
+        password VARCHAR(255) NOT NULL,       
+        level_name_en VARCHAR(50),
+        level_name_zh VARCHAR(50),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        reviews_completed INT DEFAULT 0,
+        score INT DEFAULT 0,
+        last_activity DATE DEFAULT NULL,
+        consecutive_days INT DEFAULT 0,
+        total_points INT DEFAULT 0
+    )
+    """
+
+    db.execute_query(users_table)
+    # Check if columns exist before adding
+    result = db.execute_query(check_column_exists, ('users', 'display_name_en'), fetch_one=True)
+    has_display_name_en = result and result.get('column_exists', 0) > 0
+
+    if has_display_name_en:
+        logger.info("Users table already has multilingual support")
+    else:
+        # Users table exists but needs multilingual columns
+        logger.info("Adding multilingual support to users table")
+        
+        # Add multilingual columns if they don't exist
+        try:
+            db.execute_query("ALTER TABLE users ADD COLUMN display_name_en VARCHAR(255)")
+            db.execute_query("ALTER TABLE users ADD COLUMN display_name_zh VARCHAR(255)")
+            db.execute_query("ALTER TABLE users ADD COLUMN level_name_en VARCHAR(50)")
+            db.execute_query("ALTER TABLE users ADD COLUMN level_name_zh VARCHAR(50)")
+            
+            # Populate new columns with data from existing columns
+            db.execute_query("UPDATE users SET display_name_en = display_name, display_name_zh = display_name")
+            
+            # Populate level names based on the level enum value
+            db.execute_query("UPDATE users SET level_name_en = level")
+            
+            # Set Chinese level names
+            db.execute_query("UPDATE users SET level_name_zh = CASE level " +
+                            "WHEN 'basic' THEN '基礎' " +
+                            "WHEN 'medium' THEN '中級' " +
+                            "WHEN 'senior' THEN '高級' " +
+                            "ELSE level END")
+            
+            logger.info("Multilingual columns added and populated in users table")
+        except Exception as e:
+            logger.error(f"Error adding multilingual columns to users table: {str(e)}")
     
     # Create badges table with multilingual fields (if not exists)
     badges_table = """
@@ -75,6 +129,45 @@ def update_database_schema():
     AND table_name = %s 
     AND column_name = %s
     """
+    # Add multilingual fields to users table
+
+    users_multilingual_update = """
+    ALTER TABLE users
+    ADD COLUMN display_name_en VARCHAR(255),
+    ADD COLUMN display_name_zh VARCHAR(255),
+    ADD COLUMN level_name_en VARCHAR(50),
+    ADD COLUMN level_name_zh VARCHAR(50)
+    """
+
+    
+
+    if not has_display_name_en:
+        # The table exists but doesn't have multilingual columns
+        # Need to migrate data from old format to new format
+        logger.info("Migrating users table to support multiple languages...")
+        
+        # Create temporary columns
+        db.execute_query("ALTER TABLE users ADD COLUMN display_name_backup VARCHAR(255)")
+        db.execute_query("ALTER TABLE users ADD COLUMN level_backup VARCHAR(50)")
+        
+        # Backup current data
+        db.execute_query("UPDATE users SET display_name_backup = display_name, level_backup = level")
+        
+        # Add multilingual columns
+        db.execute_query(users_multilingual_update)
+        
+        # Copy data to new columns
+        db.execute_query("UPDATE users SET display_name_en = display_name_backup, display_name_zh = display_name_backup")
+        db.execute_query("UPDATE users SET level_name_en = level_backup, level_name_zh = level_backup")
+        
+        # Clean up backup columns
+        db.execute_query("ALTER TABLE users DROP COLUMN display_name_backup")
+        db.execute_query("ALTER TABLE users DROP COLUMN level_backup")
+        
+        logger.info("Added multilingual support to users table")
+    else:
+        logger.info("Users table already has multilingual support")
+
     
     # Execute all schema updates
     try:
@@ -133,7 +226,7 @@ def update_database_schema():
             logger.info("Created badges table with multilingual support")
         
         # Create other tables if they don't exist
-        db.execute_query(user_badges_table)
+        db.execute_query(user_badges_table)       
         db.execute_query(error_category_stats_table)
         
         # Check if activity log table exists

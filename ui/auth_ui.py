@@ -8,13 +8,13 @@ registration, and profile management using local JSON files.
 import streamlit as st
 import logging
 import time
-from typing import Dict, Any, Optional, Callable
+from typing import Dict, Any, Optional, Callable, Tuple
 import os
 from pathlib import Path
 import base64
 
 from auth.mysql_auth import MySQLAuthManager
-from utils.language_utils import t, get_current_language
+from utils.language_utils import t, get_current_language, set_language
 
 # Configure logging
 logging.basicConfig(
@@ -47,13 +47,12 @@ class AuthUI:
     def render_auth_page(self) -> bool:
         """
         Render the authentication page with login and registration forms.
+        Uses t() function for all translations instead of hardcoded maps.
         
         Returns:
             bool: True if user is authenticated, False otherwise
         """
         
-        
-        # Main container
         st.markdown('<div class="auth-container">', unsafe_allow_html=True)
         
         # Header with logo and title
@@ -68,7 +67,7 @@ class AuthUI:
         col1, col2 = st.columns(2)
         
         with col1:
-            # Login form
+            # Login form - unchanged
             st.markdown('<div class="auth-form">', unsafe_allow_html=True)
             st.markdown(f'<h3>{t("login")}</h3>', unsafe_allow_html=True)
             
@@ -88,10 +87,14 @@ class AuthUI:
                         st.session_state.auth["user_id"] = result.get("user_id")
                         st.session_state.auth["user_info"] = {
                             "display_name": result.get("display_name"),
+                            "display_name_en": result.get("display_name_en"),
+                            "display_name_zh": result.get("display_name_zh"),
                             "email": result.get("email"),
-                            "level": result.get("level", "basic")
+                            "level": result.get("level", "basic"),
+                            "level_name_en": result.get("level_name_en"),
+                            "level_name_zh": result.get("level_name_zh")
                         }                     
-                        st.success(t("login") + " " + t("login_failed"))
+                        st.success(t("login_success"))
                         
                         # Force UI refresh
                         st.rerun()
@@ -100,32 +103,68 @@ class AuthUI:
             st.markdown('</div>', unsafe_allow_html=True)
         
         with col2:
-            # Registration form
+            # Registration form - updated to use t() function
             st.markdown('<div class="auth-form">', unsafe_allow_html=True)
             st.markdown(f'<h3>{t("register")}</h3>', unsafe_allow_html=True)
             
+            # Get the current language
+            current_lang = get_current_language()
+            
+            # Primary display name (will be used for both languages if only one is provided)
             display_name = st.text_input(t("display_name"), key="reg_name")
+            
+            # Show language-specific name fields if needed
+            show_lang_specific = st.checkbox(t("specify_different_names_per_language"), value=False, key="show_lang_names")
+            
+            display_name_en = display_name
+            display_name_zh = display_name
+            
+            if show_lang_specific:
+                col_a, col_b = st.columns(2)
+                with col_a:
+                    display_name_en = st.text_input(t("english_name"), value=display_name, key="reg_name_en")
+                with col_b:
+                    display_name_zh = st.text_input(t("chinese_name"), value=display_name, key="reg_name_zh")
+            
             email = st.text_input(t("email"), key="reg_email")
             password = st.text_input(t("password"), type="password", key="reg_password")
             confirm_password = st.text_input(t("confirm_password"), type="password", key="reg_confirm")
             
-            # Student level selection
-            level_options = ["Basic", "Medium", "Senior"]
-            level_labels = {"en": level_options, "zh-tw": ["基礎", "中級", "高級"]}
+            # Student level selection using t() function
+            level_internal_values = ["basic", "medium", "senior"]
+            level_options = [t(level) for level in level_internal_values]
             
-            selected_level = st.selectbox(
+            selected_level_index = st.selectbox(
                 t("experience_level"),
-                options=level_labels.get(get_current_language(), level_options),
+                options=level_options,
                 index=0,
                 key="reg_level"
             )
             
-            # Map the displayed level back to database value
-            level_map = {
-                "Basic": "basic", "Medium": "medium", "Senior": "senior",
-                "基礎": "basic", "中級": "medium", "高級": "senior"
-            }
-            level = level_map.get(selected_level, "basic")
+            # Get the internal level value from the index
+            level = level_internal_values[level_options.index(selected_level_index)]
+            
+            # Store level names for both languages
+            level_name_en = t(level) if current_lang == "en" else ""
+            level_name_zh = t(level) if current_lang == "zh-tw" else ""
+            
+            # If we didn't get level names for both languages, we need to switch language temporarily
+            if not level_name_en or not level_name_zh:
+                # Save current language
+                saved_language = get_current_language()
+                
+                # Get English level name
+                if not level_name_en:
+                    set_language("en")
+                    level_name_en = t(level)
+                
+                # Get Chinese level name
+                if not level_name_zh:
+                    set_language("zh-tw")
+                    level_name_zh = t(level)
+                
+                # Restore original language
+                set_language(saved_language)
             
             if st.button(t("register"), use_container_width=True, key="register_button"):
                 # Validate inputs
@@ -134,24 +173,31 @@ class AuthUI:
                 elif password != confirm_password:
                     st.error(t("passwords_mismatch"))
                 else:
-                    # Register user
+                    # Register user with multilingual support
                     result = self.auth_manager.register_user(
                         email=email,
-                        password=password,
-                        display_name=display_name,
-                        level=level.lower()
+                        password=password,                        
+                        display_name_en=display_name_en,
+                        display_name_zh=display_name_zh,                        
+                        level_name_en=level_name_en,
+                        level_name_zh=level_name_zh
                     )
-    
+                    
+                    # Handle registration result
                     if result.get("success", False):
                         # Set authenticated state
                         st.session_state.auth["is_authenticated"] = True
                         st.session_state.auth["user_id"] = result.get("user_id")
                         st.session_state.auth["user_info"] = {
                             "display_name": result.get("display_name"),
+                            "display_name_en": result.get("display_name_en"),
+                            "display_name_zh": result.get("display_name_zh"),
                             "email": result.get("email"),
-                            "level": result.get("level", "basic")
-                        }
-                        st.success(t("registration_failed"))
+                            "level": result.get("level", "basic"),
+                            "level_name_en": result.get("level_name_en"),
+                            "level_name_zh": result.get("level_name_zh")
+                        }                     
+                        st.success(t("registration_success"))
                         
                         # Force UI refresh
                         st.rerun()
@@ -164,23 +210,24 @@ class AuthUI:
         return st.session_state.auth["is_authenticated"]
     
     def render_user_profile(self):
-        """Render the user profile section in the sidebar."""
+        """Render the user profile section in the sidebar with proper language support."""
         # Check if user is authenticated
-        if "auth" not in st.session_state:
-            st.session_state.auth = {
-                "is_authenticated": False,
-                "user_id": None,
-                "user_info": {}
-            }
-            
         if not st.session_state.auth.get("is_authenticated", False):
             return
-            
+                
         # Get user info
         user_info = st.session_state.auth.get("user_info", {})
-        display_name = user_info.get("display_name", "User")
-        level = user_info.get("level", "basic").capitalize()     
         
+        # Get current language
+        current_lang = get_current_language()
+        
+        # Use the appropriate language field
+        display_name_field = f"display_name_{current_lang}" if current_lang in ["en", "zh-tw"] else "display_name_en"
+        level_field = f"level_name_{current_lang}" if current_lang in ["en", "zh-tw"] else "level_name_en"
+        
+        # Fallback to standard fields if multilingual ones are not available
+        display_name = user_info.get(display_name_field, user_info.get("display_name", "User"))
+        level = user_info.get(level_field, user_info.get("level", "basic")).capitalize()
         
         st.sidebar.markdown(f"""
         <div class="profile-container">
@@ -190,31 +237,6 @@ class AuthUI:
                 <span class="profile-value">{level}</span>
             </div>
         """, unsafe_allow_html=True)
-     
-        # Get extended profile from database if user is not demo user
-        if st.session_state.auth.get("user_id") != "demo-user":
-            user_id = st.session_state.auth.get("user_id")
-            try:
-                profile = self.auth_manager.get_user_profile(user_id)
-                if profile.get("success", False):
-                    # Display additional stats
-                    reviews = profile.get("reviews_completed", 0)
-                    score = profile.get("score", 0)                   
-                    st.sidebar.markdown(f"""
-                    <div class="profile-item">
-                        <span class="profile-label">{t("review_times")}:</span>
-                        <span class="profile-value">{reviews}</span>
-                    </div>
-                    <div class="profile-item">
-                        <span class="profile-label">{t("score")}:</span>
-                        <span class="profile-value">{score}</span>
-                    </div>
-                    """, unsafe_allow_html=True)   
-            except Exception as e:
-                logger.error(f"Error getting user profile: {str(e)}")
-                
-        # Close profile container
-        st.sidebar.markdown("</div>", unsafe_allow_html=True)
         
         # Application info
         st.sidebar.subheader(t("about"))
@@ -303,3 +325,29 @@ class AuthUI:
             logger.error(f"Error getting user level from database: {str(e)}")
             # Fallback to session state
             return st.session_state.auth.get("user_info", {}).get("level", "basic")
+        
+    def _get_multilingual_level_names(self, level: str) -> Tuple[str, str]:
+        """
+        Get the level names in both English and Chinese using the t() function.
+        
+        Args:
+            level: Internal level value (basic, medium, senior)
+            
+        Returns:
+            Tuple of (level_name_en, level_name_zh)
+        """
+        # Save current language
+        current_lang = get_current_language()
+        
+        # Get English level name
+        set_language("en")
+        level_name_en = t(level)
+        
+        # Get Chinese level name
+        set_language("zh-tw")
+        level_name_zh = t(level)
+        
+        # Restore original language
+        set_language(current_lang)
+        
+        return level_name_en, level_name_zh

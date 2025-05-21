@@ -93,21 +93,6 @@ class MySQLConnection:
             cursor.execute(f"CREATE DATABASE IF NOT EXISTS {self.db_name}")
             cursor.execute(f"USE {self.db_name}")
             
-            # Create users table if it doesn't exist - REMOVED average_accuracy column
-            logger.debug("Creating users table if not exists")
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS users (
-                    uid VARCHAR(36) PRIMARY KEY,
-                    email VARCHAR(255) UNIQUE NOT NULL,
-                    display_name VARCHAR(255) NOT NULL,
-                    password VARCHAR(255) NOT NULL,
-                    level ENUM('basic', 'medium', 'senior') DEFAULT 'basic',
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    reviews_completed INT DEFAULT 0,
-                    score INT DEFAULT 0
-                )
-            """)
-            
             # Commit changes and close connection
             init_conn.commit()
             cursor.close()

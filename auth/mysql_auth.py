@@ -10,6 +10,7 @@ import uuid
 from typing import Dict, Any, List, Optional
 from db.mysql_connection import MySQLConnection
 from auth.badge_manager import BadgeManager
+from utils.language_utils import set_language, get_current_language,t
 
 # Configure logging
 logging.basicConfig(
@@ -44,8 +45,22 @@ class MySQLAuthManager:
         """Hash a password using SHA-256."""
         return hashlib.sha256(password.encode()).hexdigest()
     
-    def register_user(self, email: str, password: str, display_name: str, level: str = "basic") -> Dict[str, Any]:
-        """Register a new user."""
+    def _column_exists(self, table: str, column: str) -> bool:
+        """Check if a column exists in a table."""
+        query = """
+            SELECT COUNT(*) as column_exists
+            FROM information_schema.columns
+            WHERE table_schema = DATABASE()
+            AND table_name = %s
+            AND column_name = %s
+        """
+        result = self.db.execute_query(query, (table, column), fetch_one=True)
+        return result and result.get('column_exists', 0) > 0
+
+    def register_user(self, email: str, password: str, display_name_en: str = None, display_name_zh: str = None,
+                 level_name_en: str = None, 
+                 level_name_zh: str = None) -> Dict[str, Any]:
+        """Register a new user with multilingual support."""
         # Check if email is already in use
         check_query = "SELECT email FROM users WHERE email = %s"
         result = self.db.execute_query(check_query, (email,), fetch_one=True)
@@ -58,18 +73,44 @@ class MySQLAuthManager:
         
         # Hash the password
         hashed_password = self._hash_password(password)
+       
+            
+        # If level names are not provided, get them from translation
+        if not level_name_en or not level_name_zh:
+            # Save current language
+            current_lang = get_current_language()
+            
+            # Get English level name
+            if not level_name_en:
+                set_language("en")
+                level_name_en = t(level)
+            
+            # Get Chinese level name
+            if not level_name_zh:
+                set_language("zh-tw")
+                level_name_zh = t('level')
+            
+            # Restore original language
+            set_language(current_lang)
         
-        # Create the user in the database
-        insert_query = """
+        
+        # Prepare the SQL query based on existing columns
+        columns = ["uid", "email","display_name_en","display_name_zh", "password", "level_name_en", "level_name_zh"]
+        values = [user_id, email, display_name_en,display_name_zh, hashed_password, level_name_en, level_name_zh]
+        
+       
+        
+        # Create the SQL query
+        columns_str = ", ".join(columns)
+        placeholders = ", ".join(["%s"] * len(values))
+        insert_query = f"""
             INSERT INTO users 
-            (uid, email, display_name, password, level, score) 
-            VALUES (%s, %s, %s, %s, %s, 0)
+            ({columns_str}) 
+            VALUES ({placeholders})
         """
         
-        affected_rows = self.db.execute_query(
-            insert_query, 
-            (user_id, email, display_name, hashed_password, level)
-        )
+        # Execute the query
+        affected_rows = self.db.execute_query(insert_query, tuple(values))
         
         if affected_rows:
             logger.debug(f"Registered new user: {email} (ID: {user_id})")
@@ -77,8 +118,10 @@ class MySQLAuthManager:
                 "success": True,
                 "user_id": user_id,
                 "email": email,
-                "display_name": display_name,
-                "level": level
+                "display_name_en": display_name_en,
+                "display_name_zh": display_name_zh,
+                "level_name_en": level_name_en,
+                "level_name_zh": level_name_zh
             }
         else:
             return {"success": False, "error": "Error saving user data"}

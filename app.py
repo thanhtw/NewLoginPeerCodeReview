@@ -50,7 +50,6 @@ from ui.main_ui import (
 from ui.CodeGeneratorUI import CodeGeneratorUI
 from ui.code_review import CodeDisplayUI, render_review_tab  # Changed import
 from ui.feedback_system import FeedbackSystem, render_feedback_tab
-from ui.provider_selector import ProviderSelectorUI
 from ui.auth_ui import AuthUI
 # Load environment variables
 load_dotenv(override=True)
@@ -224,11 +223,6 @@ def main():
     # Render user profile
     auth_ui.render_user_profile()
 
-    # Initialize provider selector UI
-    provider_selector = ProviderSelectorUI(llm_manager)
-    
-    # MODIFIED: Skip provider setup modal and use Groq by default
-    # We won't call provider_selector.render_provider_setup_modal()
     
     # Initialize workflow after provider is setup
     workflow = JavaCodeReviewGraph(llm_manager)

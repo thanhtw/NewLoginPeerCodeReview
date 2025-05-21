@@ -394,7 +394,7 @@ class BadgeManager:
     
     def get_leaderboard(self, limit: int = 10) -> List[Dict[str, Any]]:
         """
-        Get the user leaderboard by total points.
+        Get the user leaderboard by total points with multilingual support.
         
         Args:
             limit: Maximum number of users to return
@@ -403,9 +403,25 @@ class BadgeManager:
             List of user dictionaries with score and ranking
         """
         try:
-            query = """
-                SELECT uid, display_name, total_points, level,
-                       (SELECT COUNT(*) FROM user_badges WHERE user_id = uid) AS badge_count
+            # Get current language
+            current_lang = self.current_language
+            
+            # Set display name and level fields based on language
+            display_name_field = f"display_name_{current_lang}" if current_lang in ["en", "zh-tw"] else "display_name"
+            level_field = f"level_name_{current_lang}" if current_lang in ["en", "zh-tw"] else "level"
+            
+            # Check if these fields exist
+            display_name_exists = self._column_exists("users", display_name_field)
+            level_exists = self._column_exists("users", level_field)
+            
+            # Use the fields that exist
+            display_name_col = display_name_field if display_name_exists else "display_name"
+            level_col = level_field if level_exists else "level"
+            
+            # Build query with appropriate fields
+            query = f"""
+                SELECT uid, {display_name_col} as display_name, total_points, {level_col} as level,
+                    (SELECT COUNT(*) FROM user_badges WHERE user_id = uid) AS badge_count
                 FROM users
                 ORDER BY total_points DESC
                 LIMIT %s
@@ -416,7 +432,7 @@ class BadgeManager:
             # Add rank
             for i, leader in enumerate(leaders, 1):
                 leader["rank"] = i
-                
+                    
             return leaders or []
                 
         except Exception as e:
