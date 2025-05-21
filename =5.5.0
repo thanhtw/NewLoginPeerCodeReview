@@ -1,8 +1,0 @@
-Collecting plotly
-  Downloading plotly-6.1.1-py3-none-any.whl.metadata (6.9 kB)
-Requirement already satisfied: narwhals>=1.15.1 in /home/selab/anaconda3/envs/ThomasPeer/lib/python3.11/site-packages (from plotly) (1.29.0)
-Requirement already satisfied: packaging in /home/selab/anaconda3/envs/ThomasPeer/lib/python3.11/site-packages (from plotly) (24.2)
-Downloading plotly-6.1.1-py3-none-any.whl (16.1 MB)
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 16.1/16.1 MB 60.6 MB/s eta 0:00:00
-Installing collected packages: plotly
-Successfully installed plotly-6.1.1
