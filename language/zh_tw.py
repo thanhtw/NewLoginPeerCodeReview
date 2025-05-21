@@ -474,7 +474,8 @@ translations = {
     "english_name": "英文名稱",
     "chinese_name": "中文名稱",
     "registration_success": "註冊成功！",
-    "login_success": "登入成功！"
+    "login_success": "登入成功！",
+    "login_to_see":"登入以查看排行榜！"
         
 
 }

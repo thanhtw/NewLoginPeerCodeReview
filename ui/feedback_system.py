@@ -113,7 +113,7 @@ class FeedbackSystem:
             if user_id:
                 self.render_leaderboard(user_id)
             else:
-                st.info("Login to view the leaderboard!")
+                st.info(f"{t('login_to_see')}")
         
         # Add a button to start a new session
         st.markdown("---")
@@ -623,10 +623,10 @@ class FeedbackSystem:
         badges = badge_manager.get_user_badges(user_id)
         
         if not badges:
-            st.info("No badges earned yet. Complete reviews to earn badges!")
+            st.info(f"{t('no_badges_earned')}")
             return
         
-        st.subheader("🏆 Achievement Badges")
+        st.subheader(f"🏆 {t('achievement_badges')}")
         
         # Group badges by category
         badge_categories = {}
@@ -676,10 +676,10 @@ class FeedbackSystem:
         # Get category stats
         category_stats = badge_manager.get_category_stats(user_id)
         
-        st.subheader("📊 Progress Dashboard")
+        st.subheader(f"📊 {t('progress_dashboard')}")
         
         if not category_stats:
-            st.info("Complete more reviews to see your progress across error categories!")
+            st.info(f"{t('no_progress_data')}")
             return
         
         # Create mastery heatmap
@@ -819,48 +819,16 @@ class FeedbackSystem:
         
         # Create leaderboard table with translated headers
         st.markdown(f"""
-        <style>
-        .leaderboard-table {{
-            width: 100%;
-            border-collapse: collapse;
-        }}
-        .leaderboard-table th, .leaderboard-table td {{
-            padding: 8px 12px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }}
-        .leaderboard-table tr:hover {{
-            background-color: rgba(100, 100, 255, 0.05);
-        }}
-        .leaderboard-table th {{
-            background-color: rgba(100, 100, 255, 0.1);
-        }}
-        .current-user {{
-            background-color: rgba(100, 255, 100, 0.1) !important;
-            font-weight: bold;
-        }}
-        .gold {{
-            color: gold;
-            font-weight: bold;
-        }}
-        .silver {{
-            color: silver;
-            font-weight: bold;
-        }}
-        .bronze {{
-            color: #cd7f32;
-            font-weight: bold;
-        }}
-        </style>
-        
         <table class="leaderboard-table">
-            <tr>
-                <th>{t("rank")}</th>
-                <th>{t("user")}</th>
-                <th>{t("level")}</th>
-                <th>{t("points")}</th>
-                <th>{t("badges")}</th>
-            </tr>
+            <thead>
+                <tr>
+                    <th>{t("rank")}</th>
+                    <th>{t("user")}</th>
+                    <th>{t("level")}</th>
+                    <th>{t("points")}</th>
+                    <th>{t("badges")}</th>
+                </tr>
+            </thead>
         """, unsafe_allow_html=True)
 
         
@@ -893,7 +861,7 @@ class FeedbackSystem:
             rank = user_rank.get("rank", 0)
             total_users = user_rank.get("total_users", 0)
             
-            st.info(f"Your rank: {rank} of {total_users} users")
+            st.info(f"{t('your_rank')}")
 
 def render_feedback_tab(workflow, auth_ui=None):
     """

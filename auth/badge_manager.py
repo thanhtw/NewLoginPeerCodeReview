@@ -1,5 +1,5 @@
 """
-Badge and rewards manager for the Java Peer Code Review Training System.
+Badge and rewards manager for the Java Peer Review Training System.
 """
 
 import logging
@@ -32,6 +32,7 @@ class BadgeManager:
             
         self.db = MySQLConnection()
         self._initialized = True
+        # Get current language on initialization and update when needed
         self.current_language = get_current_language()
     
     def _column_exists(self, table: str, column: str) -> bool:
@@ -62,6 +63,9 @@ class BadgeManager:
         if not user_id:
             return {"success": False, "error": "Invalid user ID"}
         
+        # Update current language whenever a method is called
+        self.current_language = get_current_language()
+        
         try:
             # First, update the user's total points
             update_query = """
@@ -73,15 +77,15 @@ class BadgeManager:
             self.db.execute_query(update_query, (points, user_id))
             
             # Then log the activity - with multilingual support
-            # Store details in both language fields, to be translated later if needed
-            details_field_en = "details_en" if self._column_exists("activity_log", "details_en") else "details"
-            details_field_zh = "details_zh" if self._column_exists("activity_log", "details_zh") else "details"
+            # Check if the details_en and details_zh columns exist
+            has_details_en = self._column_exists("activity_log", "details_en")
+            has_details_zh = self._column_exists("activity_log", "details_zh")
             
-            if self._column_exists("activity_log", "details_en") and self._column_exists("activity_log", "details_zh"):
+            if has_details_en and has_details_zh:
                 # Both language fields exist - use multilingual insert
-                log_query = f"""
+                log_query = """
                     INSERT INTO activity_log 
-                    (user_id, activity_type, points, {details_field_en}, {details_field_zh}) 
+                    (user_id, activity_type, points, details_en, details_zh) 
                     VALUES (%s, %s, %s, %s, %s)
                 """
                 self.db.execute_query(log_query, (user_id, activity_type, points, details, details))
@@ -126,12 +130,14 @@ class BadgeManager:
         if not user_id or not badge_id:
             return {"success": False, "error": "Invalid user ID or badge ID"}
         
+        # Update current language
+        self.current_language = get_current_language()
+        
         try:
             # Check if the badge exists
             # Use language-specific field based on current language
-            current_lang = self.current_language
-            name_field = "name_en" if current_lang == "en" else "name_zh"
-            desc_field = "description_en" if current_lang == "en" else "description_zh"
+            name_field = f"name_{self.current_language}" if self.current_language == "en" or self.current_language == "zh-tw" else "name_en"
+            desc_field = f"description_{self.current_language}" if self.current_language == "en" or self.current_language == "zh-tw" else "description_en"
             
             # Check if the table has multilingual fields
             if not self._column_exists("badges", name_field):
@@ -197,11 +203,13 @@ class BadgeManager:
         if not user_id:
             return []
         
+        # Update current language
+        self.current_language = get_current_language()
+        
         try:
             # Use language-specific field based on current language
-            current_lang = self.current_language
-            name_field = "name_en" if current_lang == "en" else "name_zh"
-            desc_field = "description_en" if current_lang == "en" else "description_zh"
+            name_field = f"name_{self.current_language}" if self.current_language == "en" or self.current_language == "zh-tw" else "name_en"
+            desc_field = f"description_{self.current_language}" if self.current_language == "en" or self.current_language == "zh-tw" else "description_en"
             
             # Check if the table has multilingual fields
             if not self._column_exists("badges", name_field):
@@ -403,20 +411,20 @@ class BadgeManager:
             List of user dictionaries with score and ranking
         """
         try:
-            # Get current language
-            current_lang = self.current_language
+            # Update current language
+            self.current_language = get_current_language()
             
             # Set display name and level fields based on language
-            display_name_field = f"display_name_{current_lang}" if current_lang in ["en", "zh-tw"] else "display_name"
-            level_field = f"level_name_{current_lang}" if current_lang in ["en", "zh-tw"] else "level"
+            display_name_field = f"display_name_{self.current_language}" if self.current_language in ["en", "zh-tw"] else "display_name_en"
+            level_field = f"level_name_{self.current_language}" if self.current_language in ["en", "zh-tw"] else "level_name_en"
             
             # Check if these fields exist
             display_name_exists = self._column_exists("users", display_name_field)
             level_exists = self._column_exists("users", level_field)
             
             # Use the fields that exist
-            display_name_col = display_name_field if display_name_exists else "display_name"
-            level_col = level_field if level_exists else "level"
+            display_name_col = display_name_field if display_name_exists else "display_name_en"
+            level_col = level_field if level_exists else "level_name_en"
             
             # Build query with appropriate fields
             query = f"""
@@ -519,7 +527,10 @@ class BadgeManager:
         MIN_ENCOUNTERS = 10
         
         if stats and stats.get("mastery_level", 0) >= MASTERY_THRESHOLD and stats.get("encountered", 0) >= MIN_ENCOUNTERS:
-            # Map categories to badge IDs
+            # Update current language before mapping categories
+            self.current_language = get_current_language()
+            
+            # Map categories to badge IDs - support both English and Chinese categories
             category_badges = {
                 "Logical": "logic-guru",
                 "邏輯錯誤": "logic-guru",  # Chinese equivalent
@@ -585,10 +596,20 @@ class BadgeManager:
                 self.award_badge(user_id, "bug-hunter")
             
             # Log this perfect review
-            self.db.execute_query(
-                "INSERT INTO activity_log (user_id, activity_type, points, details) VALUES (%s, %s, %s, %s)",
-                (user_id, "perfect_review", 0, "Completed a review finding all errors")
-            )
+            # Use language-specific fields if they exist
+            details_en_exists = self._column_exists("activity_log", "details_en")
+            details_zh_exists = self._column_exists("activity_log", "details_zh")
+            
+            if details_en_exists and details_zh_exists:
+                self.db.execute_query(
+                    "INSERT INTO activity_log (user_id, activity_type, points, details_en, details_zh) VALUES (%s, %s, %s, %s, %s)",
+                    (user_id, "perfect_review", 0, "Completed a review finding all errors", "完成一次找到所有錯誤的審查")
+                )
+            else:
+                self.db.execute_query(
+                    "INSERT INTO activity_log (user_id, activity_type, points, details) VALUES (%s, %s, %s, %s)",
+                    (user_id, "perfect_review", 0, "Completed a review finding all errors")
+                )
             
             # Perfectionist badge - 3 consecutive perfect reviews
             query = """

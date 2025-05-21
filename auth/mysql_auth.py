@@ -10,7 +10,7 @@ import uuid
 from typing import Dict, Any, List, Optional
 from db.mysql_connection import MySQLConnection
 from auth.badge_manager import BadgeManager
-from utils.language_utils import set_language, get_current_language,t
+from utils.language_utils import set_language, get_current_language, t
 
 # Configure logging
 logging.basicConfig(
@@ -73,32 +73,31 @@ class MySQLAuthManager:
         
         # Hash the password
         hashed_password = self._hash_password(password)
-       
             
         # If level names are not provided, get them from translation
         if not level_name_en or not level_name_zh:
             # Save current language
             current_lang = get_current_language()
             
+            # Default level value
+            default_level = "basic"
+            
             # Get English level name
             if not level_name_en:
                 set_language("en")
-                level_name_en = t(level)
+                level_name_en = t(default_level)
             
             # Get Chinese level name
             if not level_name_zh:
                 set_language("zh-tw")
-                level_name_zh = t('level')
+                level_name_zh = t(default_level)
             
             # Restore original language
             set_language(current_lang)
         
-        
         # Prepare the SQL query based on existing columns
-        columns = ["uid", "email","display_name_en","display_name_zh", "password", "level_name_en", "level_name_zh"]
-        values = [user_id, email, display_name_en,display_name_zh, hashed_password, level_name_en, level_name_zh]
-        
-       
+        columns = ["uid", "email", "display_name_en", "display_name_zh", "password", "level_name_en", "level_name_zh"]
+        values = [user_id, email, display_name_en, display_name_zh, hashed_password, level_name_en, level_name_zh]
         
         # Create the SQL query
         columns_str = ", ".join(columns)
@@ -131,9 +130,13 @@ class MySQLAuthManager:
         # Hash the password for comparison
         hashed_password = self._hash_password(password)
         
-        # Query the database for the user
+        # Get current language for field selection
+        current_lang = get_current_language()
+        
+        # Build query with proper multilingual fields
         query = """
-            SELECT uid, email, display_name, level 
+            SELECT uid, email, display_name_zh,
+            level_name_en, level_name_zh
             FROM users 
             WHERE email = %s AND password = %s
         """
@@ -141,21 +144,36 @@ class MySQLAuthManager:
         user = self.db.execute_query(query, (email, hashed_password), fetch_one=True)
         
         if user:
+            # Choose display name based on current language
+            display_name = user[f"display_name_{current_lang}"] if current_lang in ["en", "zh-tw"] and user.get(f"display_name_{current_lang}") else user.get("display_name_en", "")
+            
+            # Choose level name based on current language
+            level_name = user[f"level_name_{current_lang}"] if current_lang in ["en", "zh-tw"] and user.get(f"level_name_{current_lang}") else user.get("level_name_en", "basic")
+            
             logger.debug(f"User authenticated: {email}")
             return {
                 "success": True,
                 "user_id": user["uid"],
                 "email": user["email"],
-                "display_name": user["display_name"],
-                "level": user["level"]
+                "display_name": display_name,
+                "display_name_en": user.get("display_name_en"),
+                "display_name_zh": user.get("display_name_zh"),
+                "level": level_name,
+                "level_name_en": user.get("level_name_en"),
+                "level_name_zh": user.get("level_name_zh")
             }
         
         return {"success": False, "error": "Invalid email or password"}
     
     def get_user_profile(self, user_id: str) -> Dict[str, Any]:
-        """Get a user's profile."""
+        """Get a user's profile with multilingual support."""
+        # Get current language for field selection
+        current_lang = get_current_language()
+        
         query = """
-            SELECT uid, email, display_name, level, reviews_completed, score 
+            SELECT uid, email, display_name_en, display_name_zh,
+            level_name_en, level_name_zh,
+            reviews_completed, score, total_points 
             FROM users 
             WHERE uid = %s
         """
@@ -163,14 +181,21 @@ class MySQLAuthManager:
         user = self.db.execute_query(query, (user_id,), fetch_one=True)
         
         if user:
+            # Choose display name based on current language
+            display_name = user[f"display_name_{current_lang}"] if current_lang in ["en", "zh-tw"] and user.get(f"display_name_{current_lang}") else user.get("display_name_en", "")
+            
+            # Choose level name based on current language
+            level_name = user[f"level_name_{current_lang}"] if current_lang in ["en", "zh-tw"] and user.get(f"level_name_{current_lang}") else user.get("level_name_en", "basic")
+            
             return {
                 "success": True,
                 "user_id": user["uid"],
                 "email": user["email"],
-                "display_name": user["display_name"],
-                "level": user["level"],
+                "display_name": display_name,
+                "level": level_name,
                 "reviews_completed": user["reviews_completed"],
-                "score": user.get("score", 0)
+                "score": user.get("score", 0),
+                "total_points": user.get("total_points", 0)
             }
         
         return {"success": False, "error": "User not found"}
@@ -179,7 +204,8 @@ class MySQLAuthManager:
         """Update a user's profile."""
         # Ensure we don't update sensitive fields
         safe_updates = {k: v for k, v in updates.items() if k in [
-            "display_name", "level", "reviews_completed"
+            "display_name_en", "display_name_zh", 
+            "level_name_en", "level_name_zh", "reviews_completed"
         ]}
         
         if not safe_updates:
@@ -211,7 +237,8 @@ class MySQLAuthManager:
     
     def update_review_stats(self, user_id: str, accuracy: float, score: int = 0) -> Dict[str, Any]:
         """
-        Update a user's review statistics with score and automatically upgrade user level based on score. Now also updates badges and point rewards.
+        Update a user's review statistics with score and automatically upgrade user level based on score.
+        Now also updates badges and point rewards.
             
         Args:
             user_id: The user's ID
@@ -228,7 +255,7 @@ class MySQLAuthManager:
         
         # Get current stats
         query = """
-            SELECT reviews_completed, score, level 
+            SELECT reviews_completed, score, level_name_en, level_name_zh 
             FROM users 
             WHERE uid = %s
         """
@@ -240,38 +267,44 @@ class MySQLAuthManager:
             logger.error(f"User {user_id} not found in database")
             return {"success": False, "error": "User not found"}
         
-       
         # Calculate new stats
         current_reviews = result["reviews_completed"]
         current_score = result.get("score", 0)
-        current_level = result.get("level", "basic")
+        current_level_en = result.get("level_name_en", "basic")  # Default to basic if not set
+        current_level_zh = result.get("level_name_zh", "基礎")   # Default to Chinese equivalent of basic
         
         new_reviews = current_reviews + 1
         new_score = current_score + score
         
-        
         # Determine if level upgrade is needed based on new score
-        new_level = current_level
-        if new_score > 200 and current_level != "senior":
-            new_level = "senior"
-        elif new_score > 100 and new_score <= 200 and current_level == "basic":
-            new_level = "medium"
+        new_level_en = current_level_en
+        new_level_zh = current_level_zh
+        
+        if new_score > 200:
+            # Senior level
+            if current_level_en != "Senior" and current_level_en != "senior":
+                new_level_en = "Senior"
+                new_level_zh = "高級"
+        elif new_score > 100 and (current_level_en == "Basic" or current_level_en == "basic"):
+            # Medium level
+            new_level_en = "Medium"
+            new_level_zh = "中級"
         
         # Only update level if it changed
-        level_changed = new_level != current_level
+        level_changed = (new_level_en != current_level_en)
         
         # Update the database
         if level_changed:
             update_query = """
                 UPDATE users 
-                SET reviews_completed = %s, score = %s, level = %s 
+                SET reviews_completed = %s, score = %s, 
+                level_name_en = %s, level_name_zh = %s 
                 WHERE uid = %s
             """
             
-            
             affected_rows = self.db.execute_query(
                 update_query, 
-                (new_reviews, new_score, new_level, user_id)
+                (new_reviews, new_score, new_level_en, new_level_zh, user_id)
             )
         else:
             update_query = """
@@ -280,12 +313,10 @@ class MySQLAuthManager:
                 WHERE uid = %s
             """
             
-            
             affected_rows = self.db.execute_query(
                 update_query, 
                 (new_reviews, new_score, user_id)
             )
-        
         
         if affected_rows is not None and affected_rows >= 0:
             result = {
@@ -297,8 +328,8 @@ class MySQLAuthManager:
             # Add level information if it changed
             if level_changed:
                 result["level_changed"] = True
-                result["old_level"] = current_level
-                result["new_level"] = new_level
+                result["old_level"] = current_level_en
+                result["new_level"] = new_level_en
             
             # Initialize badge manager
             badge_manager = BadgeManager()
@@ -328,9 +359,14 @@ class MySQLAuthManager:
             return {"success": False, "error": "Error updating review stats"}
     
     def get_all_users(self) -> List[Dict[str, Any]]:
-        """Get a list of all users."""
+        """Get a list of all users with proper language support."""
+        # Get current language for field selection
+        current_lang = get_current_language()
+        
         query = """
-            SELECT uid, email, display_name, level, created_at, reviews_completed
+            SELECT uid, email, display_name_en, display_name_zh,
+            level_name_en, level_name_zh,
+            created_at, reviews_completed, total_points
             FROM users
         """
         
@@ -339,8 +375,17 @@ class MySQLAuthManager:
         if users is None:
             return []
         
-        # Rename uid to user_id for consistency with the rest of the app
+        # Process each user to select language-appropriate fields
         for user in users:
+            # Choose display name based on current language
+            display_name = user.get(f"display_name_{current_lang}") if current_lang in ["en", "zh-tw"] else user.get("display_name_en", "")
+            user["display_name"] = display_name
+            
+            # Choose level based on current language
+            level_name = user.get(f"level_name_{current_lang}") if current_lang in ["en", "zh-tw"] else user.get("level_name_en", "Basic")
+            user["level"] = level_name
+            
+            # Rename uid to user_id for consistency with the rest of the app
             user["user_id"] = user.pop("uid")
         
         return users

@@ -9,6 +9,15 @@ def update_database_schema():
     """Apply schema updates to support multilingual fields and add badge and statistics support."""
     db = MySQLConnection()
 
+    # Check if columns exist in users table
+    check_column_exists = """
+    SELECT COUNT(*) as column_exists 
+    FROM information_schema.columns 
+    WHERE table_schema = DATABASE() 
+    AND table_name = %s 
+    AND column_name = %s
+    """
+    
     # Create users table with multilingual support if it doesn't exist
     users_table = """
     CREATE TABLE IF NOT EXISTS users (
@@ -121,14 +130,7 @@ def update_database_schema():
     )
     """
     
-    # Check if columns exist in users table
-    check_column_exists = """
-    SELECT COUNT(*) as column_exists 
-    FROM information_schema.columns 
-    WHERE table_schema = DATABASE() 
-    AND table_name = %s 
-    AND column_name = %s
-    """
+    
     # Add multilingual fields to users table
 
     users_multilingual_update = """

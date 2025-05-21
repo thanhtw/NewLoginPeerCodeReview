@@ -450,7 +450,8 @@ translations = {
     "english_name": "English Name",
     "chinese_name": "Chinese Name", 
     "registration_success": "Registration successful!",
-    "login_success": "Login successful!"
+    "login_success": "Login successful!",
+    "login_to_see":"Login to view the leaderboard!"
 
 
 }
