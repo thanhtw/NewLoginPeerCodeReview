@@ -135,7 +135,7 @@ class MySQLAuthManager:
         
         # Build query with proper multilingual fields
         query = """
-            SELECT uid, email, display_name_zh,
+            SELECT uid, email, display_name_zh, reviews_completed, score,
             level_name_en, level_name_zh
             FROM users 
             WHERE email = %s AND password = %s
@@ -160,7 +160,9 @@ class MySQLAuthManager:
                 "display_name_zh": user.get("display_name_zh"),
                 "level": level_name,
                 "level_name_en": user.get("level_name_en"),
-                "level_name_zh": user.get("level_name_zh")
+                "level_name_zh": user.get("level_name_zh"),
+                "reviews_completed": user.get("reviews_completed"),
+                "score": user.get("score")
             }
         
         return {"success": False, "error": "Invalid email or password"}

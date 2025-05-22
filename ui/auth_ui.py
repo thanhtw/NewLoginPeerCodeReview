@@ -80,7 +80,7 @@ class AuthUI:
                 else:
                     # Authenticate user
                     result = self.auth_manager.authenticate_user(email, password)
-                    
+                    print("result: ", result)
                     if result.get("success", False):
                         # Set authenticated state
                         st.session_state.auth["is_authenticated"] = True
@@ -90,7 +90,9 @@ class AuthUI:
                             "display_name_zh": result.get("display_name_zh"),
                             "email": result.get("email"),
                             "level_name_en": result.get("level_name_en"),
-                            "level_name_zh": result.get("level_name_zh")
+                            "level_name_zh": result.get("level_name_zh"),
+                            "reviews_completed": result.get("reviews_completed"),
+                            "score": result.get("score")
                         }                     
                         st.success(t("login_success"))
                         
@@ -215,7 +217,7 @@ class AuthUI:
                 
         # Get user info
         user_info = st.session_state.auth.get("user_info", {})
-        
+        print("user_info: ", user_info)
         # Get current language
         current_lang = get_current_language()
         
@@ -226,6 +228,8 @@ class AuthUI:
         # Fallback to standard fields if multilingual ones are not available
         display_name = user_info.get(display_name_field, user_info.get("display_name", "User"))
         level = user_info.get(level_field, user_info.get("level", "basic")).capitalize()
+        reviews_completed = user_info.get("reviews_completed", 0)
+        score = user_info.get("score", 0)
         
         st.sidebar.markdown(f"""
         <div class="profile-container">
@@ -233,6 +237,14 @@ class AuthUI:
             <div class="profile-item">
                 <span class="profile-label">{t("level")}:</span>
                 <span class="profile-value">{level}</span>
+            </div>
+            <div class="profile-item">
+                <span class="profile-label">{t("review_times")}:</span>
+                <span class="profile-value">{reviews_completed}</span>
+            </div>
+            <div class="profile-item">
+                <span class="profile-label">{t("score")}:</span>
+                <span class="profile-value">{score}</span>
             </div>
         """, unsafe_allow_html=True)
         
@@ -304,9 +316,6 @@ class AuthUI:
             return None
         
         user_id = st.session_state.auth.get("user_id")
-        # Skip database query for demo users
-        if user_id == "demo-user":
-            return st.session_state.auth.get("user_info", {}).get("level", "basic")
             
         try:
             # Query the database for the latest user info

@@ -358,28 +358,37 @@ class ErrorSelectorUI:
     
     def get_code_params_for_level(self, user_level: str = None) -> Dict[str, str]:
         """
-        Get code generation parameters automatically based on user level
-        without displaying UI controls.
+        Get code generation parameters based on user level stored in session state.
+        
+        Args:
+            user_level: Fallback user level if not found in session state
+            
+        Returns:
+            Dictionary with difficulty_level and code_length parameters
         """
-        # Normalize the user level to lowercase and default to medium if None
-        normalized_level = user_level.lower() if user_level else "medium"
+        # First check if user level is in session state
+        level_from_session = st.session_state.get("user_level", None)
+        # Use session state level if available, otherwise use the provided parameter
+        normalized_level = level_from_session.lower() if level_from_session else (
+            user_level.lower() if user_level else "medium"
+        )
         
         # Set appropriate difficulty based on normalized user level
         difficulty_mapping = {
-            "basic": f"{t('easy')}",
-            "medium": f"{t('medium')}",
-            "senior": f"{t('hard')}"
+            t("basic"): f"{t('easy')}",
+            t("medium"): f"{t('medium')}",
+            t("senior"): f"{t('hard')}"
         }
-        difficulty_level = difficulty_mapping.get(normalized_level, "medium")
+        difficulty_level = difficulty_mapping.get(normalized_level, f"{t('medium')}")
         
         # Set code length based on difficulty
         length_mapping = {
-           f"{t('easy')}": f"{t('short')}",
-           f"{t('medium')}": f"{t('medium')}",
-           f"{t('hard')}": f"{t('long')}"
+        f"{t('easy')}": f"{t('short')}",
+        f"{t('medium')}": f"{t('medium')}",
+        f"{t('hard')}": f"{t('long')}"
         }
-        code_length = length_mapping.get(difficulty_level, "medium")
-       
+        code_length = length_mapping.get(difficulty_level, f"{t('medium')}")
+    
         # Update session state for consistency
         st.session_state.difficulty_level = difficulty_level.capitalize()
         st.session_state.code_length = code_length.capitalize()
@@ -971,7 +980,14 @@ class CodeGeneratorUI:
         Args:
             user_level: Optional user level from authentication (basic, medium, senior)
         """
-        render_generate_tab(self.workflow, self.error_selector, self.code_display_ui, user_level)
+        # Check if tutorial needs to be shown
+        if not st.session_state.get("tutorial_completed", False):
+            from ui.tutorial_animation import CodeReviewTutorial
+            tutorial = CodeReviewTutorial()
+            tutorial.render(on_complete=lambda: render_generate_tab(self.workflow, self.error_selector, self.code_display_ui, user_level))
+        else:
+            # Render the standard generation tab
+            render_generate_tab(self.workflow, self.error_selector, self.code_display_ui, user_level)
     
     def generate_code(self, params, error_selection_mode, selected_categories, selected_specific_errors=None):
         """

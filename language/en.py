@@ -451,7 +451,60 @@ translations = {
     "chinese_name": "Chinese Name", 
     "registration_success": "Registration successful!",
     "login_success": "Login successful!",
-    "login_to_see":"Login to view the leaderboard!"
+    "login_to_see":"Login to view the leaderboard!",
+
+    # Add to the translations dictionary
+    "Java Code Review Tutorial": "Java Code Review Tutorial",
+    "Welcome to the Java Code Review Training System! This tutorial will guide you through the process of reviewing code for errors.": "Welcome to the Java Code Review Training System! This tutorial will guide you through the process of reviewing code for errors.",
+    "In this system, you'll be presented with Java code snippets that contain intentional errors. Your task is to identify these errors and provide detailed feedback.": "In this system, you'll be presented with Java code snippets that contain intentional errors. Your task is to identify these errors and provide detailed feedback.",
+    "Here's a sample Java code snippet with several errors:": "Here's a sample Java code snippet with several errors:",
+    "This code contains several issues that need to be identified.": "This code contains several issues that need to be identified.",
+    "First, let's see an example of a POOR quality review:": "First, let's see an example of a POOR quality review:",
+    "Poor Quality Review": "Poor Quality Review",
+    "This review is not helpful because:": "This review is not helpful because:",
+    "It doesn't specify which issues exist": "It doesn't specify which issues exist",
+    "It doesn't point to specific line numbers": "It doesn't point to specific line numbers",
+    "It doesn't explain what's wrong and why": "It doesn't explain what's wrong and why",
+    "It doesn't suggest how to fix the issues": "It doesn't suggest how to fix the issues",
+    "Now, let's see an example of a GOOD quality review:": "Now, let's see an example of a GOOD quality review:",
+    "Good Quality Review": "Good Quality Review",
+    "This review is effective because:": "This review is effective because:",
+    "It identifies specific line numbers": "It identifies specific line numbers",
+    "It clearly explains what's wrong with each issue": "It clearly explains what's wrong with each issue",
+    "It explains why each issue is problematic": "It explains why each issue is problematic",
+    "It suggests how to fix each issue": "It suggests how to fix each issue",
+    "Now it's your turn! Try writing a review for one of the errors in the code:": "Now it's your turn! Try writing a review for one of the errors in the code:",
+    "Focus on this error": "Focus on this error",
+    "Write your review comment for this error:": "Write your review comment for this error:",
+    "Please write a more detailed review": "Please write a more detailed review",
+    "Great job! Your review looks good.": "Great job! Your review looks good.",
+    "Congratulations! You've completed the tutorial.": "Congratulations! You've completed the tutorial.",
+    "Remember these key principles for good code reviews:": "Remember these key principles for good code reviews:",
+    "Be specific about line numbers and issues": "Be specific about line numbers and issues",
+    "Explain what's wrong and why": "Explain what's wrong and why",
+    "Provide constructive suggestions": "Provide constructive suggestions",
+    "Be thorough and check different types of errors": "Be thorough and check different types of errors",
+    "Start Coding!": "Start Coding!",
+    "Next": "Next",
+    "Submit": "Submit", 
+
+    "missingImportError":"Missing import statements for List and ArrayList",
+    "offByOneError":"Off-by-one error in findUser loop (using <= instead of <)",
+    "stringComparisonError":"String comparison using == instead of equals()",
+    "nullCheckError1":"Missing null check before accessing userId parameter",
+    "validationError":"No validation in addUser method",
+    "nullCheckError2":"Missing null check before removing user",
+
+    "codeIssuesHeader":"There are some issues in the code",
+    "line1ImportError":"Line 1: Missing import statements for List and ArrayList. Import java.util.List and java.util.ArrayList.",
+    "line10LoopError":"Line 10: The for loop uses <= which will cause an ArrayIndexOutOfBoundsException. It should use < instead.",
+    "line12StringError":"Line 12: String comparison is done using == which compares references, not content. Use equals() method instead: if (user.getId().equals(userId))",
+    "line9NullError":"Line 9: There is no null check before accessing userId parameter, which could cause NullPointerException. Add a null check.",
+    "line6ValidationError":"Line 6: The addUser method doesn't validate the user parameter, which could allow invalid data. Add validation.",
+    "line17RemoveError":"Line 17: No null check before removing user, which could cause NullPointerException if user is not found. Add a null check."
+
+
+
 
 
 }
