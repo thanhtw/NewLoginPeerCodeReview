@@ -514,7 +514,22 @@ translations = {
     "please_use_format_line_description": "Please use the format 'Line X: description of problem' for each issue you identify.",
     "review_meaning_poor":"Your review needs more meaningful",
     "review_accuracy_poor": "Your review needs to be more accurate",
-    "faile_review":"Please revise your review and try again. Focus on explaining specific line numbers, what's wrong, and why it's problematic."
+    "faile_review":"Please revise your review and try again. Focus on explaining specific line numbers, what's wrong, and why it's problematic.",
+
+    # Tutorial related
+    "tutorial": "Tutorial",
+    "retake_tutorial": "🎓 Retake Tutorial",
+    "tutorial_reset": "Tutorial reset! Starting tutorial...",
+    "tutorial_completed_status": "Tutorial Completed",
+    "tutorial_not_completed": "Tutorial Not Completed",
+    "Evaluating your review with AI...": "Evaluating your review with AI...",
+    
+    # Error messages
+    "Error checking tutorial status": "Error checking tutorial status",
+    "Could not import AuthUI to mark tutorial completion": "Could not import AuthUI to mark tutorial completion",
+    "Tutorial completed! You earned the Tutorial Master badge! 🎓": "Tutorial completed! You earned the Tutorial Master badge! 🎓",
+    "Tutorial completed, but there was an issue saving your progress.": "Tutorial completed, but there was an issue saving your progress."
+
 
 
 

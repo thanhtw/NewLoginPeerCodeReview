@@ -33,11 +33,13 @@ def update_database_schema():
         score INT DEFAULT 0,
         last_activity DATE DEFAULT NULL,
         consecutive_days INT DEFAULT 0,
-        total_points INT DEFAULT 0
+        total_points INT DEFAULT 0,
+        tutorial_completed BOOLEAN DEFAULT FALSE
     )
     """
 
     db.execute_query(users_table)
+    
     # Check if columns exist before adding
     result = db.execute_query(check_column_exists, ('users', 'display_name_en'), fetch_one=True)
     has_display_name_en = result and result.get('column_exists', 0) > 0
@@ -71,6 +73,20 @@ def update_database_schema():
             logger.info("Multilingual columns added and populated in users table")
         except Exception as e:
             logger.error(f"Error adding multilingual columns to users table: {str(e)}")
+    
+    # Check and add tutorial_completed column if it doesn't exist
+    try:
+        result = db.execute_query(check_column_exists, ('users', 'tutorial_completed'), fetch_one=True)
+        has_tutorial_completed = result and result.get('column_exists', 0) > 0
+        
+        if not has_tutorial_completed:
+            logger.info("Adding tutorial_completed column to users table")
+            db.execute_query("ALTER TABLE users ADD COLUMN tutorial_completed BOOLEAN DEFAULT FALSE")
+            logger.info("Added tutorial_completed column to users table")
+        else:
+            logger.info("tutorial_completed column already exists in users table")
+    except Exception as e:
+        logger.error(f"Error adding tutorial_completed column: {str(e)}")
     
     # Create badges table with multilingual fields (if not exists)
     badges_table = """
@@ -327,6 +343,7 @@ def insert_default_badges(db):
         # Special badges
         ("full-spectrum", "Full Spectrum", "全方位", "Identified at least one error in each category", "在每個類別中至少識別一個錯誤", "🌈", "special", "hard", 75),
         ("rising-star", "Rising Star", "冉冉新星", "Earned 500 points in your first week", "在第一週內獲得 500 點", "⭐", "special", "hard", 100),
+        ("tutorial-master", "Tutorial Master", "教學大師", "Completed the interactive tutorial", "完成互動教學", "🎓", "tutorial", "easy", 25),
     ]
     
     # Insert each badge with error handling

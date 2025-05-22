@@ -41,7 +41,6 @@ from langgraph_workflow import JavaCodeReviewGraph
 # Import modularized UI functions
 from ui.main_ui import (
     init_session_state,
-    render_sidebar,
     render_llm_logs_tab,
     create_enhanced_tabs
 )
@@ -121,7 +120,7 @@ def main():
             return
 
     # Get user level and store in session state
-    user_level = auth_ui.get_user_level()    
+    user_level = auth_ui.get_user_level()   
     st.session_state.user_level = user_level
 
     # Check if we're performing a language change reset

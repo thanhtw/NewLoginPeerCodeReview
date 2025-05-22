@@ -368,6 +368,7 @@ class ErrorSelectorUI:
         """
         # First check if user level is in session state
         level_from_session = st.session_state.get("user_level", None)
+        print("level_from_session: ", level_from_session)
         # Use session state level if available, otherwise use the provided parameter
         normalized_level = level_from_session.lower() if level_from_session else (
             user_level.lower() if user_level else "medium"

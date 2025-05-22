@@ -537,7 +537,21 @@ translations = {
     "please_use_format_line_description": "請為每個您識別的問題使用「Line X: 問題描述」的格式。",
     "review_meaning_Poor":"你的評論需要更有意義的內容",
     "review_accuracy_poor": "你的評論需要更準確",
-    "faile_review":"請修改你的評論並重新嘗試。請著重說明具體的程式碼行號、錯誤內容以及其問題所在"
+    "faile_review":"請修改你的評論並重新嘗試。請著重說明具體的程式碼行號、錯誤內容以及其問題所在",
+
+     # Tutorial related
+    "tutorial": "教學",
+    "retake_tutorial": "🎓 重新開始教學",
+    "tutorial_reset": "教學已重置！開始教學...",
+    "tutorial_completed_status": "教學已完成",
+    "tutorial_not_completed": "教學未完成",
+    "Evaluating your review with AI...": "正在使用 AI 評估您的審查...",
+    
+    # Error messages
+    "Error checking tutorial status": "檢查教學狀態時發生錯誤",
+    "Could not import AuthUI to mark tutorial completion": "無法導入 AuthUI 來標記教學完成",
+    "Tutorial completed! You earned the Tutorial Master badge! 🎓": "教學完成！您獲得了教學大師徽章！🎓",
+    "Tutorial completed, but there was an issue saving your progress.": "教學完成，但保存進度時出現問題。"
 
 
 }

@@ -18,15 +18,11 @@ class CodeReviewTutorial:
     """
     Interactive tutorial that demonstrates the code review process with
     examples of poor and good quality reviews.
-    Now includes LLM-based evaluation of user reviews.
+    Now includes LLM-based evaluation of user reviews and database tracking.
     """
     
     def __init__(self):
         """Initialize the tutorial component."""
-        # Check if tutorial has been completed
-        if "tutorial_completed" not in st.session_state:
-            st.session_state.tutorial_completed = False
-        
         # Initialize LLM components for evaluation
         self._initialize_llm_components()
         
@@ -271,6 +267,74 @@ class CodeReviewTutorial:
                 "accuracy_score": 0.0
             }
     
+    def _check_tutorial_completion_status(self) -> bool:
+        """
+        Check if the user has completed the tutorial from the database.
+        
+        Returns:
+            bool: True if tutorial is completed, False otherwise
+        """
+        # Check if user is authenticated
+        if not st.session_state.get("auth", {}).get("is_authenticated", False):
+            return False
+            
+        # Check session state first for performance
+        if st.session_state.get("tutorial_completed", False):
+            return True
+            
+        # Get user info from session
+        user_info = st.session_state.get("auth", {}).get("user_info", {})
+        tutorial_completed = user_info.get("tutorial_completed", False)
+        
+        # If we have the info in session, use it
+        if tutorial_completed:
+            st.session_state.tutorial_completed = True
+            return True
+            
+        return False
+    
+    def _mark_tutorial_completed(self) -> bool:
+        """
+        Mark the tutorial as completed in the database.
+        
+        Returns:
+            bool: True if successfully marked, False otherwise
+        """
+        # Check if AuthUI is available
+        if hasattr(st.session_state, 'auth_ui') and st.session_state.auth_ui:
+            auth_ui = st.session_state.auth_ui
+        else:
+            # Try to get from main app
+            try:
+                from ui.auth_ui import AuthUI
+                auth_ui = AuthUI()
+            except ImportError:
+                logger.error("Could not import AuthUI to mark tutorial completion")
+                return False
+        
+        # Mark tutorial as completed
+        success = auth_ui.mark_tutorial_completed()
+        
+        if success:
+            # Update session state
+            st.session_state.tutorial_completed = True
+            logger.debug("Tutorial marked as completed successfully")
+            
+            # Award tutorial completion badge if available
+            try:
+                from auth.badge_manager import BadgeManager
+                badge_manager = BadgeManager()
+                user_id = st.session_state.get("auth", {}).get("user_id")
+                if user_id:
+                    badge_manager.award_badge(user_id, "tutorial-master")
+                    logger.debug("Awarded tutorial-master badge")
+            except ImportError:
+                logger.debug("Badge manager not available for tutorial completion")
+            except Exception as e:
+                logger.error(f"Error awarding tutorial badge: {str(e)}")
+        
+        return success
+    
     def render(self, on_complete: Callable = None):
         """
         Render the interactive tutorial.
@@ -278,8 +342,12 @@ class CodeReviewTutorial:
         Args:
             on_complete: Callback function to run when tutorial is completed
         """
-        if st.session_state.tutorial_completed:
-            # Skip if already completed
+        # Check if tutorial should be shown
+        tutorial_completed = self._check_tutorial_completion_status()
+        
+        # If tutorial is completed and not being retaken, skip it
+        if tutorial_completed and not st.session_state.get("tutorial_retake", False):
+            st.session_state.tutorial_completed = True
             if on_complete:
                 on_complete()
             return
@@ -368,13 +436,6 @@ class CodeReviewTutorial:
             
             st.markdown(f"**{t('Focus on this error')}:** {focus_error}")
             
-            # # Show evaluation criteria
-            # st.markdown(f"""
-            # **Evaluation Criteria:**
-            # - Meaningfulness Score: ≥ {self.meaningful_threshold} (How well you explain WHY it's a problem)
-            # - Accuracy Score: ≥ {self.accuracy_threshold} (How correctly you identify the issue and location)
-            # """)
-            
             user_review = st.text_area(t("Write your review comment for this error:"), height=100, key="tutorial_review")
             
             # Show previous evaluation result if available
@@ -384,23 +445,13 @@ class CodeReviewTutorial:
                     st.success(eval_result["feedback"])
                 else:
                     st.warning(eval_result["feedback"])
-                    
-                # # Show detailed scores
-                # if "meaningful_score" in eval_result and "accuracy_score" in eval_result:
-                #     col1, col2 = st.columns(2)
-                #     with col1:
-                #         st.metric("Meaningfulness Score", f"{eval_result['meaningful_score']:.2f}", 
-                #                 delta=f"Required: {self.meaningful_threshold}")
-                #     with col2:
-                #         st.metric("Accuracy Score", f"{eval_result['accuracy_score']:.2f}", 
-                #                 delta=f"Required: {self.accuracy_threshold}")
-            
+                            
             if st.button(t("Submit"), key="practice_submit"):
                 if len(user_review.strip()) < 10:
                     st.warning(t("Please write a more detailed review"))
                 else:
                     # Show evaluation progress
-                    with st.spinner("Evaluating your review with AI..."):
+                    with st.spinner(t("Evaluating your review with AI...")):
                         # Evaluate the user's review using LLM
                         evaluation_result = self._evaluate_user_review(user_review)
                         
@@ -413,7 +464,6 @@ class CodeReviewTutorial:
                             st.session_state.tutorial_step = 5
                             st.rerun()
                         else:
-                            #st.warning(evaluation_result["feedback"])
                             st.info(f"{t('faile_review')}")
                             
         # Step 6: Complete
@@ -426,7 +476,21 @@ class CodeReviewTutorial:
             st.markdown("4. " + t("Be thorough and check different types of errors"))
             
             if st.button(t("Start Coding!"), key="complete_button"):
-                st.session_state.tutorial_completed = True
+                # Mark tutorial as completed in database
+                tutorial_marked = self._mark_tutorial_completed()
+                
+                if tutorial_marked:
+                    st.session_state.tutorial_completed = True
+                    st.success(t("Tutorial completed! You earned the Tutorial Master badge! 🎓"))
+                else:
+                    st.warning(t("Tutorial completed, but there was an issue saving your progress."))
+                    # Still mark as completed in session
+                    st.session_state.tutorial_completed = True
+                
+                # Clear tutorial retake flag if it was set
+                if "tutorial_retake" in st.session_state:
+                    del st.session_state["tutorial_retake"]
+                
                 if on_complete:
                     on_complete()
                 st.rerun()

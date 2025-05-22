@@ -91,7 +91,8 @@ class AuthUI:
                             "level_name_en": result.get("level_name_en"),
                             "level_name_zh": result.get("level_name_zh"),
                             "reviews_completed": result.get("reviews_completed"),
-                            "score": result.get("score")
+                            "score": result.get("score"),
+                            "tutorial_completed": result.get("tutorial_completed", False)
                         }                     
                         st.success(t("login_success"))
                         
@@ -194,7 +195,8 @@ class AuthUI:
                             "email": result.get("email"),
                             "level": result.get("level", "basic"),
                             "level_name_en": result.get("level_name_en"),
-                            "level_name_zh": result.get("level_name_zh")
+                            "level_name_zh": result.get("level_name_zh"),
+                            "tutorial_completed": False  # New users haven't completed tutorial
                         }                     
                         st.success(t("registration_success"))
                         
@@ -245,6 +247,35 @@ class AuthUI:
                 <span class="profile-value">{score}</span>
             </div>
         """, unsafe_allow_html=True)
+
+        # # Add tutorial retake button
+        # st.sidebar.markdown("---")
+        # st.sidebar.subheader(t("tutorial"))
+        
+        # Show tutorial completion status
+        # tutorial_completed = user_info.get("tutorial_completed", False)
+        # if tutorial_completed:
+        #     st.sidebar.success(f"✅ {t('tutorial_completed_status') or 'Tutorial Completed'}")
+        # else:
+        #     st.sidebar.info(f"ℹ️ {t('tutorial_not_completed') or 'Tutorial Not Completed'}")
+        
+        # if st.sidebar.button(t("retake_tutorial") or "🎓 Retake Tutorial", use_container_width=True):
+        #     # Reset tutorial completion status in session
+        #     st.session_state.tutorial_completed = False
+        #     st.session_state.tutorial_retake = True  # Add flag to indicate retaking
+            
+        #     # Clear tutorial-related session states
+        #     tutorial_keys = ["tutorial_step", "tutorial_evaluation", "tutorial_focus_error"]
+        #     for key in tutorial_keys:
+        #         if key in st.session_state:
+        #             del st.session_state[key]
+            
+        #     # Force navigation to generation tab to trigger tutorial
+        #     st.session_state.active_tab = 0
+        #     st.success(t("tutorial_reset") or "Tutorial reset! Starting tutorial...")
+        #     st.rerun()
+        
+        st.sidebar.markdown('</div>', unsafe_allow_html=True)
         
         # Application info
         st.sidebar.subheader(t("about"))
@@ -317,10 +348,12 @@ class AuthUI:
             
         try:
             # Query the database for the latest user info
-            profile = self.auth_manager.get_user_profile(user_id)
+            profile = self.auth_manager.get_user_profile(user_id)           
+            current_language = get_current_language()
+            
             if profile.get("success", False):
                 # Update the session state with the latest level
-                level = profile.get("level", "basic")
+                level = profile.get("level_name_"+ current_language, "basic")
                 st.session_state.auth["user_info"]["level"] = level
                 return level
             else:
@@ -330,6 +363,66 @@ class AuthUI:
             logger.error(f"Error getting user level from database: {str(e)}")
             # Fallback to session state
             return st.session_state.auth.get("user_info", {}).get("level", "basic")
+    
+    def has_completed_tutorial(self) -> bool:
+        """
+        Check if the user has completed the tutorial.
+        
+        Returns:
+            bool: True if user has completed tutorial, False otherwise
+        """
+        if not self.is_authenticated():
+            return False
+            
+        # First check session state
+        user_info = st.session_state.auth.get("user_info", {})
+        tutorial_completed = user_info.get("tutorial_completed", False)
+        
+        # If not completed in session, check database
+        if not tutorial_completed:
+            user_id = st.session_state.auth.get("user_id")
+            if user_id:
+                try:
+                    profile = self.auth_manager.get_user_profile(user_id)
+                    if profile.get("success", False):
+                        tutorial_completed = profile.get("tutorial_completed", False)
+                        # Update session state
+                        st.session_state.auth["user_info"]["tutorial_completed"] = tutorial_completed
+                except Exception as e:
+                    logger.error(f"Error checking tutorial completion status: {str(e)}")
+        
+        return tutorial_completed
+    
+    def mark_tutorial_completed(self) -> bool:
+        """
+        Mark the tutorial as completed for the current user.
+        
+        Returns:
+            bool: True if successfully updated, False otherwise
+        """
+        if not self.is_authenticated():
+            return False
+            
+        user_id = st.session_state.auth.get("user_id")
+        if not user_id:
+            return False
+            
+        try:
+            # Update database
+            result = self.auth_manager.update_tutorial_completion(user_id, True)
+            
+            if result.get("success", False):
+                # Update session state
+                st.session_state.auth["user_info"]["tutorial_completed"] = True
+                logger.debug(f"Marked tutorial as completed for user {user_id}")
+                return True
+            else:
+                logger.error(f"Failed to update tutorial completion: {result.get('error', 'Unknown error')}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Error marking tutorial as completed: {str(e)}")
+            return False
         
     def _get_multilingual_level_names(self, level: str) -> Tuple[str, str]:
         """

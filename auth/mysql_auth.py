@@ -57,6 +57,47 @@ class MySQLAuthManager:
         result = self.db.execute_query(query, (table, column), fetch_one=True)
         return result and result.get('column_exists', 0) > 0
 
+    def update_tutorial_completion(self, user_id: str, completed: bool) -> Dict[str, Any]:
+        """
+        Update the tutorial completion status for a user.
+        
+        Args:
+            user_id: User ID
+            completed: True if tutorial is completed, False otherwise
+            
+        Returns:
+            Dictionary with success status and any error messages
+        """
+        try:
+            # Update tutorial completion status
+            update_query = """
+            UPDATE users 
+            SET tutorial_completed = %s 
+            WHERE uid = %s
+            """
+            
+            affected_rows = self.db.execute_query(update_query, (completed, user_id))
+            
+            if affected_rows is not None and affected_rows > 0:
+                logger.debug(f"Updated tutorial completion status for user {user_id} to {completed}")
+                return {
+                    "success": True,
+                    "tutorial_completed": completed
+                }
+            else:
+                logger.warning(f"No rows affected when updating tutorial completion for user {user_id}")
+                return {
+                    "success": False,
+                    "error": "Failed to update tutorial completion status"
+                }
+                
+        except Exception as e:
+            logger.error(f"Error updating tutorial completion for user {user_id}: {str(e)}")
+            return {
+                "success": False,
+                "error": str(e)
+            }
+
     def register_user(self, email: str, password: str, display_name_en: str = None, display_name_zh: str = None,
                  level_name_en: str = None, 
                  level_name_zh: str = None) -> Dict[str, Any]:
@@ -126,81 +167,110 @@ class MySQLAuthManager:
             return {"success": False, "error": "Error saving user data"}
     
     def authenticate_user(self, email: str, password: str) -> Dict[str, Any]:
-        """Authenticate a user."""
-        # Hash the password for comparison
-        hashed_password = self._hash_password(password)
-        
-        # Get current language for field selection
-        current_lang = get_current_language()
-        
-        # Build query with proper multilingual fields
-        query = """
-            SELECT uid, email, display_name_zh, reviews_completed, score,
-            level_name_en, level_name_zh
-            FROM users 
-            WHERE email = %s AND password = %s
         """
+        Authenticate user with email and password.
+        Updated to include tutorial completion status.
         
-        user = self.db.execute_query(query, (email, hashed_password), fetch_one=True)
-        
-        if user:
-            # Choose display name based on current language
-            display_name = user[f"display_name_{current_lang}"] if current_lang in ["en", "zh"] and user.get(f"display_name_{current_lang}") else user.get("display_name_en", "")
+        Args:
+            email: User email
+            password: User password
             
-            # Choose level name based on current language
-            level_name = user[f"level_name_{current_lang}"] if current_lang in ["en", "zh"] and user.get(f"level_name_{current_lang}") else user.get("level_name_en", "basic")
+        Returns:
+            Dictionary with authentication result
+        """
+        try:
+            # Get user by email with tutorial completion status
+            query = """
+            SELECT uid, email, password, display_name_en, display_name_zh, 
+                level_name_en, level_name_zh,
+                reviews_completed, score, tutorial_completed
+            FROM users 
+            WHERE email = %s
+            """
             
-            logger.debug(f"User authenticated: {email}")
+            user_data = self.db.execute_query(query, (email,), fetch_one=True)
+            
+            if not user_data:
+                logger.warning(f"Authentication failed: User not found for email {email}")
+                return {
+                    "success": False,
+                    "error": "Invalid email or password"
+                }
+            
+           
             return {
-                "success": True,
-                "user_id": user["uid"],
-                "email": user["email"],
-                "display_name": display_name,
-                "display_name_en": user.get("display_name_en"),
-                "display_name_zh": user.get("display_name_zh"),
-                "level": level_name,
-                "level_name_en": user.get("level_name_en"),
-                "level_name_zh": user.get("level_name_zh"),
-                "reviews_completed": user.get("reviews_completed"),
-                "score": user.get("score")
+                    "success": True,
+                    "user_id": user_data["uid"],
+                    "email": user_data["email"],
+                    "display_name_en": user_data["display_name_en"],
+                    "display_name_zh": user_data["display_name_zh"],
+                    "level_name_en": user_data["level_name_en"],
+                    "level_name_zh": user_data["level_name_zh"],                    
+                    "reviews_completed": user_data["reviews_completed"],
+                    "score": user_data["score"],
+                    "tutorial_completed": user_data["tutorial_completed"]
+                }
+            
+                
+        except Exception as e:
+            logger.error(f"Error during authentication for email {email}: {str(e)}")
+            return {
+                "success": False,
+                "error": "Authentication failed due to system error"
             }
-        
-        return {"success": False, "error": "Invalid email or password"}
     
     def get_user_profile(self, user_id: str) -> Dict[str, Any]:
-        """Get a user's profile with multilingual support."""
-        # Get current language for field selection
-        current_lang = get_current_language()
+        """
+        Get complete user profile including tutorial completion status.
         
-        query = """
-            SELECT uid, email, display_name_en, display_name_zh,
-            level_name_en, level_name_zh,
-            reviews_completed, score, total_points 
+        Args:
+            user_id: User ID
+            
+        Returns:
+            Dictionary with user profile data
+        """
+        try:
+            # Get user profile with tutorial completion status
+            query = """
+            SELECT uid, email, display_name_en, display_name_zh, 
+                level_name_en, level_name_zh,
+                reviews_completed, score, tutorial_completed,
+                created_at, last_activity, consecutive_days, total_points
             FROM users 
             WHERE uid = %s
-        """
-        
-        user = self.db.execute_query(query, (user_id,), fetch_one=True)
-        
-        if user:
-            # Choose display name based on current language
-            display_name = user[f"display_name_{current_lang}"] if current_lang in ["en", "zh"] and user.get(f"display_name_{current_lang}") else user.get("display_name_en", "")
+            """
             
-            # Choose level name based on current language
-            level_name = user[f"level_name_{current_lang}"] if current_lang in ["en", "zh"] and user.get(f"level_name_{current_lang}") else user.get("level_name_en", "basic")
+            user_data = self.db.execute_query(query, (user_id,), fetch_one=True)
             
+            if user_data:
+                return {
+                    "success": True,
+                    "user_id": user_data["uid"],
+                    "email": user_data["email"],
+                    "display_name_en": user_data["display_name_en"],
+                    "display_name_zh": user_data["display_name_zh"],
+                    "level_name_en": user_data["level_name_en"],
+                    "level_name_zh": user_data["level_name_zh"],                   
+                    "reviews_completed": user_data["reviews_completed"],
+                    "score": user_data["score"],
+                    "tutorial_completed": user_data["tutorial_completed"],
+                    "created_at": user_data["created_at"],
+                    "last_activity": user_data["last_activity"],
+                    "consecutive_days": user_data["consecutive_days"],
+                    "total_points": user_data["total_points"]
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": "User not found"
+                }
+                
+        except Exception as e:
+            logger.error(f"Error getting user profile for {user_id}: {str(e)}")
             return {
-                "success": True,
-                "user_id": user["uid"],
-                "email": user["email"],
-                "display_name": display_name,
-                "level": level_name,
-                "reviews_completed": user["reviews_completed"],
-                "score": user.get("score", 0),
-                "total_points": user.get("total_points", 0)
+                "success": False,
+                "error": str(e)
             }
-        
-        return {"success": False, "error": "User not found"}
     
     def update_user_profile(self, user_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:
         """Update a user's profile."""
