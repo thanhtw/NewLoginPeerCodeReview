@@ -455,6 +455,7 @@ translations = {
 
     # Add to the translations dictionary
     "Java Code Review Tutorial": "Java Code Review Tutorial",
+    "1stPractice": "Your First Practice with Code Review in Our System",
     "Welcome to the Java Code Review Training System! This tutorial will guide you through the process of reviewing code for errors.": "Welcome to the Java Code Review Training System! This tutorial will guide you through the process of reviewing code for errors.",
     "In this system, you'll be presented with Java code snippets that contain intentional errors. Your task is to identify these errors and provide detailed feedback.": "In this system, you'll be presented with Java code snippets that contain intentional errors. Your task is to identify these errors and provide detailed feedback.",
     "Here's a sample Java code snippet with several errors:": "Here's a sample Java code snippet with several errors:",
@@ -501,7 +502,19 @@ translations = {
     "line12StringError":"Line 12: String comparison is done using == which compares references, not content. Use equals() method instead: if (user.getId().equals(userId))",
     "line9NullError":"Line 9: There is no null check before accessing userId parameter, which could cause NullPointerException. Add a null check.",
     "line6ValidationError":"Line 6: The addUser method doesn't validate the user parameter, which could allow invalid data. Add validation.",
-    "line17RemoveError":"Line 17: No null check before removing user, which could cause NullPointerException if user is not found. Add a null check."
+    "line17RemoveError":"Line 17: No null check before removing user, which could cause NullPointerException if user is not found. Add a null check.",
+
+    # Tutorial evaluation messages
+    "Please improve your review: ": "Please improve your review: ",
+    "Error evaluating your review. Please try again.": "Error evaluating your review. Please try again.",
+    "Unable to evaluate your review. Please try again.": "Unable to evaluate your review. Please try again.",
+
+    # Review format validation messages
+    "review_cannot_be_empty": "Review cannot be empty",
+    "please_use_format_line_description": "Please use the format 'Line X: description of problem' for each issue you identify.",
+    "review_meaning_poor":"Your review needs more meaningful",
+    "review_accuracy_poor": "Your review needs to be more accurate",
+    "faile_review":"Please revise your review and try again. Focus on explaining specific line numbers, what's wrong, and why it's problematic."
 
 
 

@@ -478,6 +478,7 @@ translations = {
     "login_to_see":"登入以查看排行榜！",
     # Add to the translations dictionary in language/zh.py
     "Java Code Review Tutorial": "Java 程式碼審查教學",
+    "1stPractice": "你在我們系統中的首次程式碼審查練習",
     "Welcome to the Java Code Review Training System! This tutorial will guide you through the process of reviewing code for errors.": "歡迎使用 Java 程式碼審查訓練系統！本教學將引導您完成審查程式碼錯誤的流程。",
     "In this system, you'll be presented with Java code snippets that contain intentional errors. Your task is to identify these errors and provide detailed feedback.": "在這個系統中，您將看到含有故意錯誤的 Java 程式碼片段。您的任務是識別這些錯誤並提供詳細的反饋。",
     "Here's a sample Java code snippet with several errors:": "這是一個含有多個錯誤的 Java 程式碼範例：",
@@ -524,7 +525,19 @@ translations = {
     "line12StringError":"第12行：字串比較使用 == 會比較參考而非內容。應使用 equals() 方法：if (user.getId().equals(userId))",
     "line9NullError":"第9行：存取 userId 參數前沒有 null 檢查，可能會導致 NullPointerException。請新增 null 檢查。",
     "line6ValidationError":"第6行：addUser 方法沒有驗證 user 參數，可能允許無效資料。請新增驗證。",
-    "line17RemoveError":"第17行：移除使用者前沒有 null 檢查，如果找不到使用者可能會導致 NullPointerException。請新增 null 檢查。"
+    "line17RemoveError":"第17行：移除使用者前沒有 null 檢查，如果找不到使用者可能會導致 NullPointerException。請新增 null 檢查。",
+
+    # Tutorial evaluation messages
+    "Please improve your review: ": "請改進您的審查：",
+    "Error evaluating your review. Please try again.": "評估您的審查時出錯。請重試。",
+    "Unable to evaluate your review. Please try again.": "無法評估您的審查。請重試。",
+    
+    # Review format validation messages
+    "review_cannot_be_empty": "審查不能為空",
+    "please_use_format_line_description": "請為每個您識別的問題使用「Line X: 問題描述」的格式。",
+    "review_meaning_Poor":"你的評論需要更有意義的內容",
+    "review_accuracy_poor": "你的評論需要更準確",
+    "faile_review":"請修改你的評論並重新嘗試。請著重說明具體的程式碼行號、錯誤內容以及其問題所在"
 
 
 }

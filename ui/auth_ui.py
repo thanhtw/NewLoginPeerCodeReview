@@ -79,8 +79,7 @@ class AuthUI:
                     st.error(t("fill_all_fields"))
                 else:
                     # Authenticate user
-                    result = self.auth_manager.authenticate_user(email, password)
-                    print("result: ", result)
+                    result = self.auth_manager.authenticate_user(email, password)                    
                     if result.get("success", False):
                         # Set authenticated state
                         st.session_state.auth["is_authenticated"] = True
@@ -216,8 +215,7 @@ class AuthUI:
             return
                 
         # Get user info
-        user_info = st.session_state.auth.get("user_info", {})
-        print("user_info: ", user_info)
+        user_info = st.session_state.auth.get("user_info", {})       
         # Get current language
         current_lang = get_current_language()
         
