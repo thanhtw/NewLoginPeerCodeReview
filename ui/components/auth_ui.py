@@ -244,41 +244,38 @@ class AuthUI:
                 <span class="profile-label">{t("score")}:</span>
                 <span class="profile-value">{score}</span>
             </div>
+        </div>
         """, unsafe_allow_html=True)
 
-        # # Add tutorial retake button
-        # st.sidebar.markdown("---")
-        # st.sidebar.subheader(t("tutorial"))
-        
-        # Show tutorial completion status
-        # tutorial_completed = user_info.get("tutorial_completed", False)
-        # if tutorial_completed:
-        #     st.sidebar.success(f"✅ {t('tutorial_completed_status') or 'Tutorial Completed'}")
-        # else:
-        #     st.sidebar.info(f"ℹ️ {t('tutorial_not_completed') or 'Tutorial Not Completed'}")
-        
-        # if st.sidebar.button(t("retake_tutorial") or "🎓 Retake Tutorial", use_container_width=True):
-        #     # Reset tutorial completion status in session
-        #     st.session_state.tutorial_completed = False
-        #     st.session_state.tutorial_retake = True  # Add flag to indicate retaking
-            
-        #     # Clear tutorial-related session states
-        #     tutorial_keys = ["tutorial_step", "tutorial_evaluation", "tutorial_focus_error"]
-        #     for key in tutorial_keys:
-        #         if key in st.session_state:
-        #             del st.session_state[key]
-            
-        #     # Force navigation to generation tab to trigger tutorial
-        #     st.session_state.active_tab = 0
-        #     st.success(t("tutorial_reset") or "Tutorial reset! Starting tutorial...")
-        #     st.rerun()
-        
-        st.sidebar.markdown('</div>', unsafe_allow_html=True)
-        
         # Application info
         st.sidebar.subheader(t("about"))
         st.sidebar.markdown(t("about_app"))
+        
+        # Add logout button
+        st.sidebar.markdown("---")
+        if st.sidebar.button(t("logout"), use_container_width=True, key="logout_btn"):
+            self.logout()        
+       
+        
     
+    def logout(self):
+        """Handle user logout by clearing authentication state and triggering full reset."""
+        logger.debug("User logout initiated")
+        
+        # Clear authentication session
+        st.session_state.auth = {
+            "is_authenticated": False,
+            "user_id": None,
+            "user_info": {}
+        }
+        
+        # Trigger full reset to clear all workflow-related state
+        st.session_state.full_reset = True
+        # Show logout message
+        st.success(t("logout_success"))
+        # Force UI refresh
+        st.rerun()
+
     def update_review_stats(self, accuracy: float, score: int = 0):
         """
         Update a user's review statistics after completing a review.

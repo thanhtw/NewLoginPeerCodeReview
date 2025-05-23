@@ -76,10 +76,12 @@ def render_language_selector():
             if st.button("English", use_container_width=True, 
                          disabled=get_current_language() == "en"):
                 set_language("en")
+                st.session_state.full_reset = True
                 st.rerun()
                 
         with cols[1]:
             if st.button("繁體中文", use_container_width=True, 
                          disabled=get_current_language() == "zh"):
                 set_language("zh")
+                st.session_state.full_reset = True
                 st.rerun()

@@ -369,10 +369,6 @@ class ErrorSelectorUI:
         # First check if user level is in session state
         level_from_session = st.session_state.get("user_level", None)
         
-        # Use session state level if available, otherwise use the provided parameter
-        normalized_level = level_from_session.lower() if level_from_session else (
-            user_level.lower() if user_level else "medium"
-        )
         
         # Set appropriate difficulty based on normalized user level
         difficulty_mapping = {
@@ -380,7 +376,7 @@ class ErrorSelectorUI:
             t("medium"): f"{t('medium')}",
             t("senior"): f"{t('hard')}"
         }
-        difficulty_level = difficulty_mapping.get(normalized_level, f"{t('medium')}")
+        difficulty_level = difficulty_mapping.get(level_from_session, f"{t('medium')}")
         
         # Set code length based on difficulty
         length_mapping = {

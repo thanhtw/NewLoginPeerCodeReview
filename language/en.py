@@ -501,7 +501,9 @@ translations = {
     "Error checking tutorial status": "Error checking tutorial status",
     "Could not import AuthUI to mark tutorial completion": "Could not import AuthUI to mark tutorial completion",
     "Tutorial completed! You earned the Tutorial Master badge! 🎓": "Tutorial completed! You earned the Tutorial Master badge! 🎓",
-    "Tutorial completed, but there was an issue saving your progress.": "Tutorial completed, but there was an issue saving your progress."
+    "Tutorial completed, but there was an issue saving your progress.": "Tutorial completed, but there was an issue saving your progress.",
+    "logout": "Logout",
+    "logout_success": "Successfully logged out!"
 
 
 

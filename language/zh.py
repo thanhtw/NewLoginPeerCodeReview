@@ -510,7 +510,9 @@ translations = {
     "Error checking tutorial status": "檢查教學狀態時發生錯誤",
     "Could not import AuthUI to mark tutorial completion": "無法導入 AuthUI 來標記教學完成",
     "Tutorial completed! You earned the Tutorial Master badge! 🎓": "教學完成！您獲得了教學大師徽章！🎓",
-    "Tutorial completed, but there was an issue saving your progress.": "教學完成，但保存進度時出現問題。"
+    "Tutorial completed, but there was an issue saving your progress.": "教學完成，但保存進度時出現問題。",
+    "logout": "登出",
+    "logout_success": "成功登出！"
 
 
 }
