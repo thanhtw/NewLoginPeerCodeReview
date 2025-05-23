@@ -42,29 +42,12 @@ translations = {
     "score": "Your Score",
     
     # Provider sections
-    "api_key_required": "API key is required for Groq",
-    "change_provider": "Change Provider",
-    "connect_groq_failed": "Failed to connect to Groq API. Please check your API key",
-    "connect_groq_success": "Connected to Groq API successfully",
-    "connected": "Connected",
-    "connected_groq": "Connected to Groq API",
-    "connected_ollama": "Connected to Ollama",
+    "api_key_required": "API key is required for Groq",        
     "groq_api_key": "Groq API Key ",
     "groq_api_message": "Groq API uses cloud-hosted models and requires an API key",
     "groq_mode": "Groq API (Cloud)",
     "llm_provider_setup": "LLM Provider Setup",
-    "not_connected_to_groq": "Not connected to Groq API",
-    "ollama_error": "Cannot connect to Ollama: Failed to connect to Ollama at http://localhost:11434",
-    "ollama_mode": "Ollama (Local)",
-    "please_select_LLM": "Please select the LLM provider you want to use",
-    "provider": "Provider",
-    "select_LLM": "Select the LLM provider",
-    "select_ollama": "Ollama will use locally hosted models running on your machine.",
-    "status": "Status",
-    "test_connection": "Test Connection",
-    "use_ollama": "Use Olama",
-    "using_groq": "Using Groq API (cloud)",
-    "using_ollama": "Using local Ollama models",
+    "not_connected_to_groq": "Not connected to Groq API",   
     
     # Code Generation
     "added": "Added",
@@ -212,7 +195,6 @@ translations = {
     "excellent_work_guidance": "Excellent work! Try to be even more specific in your explanations of why each issue is problematic.",
     "false_positives": "False Positives",
     "feedback": "Feedback",
-    "feedbackt": "feedback",
     "generated_comparison_report": "Generated comparison report for feedback tab",
     "generating_comparison_report": "generating comparison report",
     "good_performance_guidance": "You're doing well! Try looking for issues related to '{missed_text}'. Check for similar patterns elsewhere in the code.",
@@ -239,7 +221,6 @@ translations = {
     "no_identified_issues": "You didn't identify any issues correctly.",
     "no_result_returned": "No result returned",
     "overall_accuracy": "Overall Accuracy",
-    "problemt": "problem",
     "problem": "Problem",
     "progress_across_iterations": "Progress Across Iterations",
     "remaining_attempts": "Remaining Attempts",
@@ -320,11 +301,7 @@ translations = {
     "response_tab": "Response",
     "unknown_time": "Unknown time",
     "unknown_type": "Unknown type",
-    
-    # Troubleshooting strings
-    "check_ollama_accessible": "Check that Ollama is accessible at http://localhost:11434",
-    "custom_url_env": "If using a custom URL, set OLLAMA_BASE_URL in your .env file",
-    "make_sure_ollama_running": "Make sure Ollama is installed and running",
+
     "troubleshooting": "Troubleshooting",
     
     # Error messages
@@ -358,13 +335,9 @@ translations = {
     "provider": "provider",
 
     # Code evaluation messages
-    "could_not_evaluate_code": "Could not evaluate code",
     "please_ensure_code_contains_all": "Please ensure the code contains all",
     "requested_errors": "requested errors",
-    "no_llm_available_for_code_evaluation": "No LLM available for code evaluation",
-    "sending_code_to_llm_for_evaluation": "Sending code to LLM for evaluation",
-    "failed_to_extract_json_from_evaluation": "Failed to extract JSON from evaluation response or result is not a dictionary",
-    "error_evaluating_code": "Error evaluating code",
+    "sending_code_to_llm_for_evaluation": "Sending code to LLM for evaluation",   
     "extracting_json_from_response": "Extracting JSON from response",
     "could_not_convert_response_to_string": "Could not convert response to string",
     "using_manually_extracted_errors": "Using manually extracted errors",

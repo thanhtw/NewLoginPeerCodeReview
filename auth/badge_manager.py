@@ -35,17 +35,6 @@ class BadgeManager:
         # Get current language on initialization and update when needed
         self.current_language = get_current_language()
     
-    def _column_exists(self, table: str, column: str) -> bool:
-        """Check if a column exists in a table."""
-        query = """
-            SELECT COUNT(*) as column_exists
-            FROM information_schema.columns
-            WHERE table_schema = DATABASE()
-            AND table_name = %s
-            AND column_name = %s
-        """
-        result = self.db.execute_query(query, (table, column), fetch_one=True)
-        return result and result.get('column_exists', 0) > 0
 
     def award_points(self, user_id: str, points: int, activity_type: str, details: str = None) -> Dict[str, Any]:
         """
@@ -75,28 +64,14 @@ class BadgeManager:
             """
             
             self.db.execute_query(update_query, (points, user_id))
-            
-            # Then log the activity - with multilingual support
-            # Check if the details_en and details_zh columns exist
-            has_details_en = self._column_exists("activity_log", "details_en")
-            has_details_zh = self._column_exists("activity_log", "details_zh")
-            
-            if has_details_en and has_details_zh:
-                # Both language fields exist - use multilingual insert
-                log_query = """
+           
+            log_query = """
                     INSERT INTO activity_log 
                     (user_id, activity_type, points, details_en, details_zh) 
                     VALUES (%s, %s, %s, %s, %s)
                 """
-                self.db.execute_query(log_query, (user_id, activity_type, points, details, details))
-            else:
-                # Only one details field exists - use original format
-                log_query = """
-                    INSERT INTO activity_log 
-                    (user_id, activity_type, points, details) 
-                    VALUES (%s, %s, %s, %s)
-                """
-                self.db.execute_query(log_query, (user_id, activity_type, points, details))
+            self.db.execute_query(log_query, (user_id, activity_type, points, details, details))
+         
             
             # Get the updated total points
             points_query = "SELECT total_points FROM users WHERE uid = %s"
@@ -138,12 +113,6 @@ class BadgeManager:
             # Use language-specific field based on current language
             name_field = f"name_{self.current_language}" if self.current_language == "en" or self.current_language == "zh" else "name_en"
             desc_field = f"description_{self.current_language}" if self.current_language == "en" or self.current_language == "zh" else "description_en"
-            
-            # Check if the table has multilingual fields
-            if not self._column_exists("badges", name_field):
-                # Fall back to original schema
-                name_field = "name"
-                desc_field = "description"
             
             badge_query = f"SELECT badge_id, {name_field} as name, {desc_field} as description, points FROM badges WHERE badge_id = %s"
             badge = self.db.execute_query(badge_query, (badge_id,), fetch_one=True)
@@ -210,12 +179,6 @@ class BadgeManager:
             # Use language-specific field based on current language
             name_field = f"name_{self.current_language}" if self.current_language == "en" or self.current_language == "zh" else "name_en"
             desc_field = f"description_{self.current_language}" if self.current_language == "en" or self.current_language == "zh" else "description_en"
-            
-            # Check if the table has multilingual fields
-            if not self._column_exists("badges", name_field):
-                # Fall back to original schema
-                name_field = "name"
-                desc_field = "description"
             
             query = f"""
                 SELECT b.badge_id, b.{name_field} as name, b.{desc_field} as description, 
@@ -418,17 +381,10 @@ class BadgeManager:
             display_name_field = f"display_name_{self.current_language}" if self.current_language in ["en", "zh"] else "display_name_en"
             level_field = f"level_name_{self.current_language}" if self.current_language in ["en", "zh"] else "level_name_en"
             
-            # Check if these fields exist
-            display_name_exists = self._column_exists("users", display_name_field)
-            level_exists = self._column_exists("users", level_field)
-            
-            # Use the fields that exist
-            display_name_col = display_name_field if display_name_exists else "display_name_en"
-            level_col = level_field if level_exists else "level_name_en"
             
             # Build query with appropriate fields
             query = f"""
-                SELECT uid, {display_name_col} as display_name, total_points, {level_col} as level,
+                SELECT uid, {display_name_field} as display_name, total_points, {level_field} as level,
                     (SELECT COUNT(*) FROM user_badges WHERE user_id = uid) AS badge_count
                 FROM users
                 ORDER BY total_points DESC
@@ -599,23 +555,13 @@ class BadgeManager:
             result = self.db.execute_query(query, (user_id,), fetch_one=True)
             
             if result and result.get("perfect_count", 0) >= 5:
-                self.award_badge(user_id, "bug-hunter")
-            
-            # Log this perfect review
-            # Use language-specific fields if they exist
-            details_en_exists = self._column_exists("activity_log", "details_en")
-            details_zh_exists = self._column_exists("activity_log", "details_zh")
-            
-            if details_en_exists and details_zh_exists:
+                self.award_badge(user_id, "bug-hunter")            
+          
                 self.db.execute_query(
                     "INSERT INTO activity_log (user_id, activity_type, points, details_en, details_zh) VALUES (%s, %s, %s, %s, %s)",
                     (user_id, "perfect_review", 0, t("completed_perfect_review"), t("completed_perfect_review"))
                 )
-            else:
-                self.db.execute_query(
-                    "INSERT INTO activity_log (user_id, activity_type, points, details) VALUES (%s, %s, %s, %s)",
-                    (user_id, "perfect_review", 0, t("completed_perfect_review"))
-                )
+          
             
             # Perfectionist badge - 3 consecutive perfect reviews
             query = """

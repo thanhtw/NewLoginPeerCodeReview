@@ -50,12 +50,10 @@ class CodeDisplayUI:
             else:
                 st.warning(t("code_exists_but_empty"))
                 return
-        numbered_code = self._add_line_numbers(display_code)
+        numbered_code = add_line_numbers(display_code)
         st.code(numbered_code, language="java")
                
-    def _add_line_numbers(self, code: str) -> str:
-        """Add line numbers to code snippet using shared utility."""
-        return add_line_numbers(code)
+   
     
     def render_review_input(self, student_review: str = "", 
                     on_submit_callback: Callable[[str], None] = None,

@@ -11,10 +11,10 @@ import os
 import logging
 from typing import List, Dict, Any, Optional, Tuple
 from langchain_core.language_models import BaseLanguageModel
-from utils.language_utils import get_llm_instructions, t
+from utils.language_utils import t, get_llm_prompt_instructions, get_current_language
 
 # Import prompt templates
-from prompts import get_prompt_template
+from prompts import get_prompt_template, format_prompt_safely
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -98,13 +98,13 @@ def create_code_generation_prompt(code_length: str, difficulty_level: str, selec
     domain_str = domain or "general"
     
     # Get language-specific instructions
-    language_instructions = get_llm_instructions()
+    language_instructions = get_llm_prompt_instructions(get_current_language())
     
     # Get language-specific template
     template = get_prompt_template("code_generation_template")
     
     # Create the prompt by filling in the template safely
-    prompt = f"{language_instructions}. " + format_template_safely(
+    prompt = f"{language_instructions}. " + format_prompt_safely(
         template,
         code_length=code_length,
         domain_str=domain_str,
@@ -116,63 +116,6 @@ def create_code_generation_prompt(code_length: str, difficulty_level: str, selec
     )
 
     return prompt
-
-def format_template_safely(template: str, **kwargs) -> str:
-    """
-    Format a template string safely, handling potential formatting errors.
-    
-    Args:
-        template: Template string with {placeholders}
-        **kwargs: Key-value pairs to substitute into the template
-        
-    Returns:
-        Formatted string
-    """
-    try:
-        # First attempt: use standard string formatting
-        return template.format(**kwargs)
-    except KeyError as e:
-        # If we get a KeyError, log it and try to handle translations
-        logger.warning(f"Template formatting error: missing key {e}")
-        
-        # Check if the missing key is a Chinese translation
-        missing_key = str(e).strip("'")
-        
-        # Map of common Chinese keys to their English equivalents
-        chinese_to_english = {
-            "已找到錯誤": "found_errors",
-            "遺漏錯誤": "missing_errors",
-            "錯誤類型": "error_type",
-            "錯誤名稱": "error_name",
-            "行號": "line_number",
-            "代碼片段": "code_segment",
-            "解釋": "explanation",
-            "有效": "valid",
-            "反饋": "feedback",
-            "錯誤": "error"
-        }
-        
-        # If the missing key is a Chinese translation, use the English value instead
-        if missing_key in chinese_to_english and chinese_to_english[missing_key] in kwargs:
-            english_key = chinese_to_english[missing_key]
-            template = template.replace("{" + missing_key + "}", "{" + english_key + "}")
-            try:
-                return template.format(**kwargs)
-            except Exception:
-                pass
-                
-        # Replace problematic placeholders with their string values
-        for key, value in kwargs.items():
-            placeholder = "{" + key + "}"
-            template = template.replace(placeholder, str(value))
-        return template
-    except Exception as e:
-        # For any other error, log and return a basic formatted string
-        logger.error(f"Template formatting error: {str(e)}")
-        # Create a basic output with the key information
-        return (f"Code evaluation for {kwargs.get('error_count', '?')} errors:\n\n"
-                f"Code to evaluate:\n{kwargs.get('code', '')}\n\n"
-                f"Errors to find:\n{kwargs.get('error_instructions', '')}")
 
 def create_evaluation_prompt(code: str, requested_errors: list) -> str:
     """
@@ -215,13 +158,13 @@ def create_evaluation_prompt(code: str, requested_errors: list) -> str:
     error_instructions = "\n".join(error_list)
 
     # Get language-specific instructions
-    language_instructions = get_llm_instructions()
+    language_instructions = get_llm_prompt_instructions(get_current_language())
 
     # Get language-specific template
     template = get_prompt_template("evaluation_template")
     
     # Create the prompt by filling in the template safely
-    prompt = f"{language_instructions}. " + format_template_safely(
+    prompt = f"{language_instructions}. " + format_prompt_safely(
         template,
         code=add_line_numbers(code),
         error_count=error_count,
@@ -254,13 +197,13 @@ def create_regeneration_prompt(code: str, domain: str, missing_errors: list, fou
     found_text = "\n".join(f"- {err}" for err in found_errors) if found_errors else "No correctly implemented errors found."
     
     # Get language-specific instructions
-    language_instructions = get_llm_instructions()
+    language_instructions = get_llm_prompt_instructions(get_current_language())
     
     # Get language-specific template
     template = get_prompt_template("regeneration_template")
 
     # Create the prompt by filling in the template safely
-    prompt = f"{language_instructions}. " + format_template_safely(
+    prompt = f"{language_instructions}. " + format_prompt_safely(
         template,
         code=code,
         domain=domain,
@@ -296,13 +239,13 @@ def create_review_analysis_prompt(code: str, known_problems: list, student_revie
     accuracy_score_threshold = float(os.getenv("ACCURACY_SCORE", "0.7"))
 
     # Get language-specific instructions
-    language_instructions = get_llm_instructions()
+    language_instructions = get_llm_prompt_instructions(get_current_language())
 
     # Get language-specific template
     template = get_prompt_template("review_analysis_template")
    
     # Create the prompt by filling in the template safely
-    prompt = f"{language_instructions}. " + format_template_safely(
+    prompt = f"{language_instructions}. " + format_prompt_safely(
         template,
         code=code,
         problem_count=problem_count,
@@ -357,13 +300,13 @@ def create_feedback_prompt(code: str, known_problems: list, review_analysis: dic
             missed_text += f"- {problem}\n"
 
     # Get language-specific instructions
-    language_instructions = get_llm_instructions()
+    language_instructions = get_llm_prompt_instructions(get_current_language())
 
     # Get language-specific template
     template = get_prompt_template("feedback_template")
 
     # Create the prompt by filling in the template safely
-    prompt = f"{language_instructions}. " + format_template_safely(
+    prompt = f"{language_instructions}. " + format_prompt_safely(
         template,
         iteration=iteration,
         max_iterations=max_iterations,
@@ -428,13 +371,13 @@ def create_comparison_report_prompt(evaluation_errors: List[str], review_analysi
     progress_info = ""
 
     # Get language-specific instructions
-    language_instructions = get_llm_instructions()
+    language_instructions = get_llm_prompt_instructions(get_current_language())
 
     # Get language-specific template
     template = get_prompt_template("comparison_report_template")
     
     # Create the prompt by filling in the template safely
-    prompt = f"{language_instructions}. " + format_template_safely(
+    prompt = f"{language_instructions}. " + format_prompt_safely(
         template,
         total_problems=total_problems,
         identified_count=identified_count,

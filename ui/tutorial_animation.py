@@ -93,9 +93,7 @@ class CodeReviewTutorial:
             
             # Check if we have a working LLM connection
             if self.llm_manager.provider == "groq":
-                connection_ok, _ = self.llm_manager.check_groq_connection()
-            elif self.llm_manager.provider == "ollama":
-                connection_ok, _ = self.llm_manager.check_ollama_connection()
+                connection_ok, _ = self.llm_manager.check_groq_connection()            
             else:
                 connection_ok = False
             

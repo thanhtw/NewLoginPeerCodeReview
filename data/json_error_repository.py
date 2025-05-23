@@ -27,6 +27,7 @@ class JsonErrorRepository:
     error data from Java_code_review_errors.json file.
     """
     
+    
     def __init__(self, java_errors_path: str = None):
         """
         Initialize the JSON Error Repository.
@@ -37,12 +38,12 @@ class JsonErrorRepository:
         # Get current language
         self.current_language = get_current_language()
         self.java_errors_path = java_errors_path
+        self.DATA_DIR = os.path.join(os.path.dirname(__file__))
         # Determine file path based on language
         if java_errors_path is None:
-            self.java_errors_path = f"{self.current_language}_Java_code_review_errors.json"
+            self.java_errors_path = f"{self.DATA_DIR}/{self.current_language}_Java_code_review_errors.json"
         else:
-            self.java_errors_path = java_errors_path
-        
+            self.java_errors_path = java_errors_path     
         # Initialize data
         self.java_errors = {}
         self.java_error_categories = []
@@ -50,7 +51,6 @@ class JsonErrorRepository:
         # Load error data from JSON files
         self.load_error_data()
        
-    
     def load_error_data(self) -> bool:
         """
         Load error data from JSON files.
@@ -59,14 +59,10 @@ class JsonErrorRepository:
             True if files are loaded successfully, False otherwise
         """
         java_loaded = self._load_java_errors()
-        # If loading fails, try loading the English version as a fallback
         if not java_loaded and self.current_language != "en":
             logger.warning(f"Failed to load {self.current_language} Java errors, trying English version")
-            old_path = self.java_errors_path
-            self.java_errors_path = "en_Java_code_review_errors.json"
+            self.java_errors_path = os.path.join(self.DATA_DIR, "en_Java_code_review_errors.json")
             java_loaded = self._load_java_errors()
-            if not java_loaded:
-                logger.warning(f"Failed to load both {old_path} and {self.java_errors_path}")
         
         # If still not loaded, use hardcoded fallback categories
         if not java_loaded:
@@ -90,59 +86,20 @@ class JsonErrorRepository:
         Returns:
             True if file is loaded successfully, False otherwise
         """
-        try:
-            # Try different paths to find the Java errors file
-            file_paths = self._get_potential_file_paths(self.java_errors_path)
-            
-            for file_path in file_paths:
-                if os.path.exists(file_path):
-                    try:
-                        with open(file_path, 'r', encoding='utf-8') as file:
-                            self.java_errors = json.load(file)
-                            self.java_error_categories = list(self.java_errors.keys())
-                            logger.debug(f"Loaded Java errors from {file_path} with {len(self.java_error_categories)} categories")
-                            return True
-                    except Exception as file_error:
-                        logger.error(f"Error reading or parsing file {file_path}: {str(file_error)}")
-                        continue  # Try the next path
-            
-            # If we get here, none of the paths worked
-            logger.warning(f"Could not find or load Java errors file: {self.java_errors_path}")
+        try:                    
+           if os.path.exists(self.java_errors_path):
+            with open(self.java_errors_path, 'r', encoding='utf-8') as file:
+                self.java_errors = json.load(file)
+                self.java_error_categories = list(self.java_errors.keys())
+                logger.info(f"Loaded Java errors from {self.java_errors_path} with {len(self.java_error_categories)} categories")
+                return True
+        
+            logger.warning(f"Could not find Java errors file: {self.java_errors_path}")
             return False
-                
+                    
         except Exception as e:
             logger.error(f"Error loading Java errors: {str(e)}")
             return False
-    
-    def _get_potential_file_paths(self, file_name: str) -> List[str]:
-        """
-        Get potential file paths to look for the error files.
-        
-        Args:
-            file_name: Base file name to search for
-            
-        Returns:
-            List of potential file paths
-        """
-        # Get the current directory
-        current_dir = os.path.dirname(os.path.realpath(__file__))
-        
-        # Get the parent directory (project root)
-        parent_dir = os.path.dirname(current_dir)
-        
-        # Try various potential locations
-        return [
-            file_name,  # Direct file name (if it's in the working directory)
-            os.path.join(current_dir, file_name),  # In the same directory as this file
-            os.path.join(parent_dir, file_name),  # In the parent directory (project root)
-            os.path.join(parent_dir, "data", file_name),  # In a data subdirectory
-            os.path.join(parent_dir, "resources", file_name),  # In a resources subdirectory
-            os.path.join(parent_dir, "assets", file_name),  # In an assets subdirectory
-            # Additional paths
-            os.path.join(os.getcwd(), file_name),  # Current working directory 
-            os.path.join(os.getcwd(), "data", file_name),  # Data folder in current working directory
-            os.path.join(os.path.expanduser("~"), file_name),  # User's home directory
-        ]
     
     def get_all_categories(self) -> Dict[str, List[str]]:
         """

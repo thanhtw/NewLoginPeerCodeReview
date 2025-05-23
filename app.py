@@ -3,21 +3,18 @@ Java Peer Code Review Training System - LangGraph Version
 
 This module provides a Streamlit web interface for the Java code review training system
 using LangGraph for workflow management with a modular UI structure.
-Support for both Ollama and Groq LLM providers.
 """
 
 import streamlit as st
-import sys
 import os
 import logging
-from dotenv import load_dotenv
 from state_schema import WorkflowState
 
 # Import CSS utilities
 from static.css_utils import load_css
 
 # Import language utilities
-from utils.language_utils import init_language, render_language_selector, t, get_llm_instructions
+from utils.language_utils import init_language, render_language_selector, t
 
 # Configure logging
 logging.getLogger('streamlit').setLevel(logging.ERROR)
@@ -26,11 +23,6 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
-
-# Add the current directory to the path if needed
-current_dir = os.path.dirname(os.path.abspath(__file__))
-if current_dir not in sys.path:
-    sys.path.append(current_dir)
 
 # Import LLM Manager
 from llm_manager import LLMManager
@@ -47,11 +39,10 @@ from ui.main_ui import (
 
 # Import UI components
 from ui.CodeGeneratorUI import CodeGeneratorUI
-from ui.code_review import CodeDisplayUI, render_review_tab  # Changed import
-from ui.feedback_system import FeedbackSystem, render_feedback_tab
+from ui.code_review import CodeDisplayUI, render_review_tab  
+from ui.feedback_system import render_feedback_tab
 from ui.auth_ui import AuthUI
-# Load environment variables
-load_dotenv(override=True)
+
 
 # Set page config
 st.set_page_config(
@@ -61,53 +52,25 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Load CSS from external files
 css_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "css")
 
-# Try loading CSS with improved function
-loaded_files = load_css(css_directory=css_dir)
-
-log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "llm_logs")
-if not os.path.exists(log_dir):
-     try:
-         os.makedirs(log_dir, exist_ok=True)
-         logger.debug(f"Created log directory: {log_dir}")
-     except Exception as e:
-         logger.warning(f"Failed to create log directory: {str(e)}")
-
-if not loaded_files:
-    # Fallback to inline CSS if loading fails
-    logger.warning("Failed to load CSS files, falling back to inline CSS")
+try:
+    load_css(css_directory=css_dir)
+except Exception as e:
+    logger.warning(f"CSS loading failed: {str(e)}")
 
 def main():
     """Enhanced main application function with provider selection."""
+
     # Initialize language selection
     init_language()
 
     try:
         from db.schema_update import update_database_schema
-        schema_updated = update_database_schema()
-        if schema_updated:
-            logger.info("Database schema updated successfully")
-        else:
-            logger.warning("Database schema update skipped or failed")
-    except ImportError:
-        logger.warning("Schema update module not found")
+        update_database_schema()
     except Exception as e:
-        logger.error(f"Error updating database schema: {str(e)}")
+        logger.error(f"Database schema update failed: {str(e)}")
 
-    if st.session_state.get("changing_provider", False):
-        # Restore preserved states
-        if "preserved_auth" in st.session_state:
-            st.session_state.auth = st.session_state.pop("preserved_auth")
-        if "preserved_user_level" in st.session_state:
-            st.session_state.user_level = st.session_state.pop("preserved_user_level")
-        if "preserved_language" in st.session_state:
-            st.session_state.language = st.session_state.pop("preserved_language")
-        
-        # Remove the changing provider flag
-        st.session_state.pop("changing_provider", None)
-    
     # Initialize the authentication UI
     auth_ui = AuthUI()
 
@@ -122,79 +85,24 @@ def main():
     # Get user level and store in session state
     user_level = auth_ui.get_user_level()   
     st.session_state.user_level = user_level
-
-    # Check if we're performing a language change reset
-    if st.session_state.get("language_change_reset", False):
-        # Remove the language change reset flag
-        del st.session_state["language_change_reset"]
-        
-        # Retrieve preserved values
-        preserved_auth = st.session_state.pop("language_auth_preserve", None)
-        preserved_user_level = st.session_state.pop("language_user_level_preserve", None)
-        preserved_provider = st.session_state.pop("language_provider_preserve", None)
-        current_language = st.session_state.get("language", "en")
-        
-        # Get keys to preserve
-        keys_to_preserve = ["language"]
-        
-        # Create a backup of values we want to preserve
-        preserved_values = {
-            "language": current_language
-        }
-        
-        # Clear all state except language
-        for key in list(st.session_state.keys()):
-            if key not in keys_to_preserve:
-                del st.session_state[key]
-        
-        # Restore preserved values
-        for key, value in preserved_values.items():
-            st.session_state[key] = value
-        
-        # Restore auth and provider information
-        if preserved_auth is not None:
-            st.session_state["auth"] = preserved_auth
-        if preserved_user_level is not None:
-            st.session_state["user_level"] = preserved_user_level
-        if preserved_provider is not None:
-            st.session_state["provider_selection"] = preserved_provider
-        
-        # Initialize a fresh workflow state
-        st.session_state.workflow_state = WorkflowState()
-        
-        # Set active tab to generation tab
-        st.session_state.active_tab = 0
-
-    # Check if we're performing a full reset
+    
     if st.session_state.get("full_reset", False):
-        # Remove the reset flag
         del st.session_state["full_reset"]
-        # Store authentication state and key items we want to preserve
-        preserved_keys = ["auth", "provider_selection", "user_level", "language"]
-        
-        # Create a backup of values we want to preserve
-        preserved_values = {}
-        for key in preserved_keys:
-            if key in st.session_state:
-                preserved_values[key] = st.session_state[key]
-        
-        # Clear all state except the keys we want to preserve
-        keys_to_remove = [key for key in list(st.session_state.keys()) 
-                        if key not in preserved_keys]
-        
-        for key in keys_to_remove:
+        preserved = {
+            key: st.session_state.get(key) 
+            for key in ["auth", "provider_selection", "user_level", "language"]
+            if key in st.session_state
+        }        
+        # Clear workflow-related state
+        workflow_keys = [k for k in st.session_state.keys() 
+                        if k not in preserved.keys()]
+        for key in workflow_keys:
             del st.session_state[key]
         
-        # Restore the preserved values (just to be safe, though they should still be there)
-        for key, value in preserved_values.items():
-            st.session_state[key] = value
-        
-        # Initialize a fresh workflow state
+        # Restore preserved values
+        st.session_state.update(preserved)
         st.session_state.workflow_state = WorkflowState()
-        
-        # Set active tab to generation tab
         st.session_state.active_tab = 0
-        st.session_state.force_tab_zero = True
         st.rerun()
 
     # Initialize session state
@@ -203,12 +111,9 @@ def main():
     # Initialize LLM manager
     llm_manager = LLMManager()
     
-    # MODIFIED: Set Groq as the default provider
-    # Check if provider_selection is already set to avoid changing it if already selected
     if "provider_selection" not in st.session_state:
-        st.session_state.provider_selection = "groq"
-        
-    # Set the provider to Groq
+        st.session_state.provider_selection = "groq"    
+    
     api_key = os.getenv("GROQ_API_KEY", "")
     if api_key:
         llm_manager.set_provider("groq", api_key)

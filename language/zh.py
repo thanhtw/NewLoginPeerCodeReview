@@ -41,29 +41,13 @@ translations = {
     "score": "您的得分",
     
     # Provider sections
-    "api_key_required": "Groq 需要 API 金鑰",
-    "change_provider": "變更提供者",
-    "connect_groq_failed": "無法連線至 Groq API。請檢查您的 API 金鑰",
-    "connect_groq_success": "已成功連線至 Groq API",
-    "connected": "已連線到",
-    "connected_groq": "已連線至 Groq API",
-    "connected_ollama": "已連線到 Ollama",
+    "api_key_required": "Groq 需要 API 金鑰",    
     "groq_api_key": "Groq API 金鑰",
     "groq_api_message": "Groq API 使用雲端託管的模型，並且需要 API 金鑰",
     "groq_mode": "Groq API（雲端）",
     "llm_provider_setup": "LLM 提供者設定",
     "not_connected_to_groq": "未連接到 Groq API",
-    "ollama_error": "無法連線到 Ollama：在 http://localhost:11434 連接失敗",
-    "ollama_mode": "Ollama（本機）",
-    "please_select_LLM": "請選擇您要使用的 LLM 提供者",
-    "provider": "提供者",
-    "select_LLM": "選擇 LLM 提供者",
-    "select_ollama": "Ollama 將使用在您本機上運行的本地託管模型",
-    "status": "狀態",
-    "test_connection": "測試連線",
-    "use_ollama": "使用 Ollama",
-    "using_groq": "使用 Groq API（雲端）",
-    "using_ollama": "使用本地 Ollama 模型",
+    
     
     # Code Generation
     "added": "新增了",
@@ -195,8 +179,7 @@ translations = {
     
     # Feedback
     "accuracy": "準確率",
-    "accuracy_percentage": "準確率百分比",
-    "accuracyt": "準確度",
+    "accuracy_percentage": "準確率百分比",    
     "all_issues_found": "太棒了！您找到了所有問題！",
     "check_detailed_analysis": "請查看比較報告中的詳細分析以獲取更多信息。",
     "check_review_history": "請檢查您的審查歷史以獲取詳細信息",
@@ -212,11 +195,9 @@ translations = {
     "excellent_work_guidance": "出色的工作！嘗試更具體地解釋為什麼每個問題存在問題。",
     "false_positives": "誤報",
     "feedback": "反饋",
-    "feedbackt": "反饋",
     "generated_comparison_report": "已為反饋標籤生成比較報告",
     "generating_comparison_report": "生成比較報告",
     "good_performance_guidance": "做得很好！嘗試尋找與「{missed_text}」相關的問題。檢查代碼中其他地方的類似模式。",
-    "hintt": "提示",
     "hint": "提示",
     "identified_count": "已識別數量",
     "identified_issues": "已識別的問題",
@@ -239,7 +220,6 @@ translations = {
     "no_identified_issues": "您沒有正確識別任何問題。",
     "no_result_returned": "未返回結果",
     "overall_accuracy": "整體準確度",
-    "problemt": "問題",
     "problem": "問題",
     "progress_across_iterations": "迭代進度",
     "remaining_attempts": "剩餘嘗試次數",
@@ -251,7 +231,6 @@ translations = {
     "review_sufficient": "審查足夠",
     "start_new_session": "開始新會話",
     "statistics_updated": "統計數據已更新",
-    "student_commentt": "學生評論",
     "student_comment": "學生評論",
     "successfully_updated_statistics": "成功更新用戶統計數據",
     "targeted_guidance": "針對性指導",
@@ -323,10 +302,6 @@ translations = {
     "unknown_time": "未知時間",
     "unknown_type": "未知類型",
     
-    # Troubleshooting strings
-    "check_ollama_accessible": "檢查 Ollama 可以在 http://localhost:11434 訪問",
-    "custom_url_env": "如果使用自定義 URL，請在 .env 文件中設置 OLLAMA_BASE_URL",
-    "make_sure_ollama_running": "確保 Ollama 已安裝並正在運行",
     "troubleshooting": "故障排除",
     
     # Error messages
@@ -352,18 +327,6 @@ translations = {
 
     # Add these translations to the existing 'translations' dictionary in zh_tw.py
 
-    # Domain names for code generation
-    "user_management_domain": "使用者管理",
-    "file_processing_domain": "檔案處理",
-    "data_validation_domain": "資料驗證",
-    "calculation_domain": "計算",
-    "inventory_system_domain": "庫存系統",
-    "notification_service_domain": "通知服務",
-    "logging_domain": "日誌紀錄",
-    "banking_domain": "銀行業務",
-    "ecommerce_domain": "電子商務",
-    "student_management_domain": "學生管理",
-
     # Code generator log messages
     "generating_java_code_with_provider": "使用提供者生成Java代碼：{provider}",
     "generating_java_code_with_groq": "使用Groq模型生成Java代碼：{model}",
@@ -373,12 +336,8 @@ translations = {
     "provider": "提供者",
 
     # Code evaluation messages
-    "could_not_evaluate_code": "無法評估代碼",
     "please_ensure_code_contains_all": "請確保代碼包含所有",
-    "no_llm_available_for_code_evaluation": "沒有可用於代碼評估的LLM",
-    "sending_code_to_llm_for_evaluation": "發送代碼到LLM進行評估",
-    "failed_to_extract_json_from_evaluation": "無法從評估回應中提取JSON或結果不是字典",
-    "error_evaluating_code": "評估代碼時出錯",
+    "sending_code_to_llm_for_evaluation": "發送代碼到LLM進行評估",  
     "extracting_json_from_response": "從回應中提取JSON",
     "could_not_convert_response_to_string": "無法將回應轉換為字符串",
     "using_manually_extracted_errors": "使用手動提取的錯誤",

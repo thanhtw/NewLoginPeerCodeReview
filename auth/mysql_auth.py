@@ -45,17 +45,6 @@ class MySQLAuthManager:
         """Hash a password using SHA-256."""
         return hashlib.sha256(password.encode()).hexdigest()
     
-    def _column_exists(self, table: str, column: str) -> bool:
-        """Check if a column exists in a table."""
-        query = """
-            SELECT COUNT(*) as column_exists
-            FROM information_schema.columns
-            WHERE table_schema = DATABASE()
-            AND table_name = %s
-            AND column_name = %s
-        """
-        result = self.db.execute_query(query, (table, column), fetch_one=True)
-        return result and result.get('column_exists', 0) > 0
 
     def update_tutorial_completion(self, user_id: str, completed: bool) -> Dict[str, Any]:
         """

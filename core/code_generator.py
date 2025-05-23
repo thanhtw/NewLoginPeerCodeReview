@@ -74,8 +74,7 @@ class CodeGenerator:
     def _generate_with_llm(self, code_length: str, difficulty_level: str, domain: str = None, 
                        selected_errors=None) -> str:
         """
-        Generate Java code using the language model.
-        Handles both Ollama and Groq API responses.
+        Generate Java code using the language model.        
         
         Args:
             code_length: Desired code length (short, medium, long)

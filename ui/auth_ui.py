@@ -424,28 +424,3 @@ class AuthUI:
             logger.error(f"Error marking tutorial as completed: {str(e)}")
             return False
         
-    def _get_multilingual_level_names(self, level: str) -> Tuple[str, str]:
-        """
-        Get the level names in both English and Chinese using the t() function.
-        
-        Args:
-            level: Internal level value (basic, medium, senior)
-            
-        Returns:
-            Tuple of (level_name_en, level_name_zh)
-        """
-        # Save current language
-        current_lang = get_current_language()
-        
-        # Get English level name
-        set_language("en")
-        level_name_en = t(level)
-        
-        # Get Chinese level name
-        set_language("zh")
-        level_name_zh = t(level)
-        
-        # Restore original language
-        set_language(current_lang)
-        
-        return level_name_en, level_name_zh

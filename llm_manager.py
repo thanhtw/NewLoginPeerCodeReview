@@ -2,19 +2,15 @@
 LLM Manager module for Java Peer Review Training System.
 
 This module provides the LLMManager class for handling model initialization,
-configuration, and management of LLM providers including Ollama and Groq.
+configuration, and management of Groq LLM provider.
 """
 
 import os
-import requests
 import logging
 from typing import Dict, Any, Optional, Tuple
 from dotenv import load_dotenv 
-import inspect
 
-from langchain_community.llms.ollama import Ollama
-
-# Add Groq integration
+# Groq integration
 from langchain_groq import ChatGroq 
 from langchain_core.messages import HumanMessage
 GROQ_AVAILABLE = True
@@ -31,19 +27,15 @@ logger = logging.getLogger(__name__)
 class LLMManager:
     """
     LLM Manager for handling model initialization, configuration and management.
-    Supports multiple LLM providers including Ollama and Groq.
+    Supports Groq LLM provider.
     """
     
     def __init__(self):
         """Initialize the LLM Manager with environment variables."""
         load_dotenv(override=True)
         
-        # Provider settings - default to Ollama
-        self.provider = os.getenv("LLM_PROVIDER", "ollama").lower()
-        
-        # Ollama settings
-        self.ollama_base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-        self.default_model = os.getenv("DEFAULT_MODEL", "llama3:1b")
+        # Provider settings - set to Groq
+        self.provider = "groq"
         
         # Groq settings
         self.groq_api_key = os.getenv("GROQ_API_KEY", "")
@@ -58,114 +50,54 @@ class LLMManager:
             "gemma-7b-it"
         ]
         
-        # Force GPU usage by default if available (Ollama only)
-        self.force_gpu = os.getenv("ENABLE_GPU", "true").lower() == "true"
-
-        # Get the GPU_LAYERS value
-        gpu_layers_value = os.getenv("GPU_LAYERS", "-1")
-
-        # Extract just the number part in case there are comments in the env var
-        if gpu_layers_value and "#" in gpu_layers_value:
-            gpu_layers_value = gpu_layers_value.split("#")[0].strip()
-            
-        self.gpu_layers = int(gpu_layers_value)
         # Track initialized models
-
         self.initialized_models = {}
-        
-        # Cache GPU info (Ollama only)
-        self._gpu_info = None
-
-    def refresh_gpu_info(self):
-        """Refresh GPU information with extended details."""
-        self._gpu_info = self.check_gpu_availability(extended=True)
-        return self._gpu_info
-       
+    
     def set_provider(self, provider: str, api_key: str = None) -> bool:
         """
         Set the LLM provider to use and persist the selection.
         
         Args:
-            provider: Provider name ('ollama' or 'groq')
-            api_key: API key for Groq (required if provider is 'groq')
+            provider: Provider name (must be 'groq')
+            api_key: API key for Groq (required)
             
         Returns:
             bool: True if successful, False otherwise
         """
-        if provider.lower() not in ["ollama", "groq"]:
-            logger.error(f"Unsupported provider: {provider}")
+        if provider.lower() != "groq":
+            logger.error(f"Unsupported provider: {provider}. Only 'groq' is supported.")
             return False
             
         # Set the provider in instance and persist to environment
-        self.provider = provider.lower()
-        os.environ["LLM_PROVIDER"] = provider.lower()
+        self.provider = "groq"
+        os.environ["LLM_PROVIDER"] = "groq"
         logger.debug(f"Provider set to: {self.provider}")
         
         # Clear initialized models to force reinitialization
         self.initialized_models = {}
         
-        # Handle provider-specific setup
-        if self.provider == "groq":
-            if not GROQ_AVAILABLE:
-                logger.error("Groq integration is not available. Please install langchain-groq package.")
-                return False
-                
-            # Validate and set API key
-            if not api_key and not self.groq_api_key:
-                logger.error("API key is required for Groq provider")
-                return False
-                
-            if api_key:
-                self.groq_api_key = api_key
-                os.environ["GROQ_API_KEY"] = api_key
+        # Handle Groq setup
+        if not GROQ_AVAILABLE:
+            logger.error("Groq integration is not available. Please install langchain-groq package.")
+            return False
             
-            # Test the API key
-            if not self.check_groq_connection()[0]:
-                logger.error("Failed to connect to Groq API. Please check your API key.")
-                return False
+        # Validate and set API key
+        if not api_key and not self.groq_api_key:
+            logger.error("API key is required for Groq provider")
+            return False
+            
+        if api_key:
+            self.groq_api_key = api_key
+            os.environ["GROQ_API_KEY"] = api_key
         
-        elif self.provider == "ollama":            
-            # Test connection to Ollama
-            if not self.check_ollama_connection()[0]:
-                logger.warning("Failed to connect to Ollama. Please ensure Ollama is running.")
-                return False
+        # Test the API key
+        if not self.check_groq_connection()[0]:
+            logger.error("Failed to connect to Groq API. Please check your API key.")
+            return False
         
         # Log successful provider change
-        logger.debug(f"Successfully switched to {self.provider} provider")
+        logger.debug(f"Successfully configured Groq provider")
         return True    
-    
-    def _format_size(self, size_in_bytes: int) -> str:
-        """Format size in human-readable format."""
-        if not isinstance(size_in_bytes, (int, float)):
-            return "Unknown"
-            
-        size = float(size_in_bytes)
-        
-        for unit in ["B", "KB", "MB", "GB"]:
-            if size < 1024.0:
-                return f"{size:.2f} {unit}"
-            size /= 1024.0
-            
-        return f"{size:.2f} TB"
-
-    #check connection        
-    def check_ollama_connection(self) -> Tuple[bool, str]:
-        """
-        Check if Ollama service is running and accessible.
-        
-        Returns:
-            Tuple[bool, str]: (is_connected, message)
-        """
-        try:
-            response = requests.get(f"{self.ollama_base_url}/api/tags", timeout=5)
-            if response.status_code == 200:
-                return True, "Connected to Ollama successfully"
-            else:
-                return False, f"Connected to Ollama but received status code {response.status_code}"
-        except requests.ConnectionError:
-            return False, f"Failed to connect to Ollama at {self.ollama_base_url}"
-        except Exception as e:
-            return False, f"Error checking Ollama connection: {str(e)}"
     
     def check_groq_connection(self) -> Tuple[bool, str]:
         """
@@ -181,8 +113,7 @@ class LLMManager:
             return False, "Groq integration is not available. Please install langchain-groq package."
             
         try:
-            # We'll use a minimal API call to test the connection
-            # Using the ChatGroq class from langchain_groq
+            # Use a minimal API call to test the connection
             chat = ChatGroq(
                 api_key=self.groq_api_key,
                 model_name="llama3-8b-8192"  # Use the smallest model for testing
@@ -201,10 +132,9 @@ class LLMManager:
             else:
                 return False, f"Error connecting to Groq API: {error_message}"
 
-    #initial_model
     def initialize_model(self, model_name: str, model_params: Dict[str, Any] = None) -> Optional[BaseLanguageModel]:
         """
-        Initialize a model with the current provider.
+        Initialize a Groq model.
         
         Args:
             model_name (str): Name of the model to initialize
@@ -213,21 +143,7 @@ class LLMManager:
         Returns:
             Optional[BaseLanguageModel]: Initialized LLM or None if initialization fails
         """
-       
-        # Use the appropriate initialization method based on the provider
-        if self.provider == "ollama":
-            model = self._initialize_ollama_model(model_name, model_params)
-        elif self.provider == "groq":
-            model = self._initialize_groq_model(model_name, model_params)
-        else:
-            logger.error(f"Unsupported provider: {self.provider}")
-            return None
-            
-        # Cache the model if initialization was successful
-        # if model:
-        #     self.initialized_models[cache_key] = model
-            
-        return model
+        return self._initialize_groq_model(model_name, model_params)
     
     def _initialize_groq_model(self, model_name: str, model_params: Dict[str, Any] = None) -> Optional[BaseLanguageModel]:
         """
@@ -277,123 +193,9 @@ class LLMManager:
             logger.debug(f"Error initializing Groq model {model_name}: {str(e)}")
             return None
     
-    def _initialize_ollama_model(self, model_name: str, model_params: Dict[str, Any] = None) -> Optional[BaseLanguageModel]:
-        """
-        Initialize an Ollama model with improved GPU support.
-        
-        Args:
-            model_name: Name of the model to initialize
-            model_params: Model parameters
-            
-        Returns:
-            Initialized LLM or None if initialization fails
-        """
-        # Apply default model parameters if none provided
-        if model_params is None:
-            model_params = {}
-        
-        # Ensure GPU is always enabled if available and forced
-        if self.force_gpu:
-            # Get GPU info with comprehensive detection
-            gpu_info = self.check_gpu_availability(extended=True)
-            
-            if gpu_info and gpu_info.get("has_gpu", False):
-                # Always set GPU parameters for better performance
-                gpu_layers = self.gpu_layers if self.gpu_layers > 0 else -1  # -1 means use all layers
-                model_params["n_gpu_layers"] = gpu_layers
-                model_params["f16_kv"] = True  # Use half-precision for key/value cache to save GPU memory
-                
-                logger.debug(f"Enabling GPU acceleration for Ollama model {model_name} with {gpu_layers} layers")
-        
-        # Initialize Ollama model
-        try:
-            # Check if model is available
-            if not self._check_ollama_model_availability(model_name):
-                logger.warning(f"Model {model_name} not found. Attempting to pull...")
-                if self.download_ollama_model(model_name):
-                    logger.debug(f"Successfully pulled model {model_name}")
-                else:
-                    logger.debug(f"Failed to pull model {model_name}")
-                    return None
-            
-            # Extract supported parameters
-            temperature = model_params.get("temperature", 0.7)
-            ollama_params = {}
-            
-            # Only include supported parameters
-            supported_params = [
-                "temperature", 
-                "model", 
-                "base_url", 
-                "keep_alive",
-                "num_ctx",
-                "repeat_penalty",
-                "top_k",
-                "top_p"
-            ]
-            
-            for key, value in model_params.items():
-                if key in supported_params:
-                    ollama_params[key] = value
-            
-            # Handle GPU layers separately as a model kwarg
-            if "n_gpu_layers" in model_params:
-                # Try to use num_gpu parameter via model_kwargs if available
-                gpu_layers = model_params["n_gpu_layers"]
-                
-                if hasattr(Ollama, "model_kwargs") or "model_kwargs" in inspect.signature(Ollama.__init__).parameters:
-                    ollama_params["model_kwargs"] = {"num_gpu": gpu_layers}
-                else:
-                    # Older versions - try direct parameter
-                    logger.debug(f"Using older Ollama client style for GPU layers: {gpu_layers}")
-                    # Only include if positive to avoid validation errors
-                    if gpu_layers > 0:
-                        ollama_params["num_gpu"] = gpu_layers
-            
-            # Log the parameters being used
-            logger.debug(f"Initializing model {model_name} with params: {ollama_params}")
-            
-            # Create the Ollama model 
-            try:
-                llm = Ollama(
-                    base_url=self.ollama_base_url,
-                    model=model_name,
-                    temperature=temperature,
-                    **ollama_params
-                )
-            except TypeError as e:
-                # If the above fails due to unexpected parameters, try with minimal params
-                logger.warning(f"Error with full params: {str(e)}, trying minimal params")
-                llm = Ollama(
-                    base_url=self.ollama_base_url,
-                    model=model_name,
-                    temperature=temperature
-                )
-            
-            # Test the model with a simple query
-            try:
-                _ = llm.invoke("hello")
-                
-                # Log GPU status
-                if self.force_gpu:
-                    gpu_info = self.check_gpu_availability()
-                    if gpu_info and gpu_info.get("has_gpu", False):
-                        logger.debug(f"Successfully initialized {model_name} with GPU acceleration")
-                    else:
-                        logger.debug(f"Successfully initialized {model_name} (CPU only)")
-                
-                return llm
-            except Exception as e:
-                logger.debug(f"Error testing model {model_name}: {str(e)}")
-                return None
-                    
-        except Exception as e:
-            logger.debug(f"Error initializing model {model_name}: {str(e)}")
-            return None
-    
     def initialize_model_from_env(self, model_key: str, temperature_key: str) -> Optional[BaseLanguageModel]:
         """
-        Initialize a model using environment variables with enhanced GPU awareness.
+        Initialize a model using environment variables.
         
         Args:
             model_key (str): Environment variable key for model name
@@ -402,68 +204,29 @@ class LLMManager:
         Returns:
             Optional[BaseLanguageModel]: Initialized LLM or None if initialization fails
         """
-        # Ensure we're using the correct provider
-        current_provider = self.provider.lower()
-        logger.debug(f"Initializing model from env with provider: {current_provider}")
+        logger.debug(f"Initializing model from env with Groq provider")
         
-        # Get model name based on provider
-        if current_provider == "ollama":
-            model_name = os.getenv(model_key, self.default_model)
-            logger.debug(f"Using Ollama model: {model_name}")
-        elif current_provider == "groq":
-            # First check for Groq-specific model environment variable
-            groq_model_key = f"GROQ_{model_key}"
-            model_name = os.getenv(groq_model_key, self.groq_default_model)
-            
-            # Map environment variable names to Groq model names if needed
-            if model_name == "llama3:8b":
-                model_name = "llama3-8b-8192"
-            elif model_name == "llama3:70b":
-                model_name = "llama3-70b-8192"
-            
-            logger.debug(f"Using Groq model: {model_name}")
-        else:
-            logger.debug(f"Unsupported provider: {current_provider}")
-            return None
+        # Get Groq model name from environment variables
+        groq_model_key = f"GROQ_{model_key}"
+        model_name = os.getenv(groq_model_key, self.groq_default_model)
+        
+        # Map environment variable names to Groq model names if needed
+        if model_name == "llama3:8b":
+            model_name = "llama3-8b-8192"
+        elif model_name == "llama3:70b":
+            model_name = "llama3-70b-8192"
+        
+        logger.debug(f"Using Groq model: {model_name}")
         
         # Get temperature
         temperature = float(os.getenv(temperature_key, "0.7"))       
-       
         
-        # Set up basic model parameters
+        # Set up model parameters
         model_params = {
             "temperature": temperature
         }
         
-        # Aggressively ensure GPU is enabled for Ollama
-        if current_provider == "ollama":
-            # Force enable GPU by default
-            if self.force_gpu:
-                # Check GPU availability with comprehensive detection
-                gpu_info = self.check_gpu_availability(extended=True)
-                if gpu_info.get("has_gpu", False):
-                    # Always set GPU parameters for Ollama models
-                    gpu_name = gpu_info.get("gpu_name", "GPU")
-                    logger.debug(f"GPU acceleration enabled: {gpu_name}")
-                    
-                    # Set GPU-specific parameters
-                    model_params["n_gpu_layers"] = self.gpu_layers
-                    model_params["f16_kv"] = True  # Use half-precision for key/value cache
-                    model_params["logits_all"] = False  # Don't compute logits for all tokens (faster)
-                    
-                    # Adjust GPU layers based on available memory if possible
-                    if "memory_total" in gpu_info and isinstance(gpu_info["memory_total"], (int, float)):
-                        memory_gb = gpu_info["memory_total"] / (1024 * 1024 * 1024)
-                        if memory_gb < 4:
-                            # Very limited GPU memory - be more conservative
-                            model_params["n_gpu_layers"] = min(24, self.gpu_layers if self.gpu_layers > 0 else 24)
-                        elif memory_gb < 8:
-                            # Limited GPU memory
-                            model_params["n_gpu_layers"] = min(32, self.gpu_layers if self.gpu_layers > 0 else 32)
-                else:
-                    logger.warning("GPU not available, using CPU for inference")
-        
-        # Initialize the model with the provider-specific settings
+        # Initialize the model
         logger.debug(f"Initializing model {model_name} with params: {model_params}")
         return self.initialize_model(model_name, model_params)
     
@@ -494,5 +257,24 @@ class LLMManager:
             params["temperature"] = 0.5  # Balanced temperature for comparison tasks
         
         return params
+
+    def get_available_models(self) -> list:
+        """
+        Get list of available Groq models.
+        
+        Returns:
+            List of available model names
+        """
+        return self.groq_available_models.copy()
     
-   
+    def is_model_available(self, model_name: str) -> bool:
+        """
+        Check if a model is available in Groq.
+        
+        Args:
+            model_name: Name of the model to check
+            
+        Returns:
+            True if model is available, False otherwise
+        """
+        return model_name in self.groq_available_models

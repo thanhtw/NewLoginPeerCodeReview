@@ -66,11 +66,7 @@ class WorkflowManager:
         provider = self.llm_manager.provider.lower()
         connection_status = False
         
-        if provider == "ollama":
-            connection_status, message = self.llm_manager.check_ollama_connection()
-            if not connection_status:
-                logger.warning(f"Ollama connection failed: {message}")
-        elif provider == "groq":
+        if provider == "groq":
             connection_status, message = self.llm_manager.check_groq_connection()
             if not connection_status:
                 logger.warning(f"Groq connection failed: {message}")

@@ -21,6 +21,63 @@ PROMPT_MODULES = {
 # Default language to use as fallback
 DEFAULT_LANGUAGE = "en"
 
+def format_prompt_safely(template: str, **kwargs) -> str:
+    """
+    Format a template string safely, handling potential formatting errors.
+    
+    Args:
+        template: Template string with {placeholders}
+        **kwargs: Key-value pairs to substitute into the template
+        
+    Returns:
+        Formatted string
+    """
+    try:
+        # First attempt: use standard string formatting
+        return template.format(**kwargs)
+    except KeyError as e:
+        # If we get a KeyError, log it and try to handle translations
+        logger.warning(f"Template formatting error: missing key {e}")
+        
+        # Check if the missing key is a Chinese translation
+        missing_key = str(e).strip("'")
+        
+        # Map of common Chinese keys to their English equivalents
+        chinese_to_english = {
+            "已找到錯誤": "found_errors",
+            "遺漏錯誤": "missing_errors",
+            "錯誤類型": "error_type",
+            "錯誤名稱": "error_name",
+            "行號": "line_number",
+            "代碼片段": "code_segment",
+            "解釋": "explanation",
+            "有效": "valid",
+            "反饋": "feedback",
+            "錯誤": "error"
+        }
+        
+        # If the missing key is a Chinese translation, use the English value instead
+        if missing_key in chinese_to_english and chinese_to_english[missing_key] in kwargs:
+            english_key = chinese_to_english[missing_key]
+            template = template.replace("{" + missing_key + "}", "{" + english_key + "}")
+            try:
+                return template.format(**kwargs)
+            except Exception:
+                pass
+                
+        # Replace problematic placeholders with their string values
+        for key, value in kwargs.items():
+            placeholder = "{" + key + "}"
+            template = template.replace(placeholder, str(value))
+        return template
+    except Exception as e:
+        # For any other error, log and return a basic formatted string
+        logger.error(f"Template formatting error: {str(e)}")
+        # Create a basic output with the key information
+        return (f"Code evaluation for {kwargs.get('error_count', '?')} errors:\n\n"
+                f"Code to evaluate:\n{kwargs.get('code', '')}\n\n"
+                f"Errors to find:\n{kwargs.get('error_instructions', '')}")
+
 def get_prompt_module(lang_code: str = None):
     """
     Dynamically import and return the prompt module for the given language code.

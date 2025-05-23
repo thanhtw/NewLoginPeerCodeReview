@@ -247,20 +247,7 @@ def render_sidebar(llm_manager):
         st.subheader(f"LLM {t('provider')}")
         provider = llm_manager.provider.capitalize()
         
-        if provider == "Ollama":
-            connection_status, message = llm_manager.check_ollama_connection()
-            status = f"✅ {t('connected')}" if connection_status else "❌ Disconnected"
-            st.markdown(f"**{t('provider')}:** {provider}  \n**{t('status')}:** {status}")
-            
-            if not connection_status:
-                st.error(f"Error: {message}")
-                st.markdown("""
-                Make sure Ollama is running:
-                ```bash
-                ollama serve
-                ```
-                """)
-        elif provider == "Groq":
+        if  provider == "Groq":
             connection_status, message = llm_manager.check_groq_connection()
             status = f"✅ {t('connected')}" if connection_status else "❌ Disconnected"
             st.markdown(f"**{t('provider')}:** {provider}  \n**{t('status')}:** {status}")
