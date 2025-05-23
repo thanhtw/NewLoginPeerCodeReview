@@ -7,7 +7,6 @@ all components of the workflow system.
 
 import logging
 from typing import Dict, Any, List, Optional, Tuple
-import os
 
 from langgraph.graph import StateGraph
 from state_schema import WorkflowState, ReviewAttempt
@@ -62,16 +61,10 @@ class WorkflowManager:
         """Initialize domain objects with appropriate LLMs."""
         logger.debug("Initializing domain objects for workflow")
         
-        # Determine provider and check connection
-        provider = self.llm_manager.provider.lower()
-        connection_status = False
-        
-        if provider == "groq":
-            connection_status, message = self.llm_manager.check_groq_connection()
-            if not connection_status:
-                logger.warning(f"Groq connection failed: {message}")
-        else:
-            logger.warning(f"Unknown provider: {provider}")
+        # Check Groq connection
+        connection_status, message = self.llm_manager.check_groq_connection()
+        if not connection_status:
+            logger.warning(f"Groq connection failed: {message}")
         
         if connection_status:
             # Initialize models for different functions
@@ -107,14 +100,6 @@ class WorkflowManager:
             Initialized LLM or None if initialization fails
         """
         try:
-            # Ensure GPU usage for Ollama models
-            if self.llm_manager.provider.lower() == "ollama":
-                # Force GPU usage
-                os.environ["ENABLE_GPU"] = "true"
-                self.llm_manager.force_gpu = True
-                # Refresh GPU info
-                self.llm_manager.refresh_gpu_info()
-            
             # Initialize model
             return self.llm_manager.initialize_model_from_env(f"{role}_MODEL", f"{role}_TEMPERATURE")
         except Exception as e:
@@ -158,7 +143,7 @@ class WorkflowManager:
         Get all available error categories.
         
         Returns:
-            Dictionary with 'build' and 'checkstyle' categories
+            Dictionary with error categories
         """
         return self.error_repository.get_all_categories()
     

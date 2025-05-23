@@ -31,17 +31,17 @@ from llm_manager import LLMManager
 from langgraph_workflow import JavaCodeReviewGraph
 
 # Import modularized UI functions
-from ui.main_ui import (
+from ui.utils.main_ui import (
     init_session_state,
     render_llm_logs_tab,
     create_enhanced_tabs
 )
 
 # Import UI components
-from ui.CodeGeneratorUI import CodeGeneratorUI
-from ui.code_review import CodeDisplayUI, render_review_tab  
-from ui.feedback_system import render_feedback_tab
-from ui.auth_ui import AuthUI
+from ui.components.code_generator import CodeGeneratorUI
+from ui.components.code_display import CodeDisplayUI, render_review_tab  
+from ui.components.feedback_system import render_feedback_tab
+from ui.components.auth_ui import AuthUI
 
 
 # Set page config

@@ -30,7 +30,6 @@ class AuthUI:
     This class handles the login, registration, and profile display interfaces
     for user authentication with a local JSON file.
     """
-    
     def __init__(self):
         """Initialize the AuthUI component with local auth manager."""
         self.auth_manager = MySQLAuthManager()
@@ -42,7 +41,6 @@ class AuthUI:
                 "user_id": None,
                 "user_info": {}
             }
-    
     
     def render_auth_page(self) -> bool:
         """

@@ -983,7 +983,7 @@ class CodeGeneratorUI:
         """
         # Check if tutorial needs to be shown
         if not st.session_state.get("tutorial_completed", False):
-            from ui.tutorial_animation import CodeReviewTutorial
+            from ui.components.tutorial import CodeReviewTutorial
             tutorial = CodeReviewTutorial()
             tutorial.render(on_complete=lambda: render_generate_tab(self.workflow, self.error_selector, self.code_display_ui, user_level))
         else:
