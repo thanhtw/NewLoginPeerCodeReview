@@ -14,7 +14,8 @@ import traceback
 from typing import List, Dict, Any, Optional, Tuple, Callable
 from auth.badge_manager import BadgeManager
 from auth.mysql_auth import MySQLAuthManager
-from utils.language_utils import t, get_current_language, get_db_field_name, get_multilingual_field
+from utils.language_utils import t, get_current_language
+from ui.animation import level_up_animation
 
 import plotly.express as px
 import plotly.graph_objects as go
@@ -575,7 +576,6 @@ class FeedbackSystem:
                         
                         # Import the animation function
                         try:
-                            from ui.animation import level_up_animation
                             level_up_animation(old_level, new_level)
                         except ImportError:
                             # Fallback if animation module is not available

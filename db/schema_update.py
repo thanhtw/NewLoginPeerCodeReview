@@ -26,8 +26,7 @@ def update_database_schema():
         last_activity DATE DEFAULT NULL,
         consecutive_days INT DEFAULT 0,
         total_points INT DEFAULT 0,
-        tutorial_completed BOOLEAN DEFAULT FALSE,
-        user_role ENUM('student', 'instructor', 'admin') DEFAULT 'student'
+        tutorial_completed BOOLEAN DEFAULT FALSE        
     )
     """
     
@@ -137,39 +136,7 @@ def insert_default_badges(db):
         # Special badges
         ("full-spectrum", "Full Spectrum", "全方位", "Identified at least one error in each category", "在每個類別中至少識別一個錯誤", "🌈", "special", "hard", 75),
         ("rising-star", "Rising Star", "冉冉新星", "Earned 500 points in your first week", "在第一週內獲得 500 點", "⭐", "special", "hard", 100),
-        ("tutorial-master", "Tutorial Master", "教學大師", "Completed the interactive tutorial", "完成互動教學", "🎓", "tutorial", "easy", 25),
-
-        #Peer review badges
-        ("peer-reviewer", "Peer Reviewer", "同儕審查者", "Completed your first peer review", "完成了您的第一次同儕審查","👥", "peer_review", "easy", 20),
-        ("helpful-reviewer", "Helpful Reviewer", "有用的審查者","Received 5-star ratings on 5 reviews", "在5次審查中獲得5星評價", "🌟", "peer_review", "medium", 50),
-        ("collaborative", "Collaborative", "協作者","Participated in 10 peer review discussions", "參與了10次同儕審查討論","🤝", "peer_review", "medium", 40),
-        ("submission-creator", "Submission Creator", "提交創建者","Created your first peer submission", "創建了您的第一次同儕提交","📝", "peer_review", "easy", 15),
-
-         # Challenge participation badges
-        ("challenge-newcomer", "Challenge Newcomer", "挑戰新手", "Participated in your first community challenge", "參與了你的第一個社群挑戰", "🎯", "challenge", "easy", 15),
-        ("challenge-regular", "Challenge Regular", "挑戰常客", "Participated in 5 community challenges", "參與了 5 個社群挑戰", "🎪", "challenge", "medium", 30),
-        ("challenge-enthusiast", "Challenge Enthusiast", "挑戰愛好者", "Participated in 15 community challenges", "參與了 15 個社群挑戰", "🎨", "challenge", "hard", 75),
-        
-        # Challenge performance badges
-        ("challenge-winner", "Challenge Winner", "挑戰獲勝者", "Won 1st place in a community challenge", "在社群挑戰中獲得第一名", "🏆", "challenge", "hard", 100),
-        ("podium-finisher", "Podium Finisher", "登台完賽者", "Finished in top 3 of a community challenge", "在社群挑戰中進入前三名", "🥉", "challenge", "medium", 50),
-        ("top-performer", "Top Performer", "頂級表現者", "Finished in top 10% of participants in a challenge", "在挑戰中進入參與者前 10%", "⭐", "challenge", "medium", 40),
-        
-        # Challenge streak badges
-        ("challenge-streak-3", "3-Challenge Streak", "三連挑戰", "Completed 3 challenges in a row", "連續完成 3 個挑戰", "🔥", "challenge", "medium", 45),
-        ("challenge-streak-7", "Weekly Warrior", "每週戰士", "Completed 7 challenges in a row", "連續完成 7 個挑戰", "💪", "challenge", "hard", 80),
-        
-        # Speed and accuracy badges
-        ("speed-demon", "Speed Demon", "速度惡魔", "Completed a challenge in under 10 minutes", "在 10 分鐘內完成挑戰", "⚡", "challenge", "medium", 35),
-        ("perfectionist-challenger", "Perfectionist Challenger", "完美主義挑戰者", "Achieved 100% accuracy in a challenge", "在挑戰中達到 100% 準確率", "💎", "challenge", "hard", 60),
-        
-        # Challenge creation badges (for instructors)
-        ("challenge-creator", "Challenge Creator", "挑戰創造者", "Created your first custom challenge", "創建了你的第一個自訂挑戰", "🎭", "challenge", "medium", 50),
-        ("popular-creator", "Popular Creator", "受歡迎創造者", "Created a challenge with 50+ participants", "創建了有 50+ 參與者的挑戰", "🌟", "challenge", "hard", 100),
-        
-        # Community engagement badges
-        ("early-bird", "Early Bird", "早起鳥", "Joined a challenge within first hour of launch", "在挑戰開始後一小時內參加", "🐦", "challenge", "easy", 20),
-        ("last-minute-hero", "Last Minute Hero", "最後時刻英雄", "Completed a challenge in its final hour", "在挑戰的最後一小時完成", "⏰", "challenge", "medium", 35)
+        ("tutorial-master", "Tutorial Master", "教學大師", "Completed the interactive tutorial", "完成互動教學", "🎓", "tutorial", "easy", 25)        
         
     ]
     
