@@ -9,14 +9,6 @@ def update_database_schema():
     """Apply schema updates to support multilingual fields and add badge and statistics support."""
     db = MySQLConnection()
 
-    # Check if columns exist in users table
-    check_column_exists = """
-    SELECT COUNT(*) as column_exists 
-    FROM information_schema.columns 
-    WHERE table_schema = DATABASE() 
-    AND table_name = %s 
-    AND column_name = %s
-    """
     
     # Create users table with multilingual support if it doesn't exist
     users_table = """
@@ -34,59 +26,10 @@ def update_database_schema():
         last_activity DATE DEFAULT NULL,
         consecutive_days INT DEFAULT 0,
         total_points INT DEFAULT 0,
-        tutorial_completed BOOLEAN DEFAULT FALSE
+        tutorial_completed BOOLEAN DEFAULT FALSE,
+        user_role ENUM('student', 'instructor', 'admin') DEFAULT 'student'
     )
     """
-
-    db.execute_query(users_table)
-    
-    # Check if columns exist before adding
-    result = db.execute_query(check_column_exists, ('users', 'display_name_en'), fetch_one=True)
-    has_display_name_en = result and result.get('column_exists', 0) > 0
-
-    if has_display_name_en:
-        logger.info("Users table already has multilingual support")
-    else:
-        # Users table exists but needs multilingual columns
-        logger.info("Adding multilingual support to users table")
-        
-        # Add multilingual columns if they don't exist
-        try:
-            db.execute_query("ALTER TABLE users ADD COLUMN display_name_en VARCHAR(255)")
-            db.execute_query("ALTER TABLE users ADD COLUMN display_name_zh VARCHAR(255)")
-            db.execute_query("ALTER TABLE users ADD COLUMN level_name_en VARCHAR(50)")
-            db.execute_query("ALTER TABLE users ADD COLUMN level_name_zh VARCHAR(50)")
-            
-            # Populate new columns with data from existing columns
-            db.execute_query("UPDATE users SET display_name_en = display_name, display_name_zh = display_name")
-            
-            # Populate level names based on the level enum value
-            db.execute_query("UPDATE users SET level_name_en = level")
-            
-            # Set Chinese level names
-            db.execute_query("UPDATE users SET level_name_zh = CASE level " +
-                            "WHEN 'basic' THEN '基礎' " +
-                            "WHEN 'medium' THEN '中級' " +
-                            "WHEN 'senior' THEN '高級' " +
-                            "ELSE level END")
-            
-            logger.info("Multilingual columns added and populated in users table")
-        except Exception as e:
-            logger.error(f"Error adding multilingual columns to users table: {str(e)}")
-    
-    # Check and add tutorial_completed column if it doesn't exist
-    try:
-        result = db.execute_query(check_column_exists, ('users', 'tutorial_completed'), fetch_one=True)
-        has_tutorial_completed = result and result.get('column_exists', 0) > 0
-        
-        if not has_tutorial_completed:
-            logger.info("Adding tutorial_completed column to users table")
-            db.execute_query("ALTER TABLE users ADD COLUMN tutorial_completed BOOLEAN DEFAULT FALSE")
-            logger.info("Added tutorial_completed column to users table")
-        else:
-            logger.info("tutorial_completed column already exists in users table")
-    except Exception as e:
-        logger.error(f"Error adding tutorial_completed column: {str(e)}")
     
     # Create badges table with multilingual fields (if not exists)
     badges_table = """
@@ -145,165 +88,16 @@ def update_database_schema():
         FOREIGN KEY (user_id) REFERENCES users(uid)
     )
     """
-    
-    
-    # Add multilingual fields to users table
-
-    users_multilingual_update = """
-    ALTER TABLE users
-    ADD COLUMN display_name_en VARCHAR(255),
-    ADD COLUMN display_name_zh VARCHAR(255),
-    ADD COLUMN level_name_en VARCHAR(50),
-    ADD COLUMN level_name_zh VARCHAR(50)
-    """
 
     
-
-    if not has_display_name_en:
-        # The table exists but doesn't have multilingual columns
-        # Need to migrate data from old format to new format
-        logger.info("Migrating users table to support multiple languages...")
-        
-        # Create temporary columns
-        db.execute_query("ALTER TABLE users ADD COLUMN display_name_backup VARCHAR(255)")
-        db.execute_query("ALTER TABLE users ADD COLUMN level_backup VARCHAR(50)")
-        
-        # Backup current data
-        db.execute_query("UPDATE users SET display_name_backup = display_name, level_backup = level")
-        
-        # Add multilingual columns
-        db.execute_query(users_multilingual_update)
-        
-        # Copy data to new columns
-        db.execute_query("UPDATE users SET display_name_en = display_name_backup, display_name_zh = display_name_backup")
-        db.execute_query("UPDATE users SET level_name_en = level_backup, level_name_zh = level_backup")
-        
-        # Clean up backup columns
-        db.execute_query("ALTER TABLE users DROP COLUMN display_name_backup")
-        db.execute_query("ALTER TABLE users DROP COLUMN level_backup")
-        
-        logger.info("Added multilingual support to users table")
-    else:
-        logger.info("Users table already has multilingual support")
-
-    
-    # Execute all schema updates
     try:
-        # Check if badges table exists
-        result = db.execute_query(check_column_exists, ('badges', 'badge_id'), fetch_one=True)
-        badges_exist = result and result.get('column_exists', 0) > 0
-        
-        # If badges table exists but doesn't have multilingual fields, modify it
-        if badges_exist:
-            # Check if name_en and name_zh exist
-            result = db.execute_query(check_column_exists, ('badges', 'name_en'), fetch_one=True)
-            has_name_en = result and result.get('column_exists', 0) > 0
-            
-            if not has_name_en:
-                # The table exists but doesn't have multilingual columns
-                # Need to migrate data from old format to new format
-                logger.info("Migrating badges table to support multiple languages...")
-                
-                # Create temporary column name_backup and description_backup
-                db.execute_query("ALTER TABLE badges ADD COLUMN name_backup VARCHAR(100)")
-                db.execute_query("ALTER TABLE badges ADD COLUMN description_backup TEXT")
-                
-                # Backup current data
-                db.execute_query("UPDATE badges SET name_backup = name, description_backup = description")
-                
-                # Check if the columns exist and modify or add them
-                for column in ['name', 'description']:
-                    # First try to modify existing columns
-                    try:
-                        result = db.execute_query(check_column_exists, ('badges', column), fetch_one=True)
-                        if result and result.get('column_exists', 0) > 0:
-                            # Rename the existing column to columnname_en
-                            db.execute_query(f"ALTER TABLE badges CHANGE {column} {column}_en {column}_en VARCHAR(100) NOT NULL")
-                            logger.info(f"Renamed {column} to {column}_en")
-                        
-                        # Add the new *_zh column
-                        db.execute_query(f"ALTER TABLE badges ADD COLUMN {column}_zh {column}_zh VARCHAR(100) NOT NULL")
-                        
-                        # Copy the English content to the zh column as a temporary measure
-                        db.execute_query(f"UPDATE badges SET {column}_zh = {column}_backup")
-                        logger.info(f"Added {column}_zh and copied English content as placeholder")
-                    except Exception as e:
-                        logger.error(f"Error modifying {column} column: {str(e)}")
-                
-                # Clean up temporary columns
-                try:
-                    db.execute_query("ALTER TABLE badges DROP COLUMN name_backup")
-                    db.execute_query("ALTER TABLE badges DROP COLUMN description_backup")
-                except Exception as e:
-                    logger.error(f"Error dropping backup columns: {str(e)}")
-            else:
-                logger.info("Badges table already has multilingual support")
-        else:
-            # Create the badges table with multilingual fields
-            db.execute_query(badges_table)
-            logger.info("Created badges table with multilingual support")
-        
-        # Create other tables if they don't exist
-        db.execute_query(user_badges_table)       
+        db.execute_query(users_table)
+        db.execute_query(badges_table)
+        db.execute_query(user_badges_table)
         db.execute_query(error_category_stats_table)
+        db.execute_query(activity_log_table)      
         
-        # Check if activity log table exists
-        result = db.execute_query(check_column_exists, ('activity_log', 'id'), fetch_one=True)
-        activity_log_exists = result and result.get('column_exists', 0) > 0
-        
-        if activity_log_exists:
-            # Check if it has multilingual fields
-            result = db.execute_query(check_column_exists, ('activity_log', 'details_en'), fetch_one=True)
-            has_details_en = result and result.get('column_exists', 0) > 0
-            
-            if not has_details_en:
-                # Migrate details to details_en and details_zh
-                logger.info("Migrating activity_log table to support multiple languages...")
-                db.execute_query("ALTER TABLE activity_log ADD COLUMN details_backup TEXT")
-                db.execute_query("UPDATE activity_log SET details_backup = details")
-                
-                # Rename details to details_en and add details_zh
-                try:
-                    db.execute_query("ALTER TABLE activity_log CHANGE details details_en TEXT")
-                    db.execute_query("ALTER TABLE activity_log ADD COLUMN details_zh TEXT")
-                    db.execute_query("UPDATE activity_log SET details_zh = details_backup")
-                    logger.info("Updated activity_log table with multilingual fields")
-                except Exception as e:
-                    logger.error(f"Error modifying activity_log table: {str(e)}")
-                
-                # Clean up
-                try:
-                    db.execute_query("ALTER TABLE activity_log DROP COLUMN details_backup")
-                except Exception as e:
-                    logger.error(f"Error dropping backup column: {str(e)}")
-        else:
-            # Create the activity_log table
-            db.execute_query(activity_log_table)
-            logger.info("Created activity_log table with multilingual support")
-        
-        # Check and add columns to users table
-        columns_to_add = [
-            ('last_activity', 'DATE DEFAULT NULL'),
-            ('consecutive_days', 'INT DEFAULT 0'),
-            ('total_points', 'INT DEFAULT 0')
-        ]
-        
-        for column_name, column_def in columns_to_add:
-            # Check if column exists
-            result = db.execute_query(check_column_exists, ('users', column_name), fetch_one=True)
-            column_exists = result and result.get('column_exists', 0) > 0
-            
-            if not column_exists:
-                # Add column if it doesn't exist
-                add_column_query = f"ALTER TABLE users ADD COLUMN {column_name} {column_def}"
-                db.execute_query(add_column_query)
-                logger.info(f"Added column {column_name} to users table")
-        
-        logger.info("Database schema updated successfully")
-        
-        # Insert default badges with multilingual support
         insert_default_badges(db)
-        
         return True
     except Exception as e:
         logger.error(f"Error updating database schema: {str(e)}")
@@ -344,6 +138,39 @@ def insert_default_badges(db):
         ("full-spectrum", "Full Spectrum", "全方位", "Identified at least one error in each category", "在每個類別中至少識別一個錯誤", "🌈", "special", "hard", 75),
         ("rising-star", "Rising Star", "冉冉新星", "Earned 500 points in your first week", "在第一週內獲得 500 點", "⭐", "special", "hard", 100),
         ("tutorial-master", "Tutorial Master", "教學大師", "Completed the interactive tutorial", "完成互動教學", "🎓", "tutorial", "easy", 25),
+
+        #Peer review badges
+        ("peer-reviewer", "Peer Reviewer", "同儕審查者", "Completed your first peer review", "完成了您的第一次同儕審查","👥", "peer_review", "easy", 20),
+        ("helpful-reviewer", "Helpful Reviewer", "有用的審查者","Received 5-star ratings on 5 reviews", "在5次審查中獲得5星評價", "🌟", "peer_review", "medium", 50),
+        ("collaborative", "Collaborative", "協作者","Participated in 10 peer review discussions", "參與了10次同儕審查討論","🤝", "peer_review", "medium", 40),
+        ("submission-creator", "Submission Creator", "提交創建者","Created your first peer submission", "創建了您的第一次同儕提交","📝", "peer_review", "easy", 15),
+
+         # Challenge participation badges
+        ("challenge-newcomer", "Challenge Newcomer", "挑戰新手", "Participated in your first community challenge", "參與了你的第一個社群挑戰", "🎯", "challenge", "easy", 15),
+        ("challenge-regular", "Challenge Regular", "挑戰常客", "Participated in 5 community challenges", "參與了 5 個社群挑戰", "🎪", "challenge", "medium", 30),
+        ("challenge-enthusiast", "Challenge Enthusiast", "挑戰愛好者", "Participated in 15 community challenges", "參與了 15 個社群挑戰", "🎨", "challenge", "hard", 75),
+        
+        # Challenge performance badges
+        ("challenge-winner", "Challenge Winner", "挑戰獲勝者", "Won 1st place in a community challenge", "在社群挑戰中獲得第一名", "🏆", "challenge", "hard", 100),
+        ("podium-finisher", "Podium Finisher", "登台完賽者", "Finished in top 3 of a community challenge", "在社群挑戰中進入前三名", "🥉", "challenge", "medium", 50),
+        ("top-performer", "Top Performer", "頂級表現者", "Finished in top 10% of participants in a challenge", "在挑戰中進入參與者前 10%", "⭐", "challenge", "medium", 40),
+        
+        # Challenge streak badges
+        ("challenge-streak-3", "3-Challenge Streak", "三連挑戰", "Completed 3 challenges in a row", "連續完成 3 個挑戰", "🔥", "challenge", "medium", 45),
+        ("challenge-streak-7", "Weekly Warrior", "每週戰士", "Completed 7 challenges in a row", "連續完成 7 個挑戰", "💪", "challenge", "hard", 80),
+        
+        # Speed and accuracy badges
+        ("speed-demon", "Speed Demon", "速度惡魔", "Completed a challenge in under 10 minutes", "在 10 分鐘內完成挑戰", "⚡", "challenge", "medium", 35),
+        ("perfectionist-challenger", "Perfectionist Challenger", "完美主義挑戰者", "Achieved 100% accuracy in a challenge", "在挑戰中達到 100% 準確率", "💎", "challenge", "hard", 60),
+        
+        # Challenge creation badges (for instructors)
+        ("challenge-creator", "Challenge Creator", "挑戰創造者", "Created your first custom challenge", "創建了你的第一個自訂挑戰", "🎭", "challenge", "medium", 50),
+        ("popular-creator", "Popular Creator", "受歡迎創造者", "Created a challenge with 50+ participants", "創建了有 50+ 參與者的挑戰", "🌟", "challenge", "hard", 100),
+        
+        # Community engagement badges
+        ("early-bird", "Early Bird", "早起鳥", "Joined a challenge within first hour of launch", "在挑戰開始後一小時內參加", "🐦", "challenge", "easy", 20),
+        ("last-minute-hero", "Last Minute Hero", "最後時刻英雄", "Completed a challenge in its final hour", "在挑戰的最後一小時完成", "⏰", "challenge", "medium", 35)
+        
     ]
     
     # Insert each badge with error handling
