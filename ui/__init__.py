@@ -11,6 +11,7 @@ from ui.components.code_display import CodeDisplayUI
 from ui.components.feedback_system import FeedbackSystem
 from ui.components.auth_ui import AuthUI
 
+
 # UI utilities
 from ui.utils.main_ui import (
     init_session_state,
@@ -22,6 +23,8 @@ from ui.utils.main_ui import (
 # Animation components
 from ui.components.animation import level_up_animation
 from ui.components.tutorial import CodeReviewTutorial
+from ui.components.profile_leaderboard import ProfileLeaderboardSidebar
+
 
 __all__ = [
     # Core components
@@ -38,5 +41,6 @@ __all__ = [
     
     # Animation components
     'level_up_animation',
-    'CodeReviewTutorial'
+    'CodeReviewTutorial',
+    'ProfileLeaderboardSidebar'
 ]

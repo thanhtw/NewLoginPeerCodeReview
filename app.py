@@ -125,7 +125,7 @@ def main():
     render_language_selector()
     
     # Render user profile
-    auth_ui.render_user_profile()
+    auth_ui.render_combined_profile_leaderboard()
 
     # Initialize workflow after provider is setup
     workflow = JavaCodeReviewGraph(llm_manager)

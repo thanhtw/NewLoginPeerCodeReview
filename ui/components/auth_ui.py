@@ -207,57 +207,7 @@ class AuthUI:
         st.markdown('</div>', unsafe_allow_html=True)
         
         return st.session_state.auth["is_authenticated"]
-    
-    def render_user_profile(self):
-        """Render the user profile section in the sidebar with proper language support."""
-        # Check if user is authenticated
-        if not st.session_state.auth.get("is_authenticated", False):
-            return
-                
-        # Get user info
-        user_info = st.session_state.auth.get("user_info", {})       
-        # Get current language
-        current_lang = get_current_language()
-        
-        # Use the appropriate language field
-        display_name_field = f"display_name_{current_lang}" if current_lang in ["en", "zh"] else "display_name_en"
-        level_field = f"level_name_{current_lang}" if current_lang in ["en", "zh"] else "level_name_en"
-        
-        # Fallback to standard fields if multilingual ones are not available
-        display_name = user_info.get(display_name_field, user_info.get("display_name", "User"))
-        level = user_info.get(level_field, user_info.get("level", "basic")).capitalize()
-        reviews_completed = user_info.get("reviews_completed", 0)
-        score = user_info.get("score", 0)
-        
-        st.sidebar.markdown(f"""
-        <div class="profile-container">
-            <div class="profile-name">{display_name}</div>
-            <div class="profile-item">
-                <span class="profile-label">{t("level")}:</span>
-                <span class="profile-value">{level}</span>
-            </div>
-            <div class="profile-item">
-                <span class="profile-label">{t("review_times")}:</span>
-                <span class="profile-value">{reviews_completed}</span>
-            </div>
-            <div class="profile-item">
-                <span class="profile-label">{t("score")}:</span>
-                <span class="profile-value">{score}</span>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-        # Application info
-        st.sidebar.subheader(t("about"))
-        st.sidebar.markdown(t("about_app"))
-        
-        # Add logout button
-        st.sidebar.markdown("---")
-        if st.sidebar.button(t("logout"), use_container_width=True, key="logout_btn"):
-            self.logout()        
-       
-        
-    
+     
     def logout(self):
         """Handle user logout by clearing authentication state and triggering full reset."""
         logger.debug("User logout initiated")
@@ -418,4 +368,32 @@ class AuthUI:
         except Exception as e:
             logger.error(f"Error marking tutorial as completed: {str(e)}")
             return False
+        
+    def render_combined_profile_leaderboard(self):
+        """Render simplified combined profile and leaderboard in sidebar."""
+        if not st.session_state.auth.get("is_authenticated", False):
+            return
+        
+        user_info = st.session_state.auth.get("user_info", {})
+        user_id = st.session_state.auth.get("user_id")
+        
+        with st.sidebar:
+            # Combined profile and leaderboard
+            try:
+                from ui.components.profile_leaderboard import ProfileLeaderboardSidebar
+                ProfileLeaderboardSidebar().render_combined_sidebar(user_info, user_id)
+            except Exception as e:
+                logger.error(f"Sidebar error: {str(e)}")
+                # Simple fallback
+                display_name = user_info.get("display_name_en", user_info.get("display_name", "User"))
+                st.markdown(f"**{display_name}**")
+                st.write(f"{t('score')}: {user_info.get('score', 0)}")
+            
+            # App info and logout
+            st.markdown("---")
+            st.markdown(f"**{t('about')}**")
+            st.caption(t("about_app"))
+            
+            if st.button(t("logout"), use_container_width=True):
+                self.logout()
         

@@ -96,7 +96,6 @@ translations = {
     "no_errors_found": "No errors found in",
     "no_process_details": "No process details available.",
     "no_specific_issues": "No specific issue selected. Random errors will be used based on categories.",
-    "of": "of",
     "params_based_on_level": "These parameters are automatically set based on your experience level",
     "partial_quality": "Code generated with",
     "process_details": "Process Details",
@@ -503,7 +502,12 @@ translations = {
     "Tutorial completed! You earned the Tutorial Master badge! 🎓": "Tutorial completed! You earned the Tutorial Master badge! 🎓",
     "Tutorial completed, but there was an issue saving your progress.": "Tutorial completed, but there was an issue saving your progress.",
     "logout": "Logout",
-    "logout_success": "Successfully logged out!"
+    "logout_success": "Successfully logged out!",
+    "you": "You",
+    "top_performers": "Top Performers",
+    "view_full_leaderboard": "View Full Leaderboard",
+    "users": "users",
+    "of": "of"
 
 
 

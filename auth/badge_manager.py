@@ -578,3 +578,67 @@ class BadgeManager:
                 all_perfect = all(r.get("activity_type") == "perfect_review" for r in result)
                 if all_perfect:
                     self.award_badge(user_id, "perfectionist")
+
+    def get_leaderboard_with_badges(self, limit: int = 10) -> List[Dict[str, Any]]:
+        """
+        Get the user leaderboard with badge icons for display.
+        
+        Args:
+            limit: Maximum number of users to return
+            
+        Returns:
+            List of user dictionaries with badge icons and ranking
+        """
+        try:
+            # Update current language
+            self.current_language = get_current_language()
+            
+            # Set display name and level fields based on language
+            display_name_field = f"display_name_{self.current_language}" if self.current_language in ["en", "zh"] else "display_name_en"
+            level_field = f"level_name_{self.current_language}" if self.current_language in ["en", "zh"] else "level_name_en"
+            
+            # Build query with appropriate fields
+            query = f"""
+                SELECT uid, {display_name_field} as display_name, total_points, {level_field} as level,
+                    (SELECT COUNT(*) FROM user_badges WHERE user_id = uid) AS badge_count
+                FROM users
+                WHERE total_points > 0
+                ORDER BY total_points DESC
+                LIMIT %s
+            """
+            
+            leaders = self.db.execute_query(query, (limit,))
+            
+            if not leaders:
+                return []
+            
+            # Add rank and get top badges for each user
+            for i, leader in enumerate(leaders, 1):
+                leader["rank"] = i
+                
+                # Get top 3 badges for this user
+                badge_query = f"""
+                    SELECT b.icon, b.{f"name_{self.current_language}" if self.current_language in ["en", "zh"] else "name_en"} as name,
+                        b.category, b.difficulty
+                    FROM badges b
+                    JOIN user_badges ub ON b.badge_id = ub.badge_id
+                    WHERE ub.user_id = %s
+                    ORDER BY 
+                        CASE b.difficulty 
+                            WHEN 'hard' THEN 3 
+                            WHEN 'medium' THEN 2 
+                            WHEN 'easy' THEN 1 
+                            ELSE 0 
+                        END DESC,
+                        ub.awarded_at DESC
+                    LIMIT 3
+                """
+                
+                badges = self.db.execute_query(badge_query, (leader["uid"],))
+                leader["top_badges"] = badges or []
+                    
+            return leaders
+                
+        except Exception as e:
+            logger.error(f"{t('error_getting_leaderboard')}: {str(e)}")
+            return []

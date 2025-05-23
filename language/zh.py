@@ -96,7 +96,6 @@ translations = {
     "no_errors_found": "在此類別中未找到錯誤",
     "no_process_details": "沒有可用的過程詳情。",
     "no_specific_issues": "未選擇特定問題。將根據類別使用隨機錯誤。",
-    "of": "共",
     "params_based_on_level": "這些參數是根據您的經驗等級自動設定的",
     "partial_quality": "生成的程式碼，錯誤比例為",
     "process_details": "過程詳情",
@@ -512,7 +511,12 @@ translations = {
     "Tutorial completed! You earned the Tutorial Master badge! 🎓": "教學完成！您獲得了教學大師徽章！🎓",
     "Tutorial completed, but there was an issue saving your progress.": "教學完成，但保存進度時出現問題。",
     "logout": "登出",
-    "logout_success": "成功登出！"
+    "logout_success": "成功登出！",
+    "you": "你",
+    "top_performers": "頂尖表現者", 
+    "view_full_leaderboard": "查看完整排行榜",
+    "users": "用戶",
+    "of": "共"
 
 
 }

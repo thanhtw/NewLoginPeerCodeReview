@@ -797,13 +797,13 @@ class FeedbackSystem:
 
     def render_leaderboard(self, user_id: str) -> None:
         """
-        Render the point-based leaderboard with proper column alignment.
+        Render an enhanced leaderboard with badge icons and better visual design.
         
         Args:
             user_id: The current user's ID
         """
         badge_manager = BadgeManager()
-        leaders = badge_manager.get_leaderboard(10)
+        leaders = badge_manager.get_leaderboard_with_badges(15)  # Show more users
         user_rank = badge_manager.get_user_rank(user_id)
         
         st.subheader("🏆 " + t("leaderboard"))
@@ -811,57 +811,71 @@ class FeedbackSystem:
         if not leaders:
             st.info(t("no_users_leaderboard"))
             return
+        # Leaderboard container
+        st.markdown('<div class="enhanced-leaderboard">', unsafe_allow_html=True)
         
-        # Get current language for field selection
-        current_lang = get_current_language()
-        display_name_field = f"display_name_{current_lang}" if current_lang in ["en", "zh"] else "display_name"
-        level_field = f"level_name_{current_lang}" if current_lang in ["en", "zh"] else "level"
+        # Header
+        st.markdown(f'''
+        <div class="leaderboard-header">
+            🏆 {t("leaderboard")} - Top Performers
+        </div>
+        ''', unsafe_allow_html=True)
         
-        # Create leaderboard table with translated headers
-        st.markdown(f"""
-        <table class="leaderboard-table">
-            <thead>
-                <tr>
-                    <th>{t("rank")}</th>
-                    <th>{t("user")}</th>
-                    <th>{t("level")}</th>
-                    <th>{t("points")}</th>
-                    <th>{t("badges")}</th>
-                </tr>
-            </thead>
-            <tbody>
-        """, unsafe_allow_html=True)
-        
+        # Leaderboard entries
         for leader in leaders:
             rank = leader.get("rank", 0)
-            rank_class = "gold" if rank == 1 else "silver" if rank == 2 else "bronze" if rank == 3 else ""
-            user_class = "current-user" if leader.get("uid") == user_id else ""
+            display_name = leader.get("display_name", t("unknown"))
+            level_display = leader.get("level", "basic").capitalize()
+            points = leader.get("total_points", 0)
+            badge_count = leader.get("badge_count", 0)
+            top_badges = leader.get("top_badges", [])
+            is_current_user = leader.get("uid") == user_id
             
-            # Get trophy emoji based on rank
-            rank_emoji = "🥇" if rank == 1 else "🥈" if rank == 2 else "🥉" if rank == 3 else f"{rank}."
+            # Rank display
+            rank_emoji = "🥇" if rank == 1 else "🥈" if rank == 2 else "🥉" if rank == 3 else f"{rank}"
             
-            # Get display name and level with language support
-            display_name = leader.get(display_name_field, leader.get("display_name", t("unknown")))
-            level_display = leader.get(level_field, leader.get("level", "basic")).capitalize()
+            # Badge icons
+            badge_icons = "".join([
+                f'<span title="{badge.get("name", "")}">{badge.get("icon", "🏅")}</span>' 
+                for badge in top_badges
+            ])
             
-            st.markdown(f"""
-            <tr class="{user_class}">
-                <td class="{rank_class}">{rank_emoji}</td>
-                <td>{display_name}</td>
-                <td>{level_display}</td>
-                <td>{leader.get("total_points", 0)}</td>
-                <td>{leader.get("badge_count", 0)}</td>
-            </tr>
-            """, unsafe_allow_html=True)
+            # Current user indicator
+            current_user_class = "current-user" if is_current_user else ""
+            current_user_text = f' <span style="color: #4CAF50; font-size: 0.8em;">({t("you")})</span>' if is_current_user else ''
+            
+            st.markdown(f'''
+            <div class="leaderboard-row {current_user_class}">
+                <div class="rank-badge">{rank_emoji}</div>
+                <div class="user-info">
+                    <div class="user-name">
+                        {display_name}{current_user_text}
+                        <span class="badge-icons">{badge_icons}</span>
+                    </div>
+                    <div class="user-details">
+                        {level_display} • {badge_count} {t("badges").lower()}
+                    </div>
+                </div>
+                <div class="points-display">
+                    {points:,}<br>
+                    <span style="font-size: 0.8em; color: #999;">{t("points").lower()}</span>
+                </div>
+            </div>
+            ''', unsafe_allow_html=True)
         
-        st.markdown("</tbody></table>", unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
         
-        # Show user's rank if not in top 10
+        # Show user's rank if not in top list
         if user_id and not any(leader.get("uid") == user_id for leader in leaders):
             rank = user_rank.get("rank", 0)
             total_users = user_rank.get("total_users", 0)
             
-            st.info(t("your_rank").format(rank=rank, total=total_users))
+            st.markdown(f'''
+            <div style="text-align: center; padding: 15px; background-color: #f8f9fa; 
+                    border-radius: 10px; margin-top: 15px;">
+                <i>{t("your_rank")}: <strong>{rank}</strong> / {total_users}</i>
+            </div>
+            ''', unsafe_allow_html=True)
 
 def render_feedback_tab(workflow, auth_ui=None):
     """
