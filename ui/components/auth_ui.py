@@ -390,163 +390,33 @@ class AuthUI:
                 
             except ImportError as ie:
                 logger.error(f"Failed to import ProfileLeaderboardSidebar: {str(ie)}")
-                self._render_basic_profile_fallback(user_info)
+                
                 
             except Exception as e:
                 logger.error(f"Enhanced sidebar error: {str(e)}")
-                self._render_basic_profile_fallback(user_info)
             
             # App info and logout section
             self._render_sidebar_footer()
 
-    def _render_basic_profile_fallback(self, user_info: Dict[str, Any]) -> None:
-        """Render basic profile information as fallback."""
-        current_lang = get_current_language()
-        display_name = user_info.get(f"display_name_{current_lang}", 
-                                user_info.get("display_name", "User"))
-        level = user_info.get(f"level_name_{current_lang}", 
-                            user_info.get("level", "basic")).capitalize()
-        score = user_info.get("score", 0)
-        reviews_completed = user_info.get("reviews_completed", 0)
-        
-        # Basic profile card with modern styling
-        st.markdown(f"""
-        <div style="
-            background: linear-gradient(145deg, #667eea 0%, #764ba2 100%);
-            border-radius: 16px;
-            padding: 24px 20px;
-            margin-bottom: 20px;
-            color: white;
-            text-align: center;
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
-        ">
-            <div style="
-                font-size: 1.4em;
-                font-weight: 700;
-                margin-bottom: 8px;
-                text-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            ">
-                {display_name}
-            </div>
-            <div style="
-                font-size: 0.9em;
-                opacity: 0.9;
-                margin-bottom: 16px;
-                text-transform: uppercase;
-                letter-spacing: 1px;
-            ">
-                {level}
-            </div>
-            <div style="
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 12px;
-                margin-top: 16px;
-            ">
-                <div style="
-                    background: rgba(255,255,255,0.15);
-                    border-radius: 10px;
-                    padding: 12px 8px;
-                ">
-                    <div style="font-size: 1.3em; font-weight: 700;">{reviews_completed}</div>
-                    <div style="font-size: 0.7em; text-transform: uppercase;">{t("review_times")}</div>
-                </div>
-                <div style="
-                    background: rgba(255,255,255,0.15);
-                    border-radius: 10px;
-                    padding: 12px 8px;
-                ">
-                    <div style="font-size: 1.3em; font-weight: 700;">{score:,}</div>
-                    <div style="font-size: 0.7em; text-transform: uppercase;">{t("score")}</div>
-                </div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
     def _render_sidebar_footer(self) -> None:
         """Render the sidebar footer with app info and logout."""
-        # App info section with enhanced styling
+        
         st.markdown("---")
         
         st.markdown(f"""
-        <div style="
-            background: linear-gradient(145deg, #f8f9fa 0%, #e9ecef 100%);
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 16px;
-            border-left: 4px solid #667eea;
-        ">
-            <div style="
-                font-weight: 700;
-                color: #2c3e50;
-                margin-bottom: 8px;
-                font-size: 1.1em;
-            ">
+        <div class="infor-infor">
+            <div class="infor-about">
                 ℹ️ {t('about')}
             </div>
-            <div style="
-                color: #6c757d;
-                font-size: 0.9em;
-                line-height: 1.4;
-            ">
+            <div class="infor-aboutapp">
                 {t("about_app")}
             </div>
         </div>
         """, unsafe_allow_html=True)
         
-        # Enhanced logout button
-        logout_button_html = f"""
-        <div style="margin-top: 20px;">
-            <style>
-            .logout-btn {{
-                background: linear-gradient(145deg, #dc3545, #c82333);
-                color: white;
-                border: none;
-                padding: 12px 20px;
-                border-radius: 10px;
-                font-weight: 600;
-                font-size: 0.9em;
-                cursor: pointer;
-                transition: all 0.3s ease;
-                width: 100%;
-                letter-spacing: 0.5px;
-                box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
-            }}
-            .logout-btn:hover {{
-                background: linear-gradient(145deg, #c82333, #dc3545);
-                transform: translateY(-2px);
-                box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
-            }}
-            </style>
-        </div>
-        """
-        
-        st.markdown(logout_button_html, unsafe_allow_html=True)
         
         # Use Streamlit button for actual functionality
-        if st.button(f"🚪 {t('logout')}", key="enhanced_logout", use_container_width=True):
+        if st.button(f"{t('logout')}", key="enhanced_logout", use_container_width=True):
             self.logout()
 
-    # Additional utility method for the enhanced sidebar
-    def _get_user_avatar_color(self, user_id: str) -> str:
-        """Generate a consistent color for user avatar based on user ID."""
-        if not user_id:
-            return "#667eea"
-        
-        # Generate a color based on user_id hash
-        import hashlib
-        hash_object = hashlib.md5(user_id.encode())
-        hex_dig = hash_object.hexdigest()
-        
-        # Extract RGB values from hash
-        r = int(hex_dig[0:2], 16)
-        g = int(hex_dig[2:4], 16) 
-        b = int(hex_dig[4:6], 16)
-        
-        # Ensure colors are vibrant enough
-        r = max(r, 100)
-        g = max(g, 100) 
-        b = max(b, 100)
-        
-        return f"rgb({r}, {g}, {b})"
         
