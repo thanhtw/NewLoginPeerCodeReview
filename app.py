@@ -115,10 +115,24 @@ def main():
         st.session_state.provider_selection = "groq"    
     
     api_key = os.getenv("GROQ_API_KEY", "")
-    if api_key:
-        llm_manager.set_provider("groq", api_key)
-    else:
-        st.warning("No Groq API key found in environment variables. Please set GROQ_API_KEY in your .env file.")
+    if not api_key:
+        st.error("⚠️ No Groq API key found in environment variables. Please set GROQ_API_KEY in your .env file.")
+        st.info("To get a Groq API key:")
+        st.info("1. Visit https://console.groq.com/")
+        st.info("2. Sign up and get your API key")
+        st.info("3. Add GROQ_API_KEY=your_key_here to your .env file")
+        st.stop()
+
+    # Configure provider without testing connection (will be tested on first use)
+    try:
+        success = llm_manager.set_provider("groq", api_key)
+        if not success:
+            st.error("❌ Failed to configure Groq provider. Please check your configuration.")
+            st.stop()
+        else:
+            logger.debug("✅ Groq provider configured successfully")
+    except Exception as e:
+        st.error(f"❌ Error configuring LLM provider: {str(e)}")
         st.stop()
 
     # Add language selector to sidebar

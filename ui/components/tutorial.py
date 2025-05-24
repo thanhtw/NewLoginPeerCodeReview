@@ -34,23 +34,12 @@ class CodeReviewTutorial:
         """Initialize LLM components for review evaluation."""
         try:
             self.llm_manager = LLMManager()
-            
-            # Check Groq connection
-            if self.llm_manager.provider == "groq":
-                connection_ok, _ = self.llm_manager.check_groq_connection()
+            self.review_llm = self.llm_manager.initialize_model_from_env("REVIEW_MODEL", "REVIEW_TEMPERATURE")
+            if self.review_llm:
+                self.evaluator = StudentResponseEvaluator(self.review_llm)
+                logger.debug("LLM components initialized for tutorial (connection will be tested on first use)")
             else:
-                connection_ok = False
-            
-            if connection_ok:
-                self.review_llm = self.llm_manager.initialize_model_from_env("REVIEW_MODEL", "REVIEW_TEMPERATURE")
-                if self.review_llm:
-                    self.evaluator = StudentResponseEvaluator(self.review_llm)
-                    logger.debug("LLM components initialized for tutorial")
-                else:
-                    logger.warning("Failed to initialize review LLM")
-                    self.evaluator = None
-            else:
-                logger.warning("No LLM connection available for tutorial")
+                logger.warning("Failed to initialize review LLM")
                 self.evaluator = None
                 
         except Exception as e:

@@ -59,6 +59,10 @@ class StudentResponseEvaluator:
         Returns:
             Dictionary with detailed analysis results
         """
+        if not self.llm:
+            logger.warning("No LLM available for review evaluation, using fallback evaluation")
+            return "// Error: No LLM available for code generation"
+
         try:
             logger.debug("Evaluating student review with code_utils prompt")
             

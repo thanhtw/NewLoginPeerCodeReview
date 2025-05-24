@@ -58,40 +58,53 @@ class WorkflowManager:
         self.workflow = self._build_workflow_graph()
     
     def _initialize_domain_objects(self) -> None:
-        """Initialize domain objects with appropriate LLMs."""
+        """
+        Initialize domain objects with appropriate LLMs.
+        Connection testing is now done lazily on first LLM use.
+        Handles cases where models might not initialize successfully.
+        """
         logger.debug("Initializing domain objects for workflow")
         
-        # Check Groq connection
-        connection_status, message = self.llm_manager.check_groq_connection()
-        if not connection_status:
-            logger.warning(f"Groq connection failed: {message}")
+        # Initialize models for different functions without testing connection
+        # Connection will be tested when models are actually used
+        generative_model = self._initialize_model_for_role("GENERATIVE")
+        review_model = self._initialize_model_for_role("REVIEW")
+        summary_model = self._initialize_model_for_role("SUMMARY")
         
-        if connection_status:
-            # Initialize models for different functions
-            generative_model = self._initialize_model_for_role("GENERATIVE")
-            review_model = self._initialize_model_for_role("REVIEW")
-            summary_model = self._initialize_model_for_role("SUMMARY")
-            
-            # Initialize domain objects with models
-            self.code_generator = CodeGenerator(generative_model, self.llm_logger)
-            self.code_evaluation = CodeEvaluationAgent(generative_model, self.llm_logger)
-            self.evaluator = StudentResponseEvaluator(review_model, llm_logger=self.llm_logger)
-            
-            # Store feedback models for generating final feedback
-            self.summary_model = summary_model
-            
-            logger.debug("Domain objects initialized with LLM models")
+        # Log model initialization status
+        models_status = {
+            "GENERATIVE": generative_model is not None,
+            "REVIEW": review_model is not None,
+            "SUMMARY": summary_model is not None
+        }
+        logger.debug(f"Model initialization status: {models_status}")
+        
+        # Initialize domain objects with models (they can handle None models gracefully)
+        self.code_generator = CodeGenerator(generative_model, self.llm_logger)
+        self.code_evaluation = CodeEvaluationAgent(generative_model, self.llm_logger)
+        self.evaluator = StudentResponseEvaluator(review_model, llm_logger=self.llm_logger)
+        
+        # Store feedback models for generating final feedback
+        self.summary_model = summary_model
+        
+        # Count successful initializations
+        successful_models = sum(models_status.values())
+        total_models = len(models_status)
+        
+        if successful_models == total_models:
+            logger.debug(f"All {total_models} domain objects initialized successfully (connections will be tested on first use)")
+        elif successful_models > 0:
+            logger.warning(f"Initialized {successful_models}/{total_models} models successfully. Some features may be limited.")
         else:
-            # Initialize without LLMs if connection fails
-            logger.warning(f"LLM connection failed. Initializing without LLMs.")
-            self.code_generator = CodeGenerator(llm_logger=self.llm_logger)
-            self.code_evaluation = CodeEvaluationAgent(llm_logger=self.llm_logger)
-            self.evaluator = StudentResponseEvaluator(llm_logger=self.llm_logger)
-            self.summary_model = None
-    
+            logger.error("Failed to initialize any models. LLM features will not be available.")
+        
+        logger.debug("Domain objects initialization completed")
+
     def _initialize_model_for_role(self, role: str):
         """
-        Initialize an LLM for a specific role.
+        Initialize an LLM for a specific role without testing connection.
+        Connection will be tested when the model is actually used.
+        Provides better error handling and logging.
         
         Args:
             role: Role identifier (e.g., "GENERATIVE", "REVIEW")
@@ -100,10 +113,20 @@ class WorkflowManager:
             Initialized LLM or None if initialization fails
         """
         try:
-            # Initialize model
-            return self.llm_manager.initialize_model_from_env(f"{role}_MODEL", f"{role}_TEMPERATURE")
+            logger.debug(f"Attempting to initialize {role} model")
+            
+            # Initialize model without testing connection
+            model = self.llm_manager.initialize_model_from_env(f"{role}_MODEL", f"{role}_TEMPERATURE")
+            
+            if model:
+                logger.debug(f"Successfully initialized {role} model (connection will be tested on first use)")
+                return model
+            else:
+                logger.warning(f"Failed to initialize {role} model - model object is None")
+                return None
+                
         except Exception as e:
-            logger.error(f"Error initializing {role} model: {str(e)}")
+            logger.error(f"Exception while initializing {role} model: {str(e)}")
             return None
     
     def _create_workflow_nodes(self) -> WorkflowNodes:

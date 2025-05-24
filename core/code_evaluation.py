@@ -52,6 +52,10 @@ class CodeEvaluationAgent:
             Evaluation results with found and missing errors
         """
         
+        if not self.llm:
+            logger.warning("No LLM available for code evaluation, using fallback evaluation")
+            return "// Error: No LLM available for code generation"
+
         # Create evaluation prompt
         prompt = create_evaluation_prompt(code, requested_errors)
         

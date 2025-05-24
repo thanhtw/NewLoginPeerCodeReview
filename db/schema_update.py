@@ -111,7 +111,7 @@ def insert_default_badges(db):
     
     # Only proceed with insertion if no badges exist
     if badge_count > 0:
-        logger.info(f"Badges already exist in the database ({badge_count} found). Skipping insertion.")
+        logger.debug(f"Badges already exist in the database ({badge_count} found). Skipping insertion.")
         return
     
     # Define default badges with English and Chinese translations
@@ -166,4 +166,4 @@ def insert_default_badges(db):
             # Continue with the next badge
             continue
     
-    logger.info(f"Inserted {successfully_inserted} multilingual default badges")
+    logger.debug(f"Inserted {successfully_inserted} multilingual default badges")

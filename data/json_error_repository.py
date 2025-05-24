@@ -91,7 +91,7 @@ class JsonErrorRepository:
             with open(self.java_errors_path, 'r', encoding='utf-8') as file:
                 self.java_errors = json.load(file)
                 self.java_error_categories = list(self.java_errors.keys())
-                logger.info(f"Loaded Java errors from {self.java_errors_path} with {len(self.java_error_categories)} categories")
+                logger.debug(f"Loaded Java errors from {self.java_errors_path} with {len(self.java_error_categories)} categories")
                 return True
         
             logger.warning(f"Could not find Java errors file: {self.java_errors_path}")

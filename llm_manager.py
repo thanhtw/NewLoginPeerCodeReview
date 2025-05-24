@@ -2,11 +2,12 @@
 LLM Manager module for Java Peer Review Training System.
 
 This module provides the LLMManager class for handling model initialization,
-configuration, and management of Groq LLM provider.
+configuration, and management of Groq LLM provider with lazy connection testing.
 """
 
 import os
 import logging
+import time
 from typing import Dict, Any, Optional, Tuple
 from dotenv import load_dotenv 
 
@@ -27,7 +28,7 @@ logger = logging.getLogger(__name__)
 class LLMManager:
     """
     LLM Manager for handling model initialization, configuration and management.
-    Supports Groq LLM provider.
+    Supports Groq LLM provider with lazy connection testing.
     """
     
     def __init__(self):
@@ -52,17 +53,22 @@ class LLMManager:
         
         # Track initialized models
         self.initialized_models = {}
+        
+        # Connection caching to avoid repeated tests
+        self._connection_cache = {}
+        self._cache_duration = 300  # 5 minutes
     
     def set_provider(self, provider: str, api_key: str = None) -> bool:
         """
         Set the LLM provider to use and persist the selection.
+        No longer tests connection immediately - this is done lazily on first use.
         
         Args:
             provider: Provider name (must be 'groq')
             api_key: API key for Groq (required)
             
         Returns:
-            bool: True if successful, False otherwise
+            bool: True if configuration successful, False otherwise
         """
         if provider.lower() != "groq":
             logger.error(f"Unsupported provider: {provider}. Only 'groq' is supported.")
@@ -90,27 +96,74 @@ class LLMManager:
             self.groq_api_key = api_key
             os.environ["GROQ_API_KEY"] = api_key
         
-        # Test the API key
-        if not self.check_groq_connection()[0]:
-            logger.error("Failed to connect to Groq API. Please check your API key.")
-            return False
+        # Clear connection cache when provider changes
+        self._connection_cache = {}
         
-        # Log successful provider change
+        # REMOVED: Connection testing - will be done on first LLM use
         logger.debug(f"Successfully configured Groq provider")
         return True    
     
-    def check_groq_connection(self) -> Tuple[bool, str]:
+    def _is_connection_cached(self) -> Tuple[bool, Optional[bool], Optional[str]]:
+        """
+        Check if we have a recent connection test result cached.
+        
+        Returns:
+            Tuple[bool, Optional[bool], Optional[str]]: (has_cache, is_connected, message)
+        """
+        if not self._connection_cache:
+            return False, None, None
+            
+        cache_time = self._connection_cache.get("timestamp", 0)
+        current_time = time.time()
+        
+        # Check if cache is still valid
+        if current_time - cache_time < self._cache_duration:
+            return True, self._connection_cache.get("connected", False), self._connection_cache.get("message", "")
+        
+        # Cache expired
+        return False, None, None
+    
+    def _cache_connection_result(self, connected: bool, message: str):
+        """
+        Cache the connection test result.
+        
+        Args:
+            connected: Whether connection was successful
+            message: Connection status message
+        """
+        self._connection_cache = {
+            "connected": connected,
+            "message": message,
+            "timestamp": time.time()
+        }
+    
+    def check_groq_connection(self, force_check: bool = False) -> Tuple[bool, str]:
         """
         Check if Groq API is accessible with the current API key.
+        Uses caching to avoid repeated checks unless forced.
         
+        Args:
+            force_check: Force a new connection check even if cached
+            
         Returns:
             Tuple[bool, str]: (is_connected, message)
         """
+        # Check cache first unless forced
+        if not force_check:
+            has_cache, is_connected, message = self._is_connection_cached()
+            if has_cache:
+                logger.debug(f"Using cached connection status: {is_connected}")
+                return is_connected, message
+        
         if not self.groq_api_key:
-            return False, "No Groq API key provided"
+            result = False, "No Groq API key provided"
+            self._cache_connection_result(*result)
+            return result
             
         if not GROQ_AVAILABLE:
-            return False, "Groq integration is not available. Please install langchain-groq package."
+            result = False, "Groq integration is not available. Please install langchain-groq package."
+            self._cache_connection_result(*result)
+            return result
             
         try:
             # Use a minimal API call to test the connection
@@ -123,18 +176,25 @@ class LLMManager:
             response = chat.invoke([HumanMessage(content="test")])
             
             # If we get here, the connection is successful
-            return True, f"Connected to Groq API successfully"
+            result = True, f"Connected to Groq API successfully"
+            logger.debug("Groq connection test successful")
             
         except Exception as e:
             error_message = str(e)
             if "auth" in error_message.lower() or "api key" in error_message.lower():
-                return False, "Invalid Groq API key"
+                result = False, "Invalid Groq API key"
             else:
-                return False, f"Error connecting to Groq API: {error_message}"
+                result = False, f"Error connecting to Groq API: {error_message}"
+            logger.debug(f"Groq connection test failed: {result[1]}")
+        
+        # Cache the result
+        self._cache_connection_result(*result)
+        return result
 
     def initialize_model(self, model_name: str, model_params: Dict[str, Any] = None) -> Optional[BaseLanguageModel]:
         """
-        Initialize a Groq model.
+        Initialize a Groq model with lazy connection testing.
+        Connection is only tested when the model is actually used.
         
         Args:
             model_name (str): Name of the model to initialize
@@ -147,14 +207,15 @@ class LLMManager:
     
     def _initialize_groq_model(self, model_name: str, model_params: Dict[str, Any] = None) -> Optional[BaseLanguageModel]:
         """
-        Initialize a Groq model.
+        Initialize a Groq model without immediate connection testing.
+        Uses simple ChatGroq instance for maximum reliability.
         
         Args:
             model_name: Name of the model to initialize
             model_params: Model parameters
             
         Returns:
-            Initialized LLM or None if initialization fails
+            Initialized ChatGroq instance or None if initialization fails
         """
         if not GROQ_AVAILABLE:
             logger.error("Groq integration is not available. Please install langchain-groq package.")
@@ -169,28 +230,19 @@ class LLMManager:
             model_params = self._get_groq_default_params(model_name)
             
         try:
-            # Initialize the Groq model
-            temperature = model_params.get("temperature", 0.7)
-            
-            # Use the ChatGroq class from langchain_groq
+            # Create ChatGroq directly for maximum reliability
             llm = ChatGroq(
                 api_key=self.groq_api_key,
                 model_name=model_name,
-                temperature=temperature,
+                temperature=model_params.get("temperature", 0.7),
                 verbose=True
             )
             
-            # Test with a simple message to ensure the model works
-            try:
-                _ = llm.invoke([HumanMessage(content="test")])
-                logger.debug(f"Successfully initialized Groq model: {model_name}")
-                return llm
-            except Exception as e:
-                logger.debug(f"Error testing Groq model {model_name}: {str(e)}")
-                return None
+            logger.debug(f"Successfully initialized Groq model: {model_name}")
+            return llm
                 
         except Exception as e:
-            logger.debug(f"Error initializing Groq model {model_name}: {str(e)}")
+            logger.error(f"Error initializing Groq model {model_name}: {str(e)}")
             return None
     
     def initialize_model_from_env(self, model_key: str, temperature_key: str) -> Optional[BaseLanguageModel]:
@@ -219,7 +271,11 @@ class LLMManager:
         logger.debug(f"Using Groq model: {model_name}")
         
         # Get temperature
-        temperature = float(os.getenv(temperature_key, "0.7"))       
+        try:
+            temperature = float(os.getenv(temperature_key, "0.7"))
+        except (ValueError, TypeError):
+            logger.warning(f"Invalid temperature value for {temperature_key}, using default 0.7")
+            temperature = 0.7
         
         # Set up model parameters
         model_params = {

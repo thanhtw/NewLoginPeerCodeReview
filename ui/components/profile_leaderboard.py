@@ -156,10 +156,10 @@ class ProfileLeaderboardSidebar:
         try:
             
             # Build the leaderboard HTML in smaller, safer chunks
-            header_html = '''
+            header_html = f'''
             <div class="leaderboard-container-enhanced">
                 <div class="leaderboard-header-enhanced">
-                    🏆 Top Performers
+                    🏆 {t('top_performers')}
                 </div>
                 <div class="leaderboard-list">
             '''
@@ -212,7 +212,7 @@ class ProfileLeaderboardSidebar:
                     </div>
                     <div class="user-points-enhanced">
                         <div class="points-number">{points:,}</div>
-                        <div class="points-label">points</div>
+                        <div class="points-label">{t('points')}</div>
                     </div>
                 </div>
                 '''
@@ -222,10 +222,10 @@ class ProfileLeaderboardSidebar:
             st.markdown(items_html, unsafe_allow_html=True)
             
             # Close container and add button
-            footer_html = '''
+            footer_html = f'''
                 </div>
                 <button class="view-full-btn" onclick="alert('Feature coming soon!')">
-                    📊 View Full Leaderboard
+                    📊 {t('view_full_leaderboard')}
                 </button>
             </div>
             '''

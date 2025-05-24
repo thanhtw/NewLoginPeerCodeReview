@@ -85,7 +85,7 @@ class FeedbackSystem:
         user_id = st.session_state.auth.get("user_id") if "auth" in st.session_state else None
         
         # Add tabs for different sections of feedback
-        feedback_tabs = st.tabs([t("review_feedback"), t("badges"), t("progress"), t("leaderboard")])
+        feedback_tabs = st.tabs([t("review_feedback"), t("badges"), t("progress")])
         
         with feedback_tabs[0]:
             # Display the feedback results      
@@ -109,13 +109,7 @@ class FeedbackSystem:
             else:
                 st.info("Login to track your progress!")
         
-        with feedback_tabs[3]:
-            # Show leaderboard
-            if user_id:
-                self.render_leaderboard(user_id)
-            else:
-                st.info(f"{t('login_to_see')}")
-        
+       
         # Add a button to start a new session
         st.markdown("---")
         self._render_new_session_button()
@@ -794,88 +788,6 @@ class FeedbackSystem:
         )
         
         st.plotly_chart(fig, use_container_width=True)
-
-    def render_leaderboard(self, user_id: str) -> None:
-        """
-        Render an enhanced leaderboard with badge icons and better visual design.
-        
-        Args:
-            user_id: The current user's ID
-        """
-        badge_manager = BadgeManager()
-        leaders = badge_manager.get_leaderboard_with_badges(15)  # Show more users
-        user_rank = badge_manager.get_user_rank(user_id)
-        
-        st.subheader("🏆 " + t("leaderboard"))
-        
-        if not leaders:
-            st.info(t("no_users_leaderboard"))
-            return
-        # Leaderboard container
-        st.markdown('<div class="enhanced-leaderboard">', unsafe_allow_html=True)
-        
-        # Header
-        st.markdown(f'''
-        <div class="leaderboard-header">
-            🏆 {t("leaderboard")} - Top Performers
-        </div>
-        ''', unsafe_allow_html=True)
-        
-        # Leaderboard entries
-        for leader in leaders:
-            rank = leader.get("rank", 0)
-            display_name = leader.get("display_name", t("unknown"))
-            level_display = leader.get("level", "basic").capitalize()
-            points = leader.get("total_points", 0)
-            badge_count = leader.get("badge_count", 0)
-            top_badges = leader.get("top_badges", [])
-            is_current_user = leader.get("uid") == user_id
-            
-            # Rank display
-            rank_emoji = "🥇" if rank == 1 else "🥈" if rank == 2 else "🥉" if rank == 3 else f"{rank}"
-            
-            # Badge icons
-            badge_icons = "".join([
-                f'<span title="{badge.get("name", "")}">{badge.get("icon", "🏅")}</span>' 
-                for badge in top_badges
-            ])
-            
-            # Current user indicator
-            current_user_class = "current-user" if is_current_user else ""
-            current_user_text = f' <span style="color: #4CAF50; font-size: 0.8em;">({t("you")})</span>' if is_current_user else ''
-            
-            st.markdown(f'''
-            <div class="leaderboard-row {current_user_class}">
-                <div class="rank-badge">{rank_emoji}</div>
-                <div class="user-info">
-                    <div class="user-name">
-                        {display_name}{current_user_text}
-                        <span class="badge-icons">{badge_icons}</span>
-                    </div>
-                    <div class="user-details">
-                        {level_display} • {badge_count} {t("badges").lower()}
-                    </div>
-                </div>
-                <div class="points-display">
-                    {points:,}<br>
-                    <span style="font-size: 0.8em; color: #999;">{t("points").lower()}</span>
-                </div>
-            </div>
-            ''', unsafe_allow_html=True)
-        
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-        # Show user's rank if not in top list
-        if user_id and not any(leader.get("uid") == user_id for leader in leaders):
-            rank = user_rank.get("rank", 0)
-            total_users = user_rank.get("total_users", 0)
-            
-            st.markdown(f'''
-            <div style="text-align: center; padding: 15px; background-color: #f8f9fa; 
-                    border-radius: 10px; margin-top: 15px;">
-                <i>{t("your_rank")}: <strong>{rank}</strong> / {total_users}</i>
-            </div>
-            ''', unsafe_allow_html=True)
 
 def render_feedback_tab(workflow, auth_ui=None):
     """

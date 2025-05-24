@@ -85,6 +85,11 @@ class CodeGenerator:
         Returns:
             Generated Java code as a string or AIMessage object
         """
+
+        if not self.llm:
+            logger.error("No LLM available for code generation")
+            return "// Error: No LLM available for code generation"
+    
         # Select a domain if not provided
         if not domain:
             domain = random.choice(self.domains)
